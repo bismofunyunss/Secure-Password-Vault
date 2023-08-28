@@ -7,18 +7,9 @@ namespace Secure_Password_Vault
 {
     public static class Authentication
     {
-        private static string _currentLoggedInUser = string.Empty;
-        public static string CurrentLoggedInUser
-        {
-            get { return _currentLoggedInUser; }
-            set { _currentLoggedInUser = value; }
-        }
-        private static string userID = string.Empty;
-        public static string UserID
-        {
-            get { return userID; }
-            set { userID = value; }
-        }
+        public static string CurrentLoggedInUser { get; set; } = string.Empty;
+  
+        private static string UserID { get; set; } = string.Empty;
      
         public static string GetUserFilePath(string userName) =>         
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault", "Users", userName, $"{userName}.user");
