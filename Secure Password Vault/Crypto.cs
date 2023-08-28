@@ -12,8 +12,12 @@ namespace Secure_Password_Vault
         private const double MemorySize = 1024 * 1024 * 1; // 10GiB
         public const int SaltSize = 384 / 8; // 64 Bit
         public static readonly int IVBit = 128;
-        public static byte[] Salt { get; set; } = Array.Empty<byte>();
-        private static byte[] IV { get; set; } = Array.Empty<byte>();
+        private static byte[] salt = Array.Empty<byte>();
+        public static byte[] Salt
+        { get { return salt; } set { salt = value; } }
+        private static byte[] iv = Array.Empty<byte>();
+        public static byte[] IV
+        { get { return iv; } set { iv = value; } }
         public static string Hash { get; set; } = string.Empty;
         public static string? checkSum { get; set; } = string.Empty;
         public static async Task<string?> HashAsync(string password, byte[] salt)
