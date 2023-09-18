@@ -6,18 +6,18 @@ namespace Secure_Password_Vault;
 
 public static class Crypto
 {
-    private const int Iterations = 2;
-    private const double MemorySize = 1024 * 1024 * 1; // 10GiB
-    public const int SaltSize = 384 / 8; // 64 Bit
-    public static readonly int ByteSize = 24; // 48 bit hex string
-    public static readonly int KeySize = 16; // 32 bit hex string
+    private const int Iterations = 64;
+    private const double MemorySize = 1024 * 1024 * 10;
+    public const int SaltSize = 384 / 8;
+    public static readonly int ByteSize = 24;
+    public static readonly int KeySize = 16;
     public static readonly int IvBit = 128;
 
 
     private static readonly RandomNumberGenerator RndNum = RandomNumberGenerator.Create();
-    public static byte[] Salt { get; set; } = Array.Empty<byte>();
-    public static byte[] Iv { get; set; } = Array.Empty<byte>();
-    public static byte[]? Hash { get; set; } = Array.Empty<byte>();
+    public static byte[] Salt { get; set; } = { };
+    public static byte[] Iv { get; set; } = { };
+    public static byte[]? Hash { get; set; } = { };
     private static string? CheckSum { get; set; } = string.Empty;
 
     public static async Task<byte[]?> HashAsync(char[]? passWord, byte[]? salt)
@@ -116,6 +116,7 @@ public static class Crypto
         var textBytes = DataConversionHelpers.StringToByteArray(textString);
         if (passWord == null)
             throw new ArgumentException(@"Value was empty or null.", nameof(passWord));
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
         var derivedKey = await DeriveAsync(passWord, Salt);
         if (derivedKey == null)
             throw new ArgumentException(@"Value returned null or empty.", nameof(derivedKey));
@@ -149,6 +150,7 @@ public static class Crypto
 
         var textString = await File.ReadAllTextAsync(file);
         var textBytes = DataConversionHelpers.Base64StringToByteArray(textString);
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
         var derivedKey = await DeriveAsync(passWord, Salt);
         if (derivedKey == null)
             throw new ArgumentException(@"Value returned null or empty.", nameof(derivedKey));

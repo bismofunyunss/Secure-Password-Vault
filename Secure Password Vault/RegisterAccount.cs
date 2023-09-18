@@ -50,6 +50,7 @@ public partial class RegisterAccount : Form
                 var userId = Guid.NewGuid().ToString();
                 Crypto.Salt = Crypto.RndByteSized(Crypto.SaltSize);
                 Crypto.Iv = Crypto.RndByteSized(Crypto.IvBit / 8);
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                 var hashedPassword = await Crypto.HashAsync(passArray, Crypto.Salt);
                 if (hashedPassword == null)
                     throw new ArgumentException(@"Value was null or empty.", nameof(hashedPassword));
@@ -63,7 +64,7 @@ public partial class RegisterAccount : Form
                 var textString = await File.ReadAllTextAsync(userFile);
                 var textBytes = DataConversionHelpers.StringToByteArray(textString);
 
-
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                 var derivedKey = await Crypto.DeriveAsync(passArray, Crypto.Salt);
                 if (derivedKey == null)
                     throw new ArgumentException(@"Value returned null or empty.", nameof(derivedKey));

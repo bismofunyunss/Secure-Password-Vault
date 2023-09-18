@@ -81,7 +81,7 @@ public partial class Vault : Form
                             PassVault.Rows[rowIndex].Cells[i].Value = values[i];
                     }
                 }
-
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                 var encryptedVault = await Crypto.EncryptUserFiles(Authentication.CurrentLoggedInUser,
                     PopupPassword.PasswordArray, Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
                 if (encryptedVault != null)

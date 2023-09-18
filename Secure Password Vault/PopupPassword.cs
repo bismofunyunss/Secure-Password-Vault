@@ -21,6 +21,7 @@ public partial class PopupPassword : Form
         passTxt.Text.CopyTo(0, PasswordArray, 0, buffer);
         try
         {
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             var decryptedBytes = await Crypto.DecryptUserFiles(Authentication.CurrentLoggedInUser, PasswordArray,
                 Authentication.GetUserFilePath(Authentication.CurrentLoggedInUser));
 
@@ -28,6 +29,7 @@ public partial class PopupPassword : Form
                 return;
             var decryptedText = DataConversionHelpers.ByteArrayToString(decryptedBytes);
             await File.WriteAllTextAsync(Authentication.GetUserFilePath(Authentication.CurrentLoggedInUser), decryptedText);
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             var hashedInput = await Task.Run(() => Crypto.HashAsync(PasswordArray, Crypto.Salt));
             if (hashedInput == null)
                 throw new ArgumentException(@"Hash value returned null.", nameof(hashedInput));
@@ -53,7 +55,8 @@ public partial class PopupPassword : Form
                         _isAnimating = false;
                         outputLbl.ForeColor = Color.LimeGreen;
                         outputLbl.Text = @"Vault saved.";
-                        var encryptedVault = await Task.Run(() =>
+                        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+                            var encryptedVault = await Task.Run(() =>
                             Crypto.EncryptUserFiles(Authentication.CurrentLoggedInUser, PasswordArray,
                                 Authentication.GetUserVault(Authentication.CurrentLoggedInUser)));
                         if (encryptedVault != null)
@@ -72,6 +75,7 @@ public partial class PopupPassword : Form
                             _isAnimating = false;
                             outputLbl.ForeColor = Color.LimeGreen;
                             outputLbl.Text = @"Access granted.";
+                            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                             var decryptedVault = await Task.Run(() =>
                                 Crypto.DecryptUserFiles(Authentication.CurrentLoggedInUser, PasswordArray,
                                     Authentication.GetUserVault(Authentication.CurrentLoggedInUser)));

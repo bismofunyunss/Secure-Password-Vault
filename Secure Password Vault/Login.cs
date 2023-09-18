@@ -36,19 +36,22 @@ public partial class Login : Form
                 case true:
                 {
                     StartAnimation();
-                    var decryptedBytes = await Crypto.DecryptUserFiles(userNameTxt.Text, passwordArray,
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+                    var decryptedBytes = await Crypto.DecryptUserFiles(userNameTxt.Text, passwordArray, 
                         Authentication.GetUserFilePath(userNameTxt.Text));
 
                     if (decryptedBytes != null)
                     {
                         var decryptedText = DataConversionHelpers.ByteArrayToString(decryptedBytes);
                         await File.WriteAllTextAsync(Authentication.GetUserFilePath(userNameTxt.Text), decryptedText);
+                        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                         var hashedInput = await Task.Run(() => Crypto.HashAsync(passwordArray, Crypto.Salt));
                         if (hashedInput == null)
                             throw new ArgumentException(@"Hash value returned null.", nameof(hashedInput));
 
                         Authentication.GetUserInfo(userNameTxt.Text);
 
+                        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
                         var loginSuccessful = await Task.Run(() => Crypto.ComparePassword(hashedInput));
                         var encryptedBytes = await Task.Run(() => Crypto.EncryptUserFiles(userNameTxt.Text, passwordArray,
