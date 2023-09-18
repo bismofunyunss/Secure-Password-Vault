@@ -75,6 +75,7 @@ public partial class Login : Form
                                 outputLbl.Text = @"Logged in.";
                                 _isAnimating = false;
                                 Authentication.CurrentLoggedInUser = userNameTxt.Text;
+                                UserLog.LogUser(Authentication.CurrentLoggedInUser);
                                 MessageBox.Show(@"Login successful. Loading vault...", @"Login success.", MessageBoxButtons.OK,
                                     MessageBoxIcon.Information);
                                 Hide();

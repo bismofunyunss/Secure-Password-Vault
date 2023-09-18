@@ -11,9 +11,9 @@ public partial class RegisterAccount : Form
         InitializeComponent();
     }
 
-    private static bool CheckPasswordValidity(char[] password, char[] password2)
+    private static bool CheckPasswordValidity(IReadOnlyCollection<char> password, char[] password2)
     {
-        if (password.Length is < 8 or > 64)
+        if (password.Count is < 8 or > 64)
             return false;
 
         if (!password.Any(char.IsUpper) || !password.Any(char.IsLower) || !password.Any(char.IsDigit))
@@ -123,10 +123,13 @@ public partial class RegisterAccount : Form
             throw new ArgumentException(@"Invalid password.", nameof(password));
 
         if (!CheckPasswordValidity(password, password2))
-            throw new ArgumentException("Password must contain between 8 and 64 characters. " +
-                                        "It also must include:\n1.) At least one uppercase letter.\n2.) At least one lowercase letter.\n" +
-                                        "3.) At least one number.\n4.) At least one special character.\n5.) Must not contain any spaces.\n" +
-                                        "6.) Both passwords must match.\n", nameof(passTxt));
+            throw new ArgumentException(@"Password must contain between 8 and 64 characters." +
+                                        @"It also must include: 1.) At least one uppercase letter." +
+                                        @"2.) At least one lowercase letter." +
+                                        @"3.) At least one number. " + 
+                                        @"4.) At least one special character." +
+                                        @"5.) Must not contain any spaces.\n" +
+                                        @"6.) Both passwords must match.", nameof(passTxt));
     }
 
     private static string CreateDirectoryIfNotExists(string directoryPath)
