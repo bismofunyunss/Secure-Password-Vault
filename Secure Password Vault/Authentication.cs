@@ -1,4 +1,7 @@
-﻿namespace Secure_Password_Vault
+﻿using System.Security;
+using System.Text;
+
+namespace Secure_Password_Vault
 {
     public static class Authentication
     {
@@ -8,6 +11,8 @@
         public static string GetUserFilePath(string userName) =>         
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault", "Users", userName, $"{userName}.user");
 
+        public static string GetUserVault(string userName) =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault", "Users", userName, $"{userName}.vault");
 
         public static bool UserExists(string userName)
         {
@@ -18,7 +23,7 @@
 
         public static string GetUserInfoPath(string userName) =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault",
-            "Users", userName, "UserInfo.info");
+            "Users", userName, $"{userName}.info");
 
 
         public static void GetUserInfo(string userName)
@@ -31,12 +36,12 @@
                     throw new IOException("File does not exist.");
 
                 string[] lines = File.ReadAllLines(path);
-                int index = Array.IndexOf(lines, userName);
+                int index = Array.IndexOf(lines, "User:");
                 if (index != -1)
                 {
-                    UserID = lines[index + 4];
-                    Crypto.Salt = DataConversionHelpers.StringToByteArray(lines[index + 6]);
-                    Crypto.Hash = lines[index + 8];
+                    UserID = lines[index + 3];
+                    byte[]? userHash = DataConversionHelpers.HexStringToByteArray(lines[index + 7]);
+                    Crypto.Hash = userHash;
                 }
             }
             catch (IOException ex)

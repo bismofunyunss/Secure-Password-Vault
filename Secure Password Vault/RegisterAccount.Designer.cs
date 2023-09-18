@@ -54,11 +54,11 @@
             groupBox1.Controls.Add(passLbl);
             groupBox1.Controls.Add(userTxt);
             groupBox1.Controls.Add(userLbl);
-            groupBox1.Font = new Font("Segoe UI Black", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            groupBox1.ForeColor = Color.WhiteSmoke;
+            groupBox1.Font = new Font("Segoe Script", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            groupBox1.ForeColor = Color.DarkRed;
             groupBox1.Location = new Point(12, 12);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(450, 383);
+            groupBox1.Size = new Size(450, 416);
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             groupBox1.Text = "Register Account";
@@ -66,30 +66,30 @@
             // outputLbl
             // 
             outputLbl.AutoSize = true;
-            outputLbl.Location = new Point(97, 344);
+            outputLbl.Location = new Point(122, 369);
             outputLbl.Name = "outputLbl";
-            outputLbl.Size = new Size(64, 25);
+            outputLbl.Size = new Size(78, 35);
             outputLbl.TabIndex = 9;
             outputLbl.Text = "Idle...";
             // 
             // statusLbl
             // 
             statusLbl.AutoSize = true;
-            statusLbl.Location = new Point(6, 344);
+            statusLbl.Location = new Point(6, 369);
             statusLbl.Name = "statusLbl";
-            statusLbl.Size = new Size(85, 25);
+            statusLbl.Size = new Size(110, 35);
             statusLbl.TabIndex = 8;
             statusLbl.Text = "Status ::";
             // 
             // cancelBtn
             // 
-            cancelBtn.BackColor = Color.WhiteSmoke;
-            cancelBtn.FlatAppearance.BorderColor = Color.Black;
+            cancelBtn.BackColor = Color.Black;
+            cancelBtn.FlatAppearance.BorderColor = Color.DarkRed;
             cancelBtn.FlatAppearance.BorderSize = 3;
             cancelBtn.FlatStyle = FlatStyle.Flat;
-            cancelBtn.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            cancelBtn.ForeColor = Color.Black;
-            cancelBtn.Location = new Point(6, 270);
+            cancelBtn.Font = new Font("Segoe Script", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            cancelBtn.ForeColor = Color.DarkRed;
+            cancelBtn.Location = new Point(6, 298);
             cancelBtn.Name = "cancelBtn";
             cancelBtn.Size = new Size(438, 44);
             cancelBtn.TabIndex = 7;
@@ -98,13 +98,13 @@
             // 
             // createAccountBtn
             // 
-            createAccountBtn.BackColor = Color.WhiteSmoke;
-            createAccountBtn.FlatAppearance.BorderColor = Color.Black;
+            createAccountBtn.BackColor = Color.Black;
+            createAccountBtn.FlatAppearance.BorderColor = Color.DarkRed;
             createAccountBtn.FlatAppearance.BorderSize = 3;
             createAccountBtn.FlatStyle = FlatStyle.Flat;
-            createAccountBtn.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            createAccountBtn.ForeColor = Color.Black;
-            createAccountBtn.Location = new Point(6, 220);
+            createAccountBtn.Font = new Font("Segoe Script", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            createAccountBtn.ForeColor = Color.DarkRed;
+            createAccountBtn.Location = new Point(6, 248);
             createAccountBtn.Name = "createAccountBtn";
             createAccountBtn.Size = new Size(438, 44);
             createAccountBtn.TabIndex = 6;
@@ -114,26 +114,30 @@
             // 
             // confirmPassTxt
             // 
-            confirmPassTxt.Location = new Point(6, 182);
+            confirmPassTxt.BackColor = Color.Black;
+            confirmPassTxt.Font = new Font("Segoe Script", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            confirmPassTxt.Location = new Point(6, 206);
             confirmPassTxt.Name = "confirmPassTxt";
-            confirmPassTxt.Size = new Size(438, 32);
+            confirmPassTxt.Size = new Size(438, 36);
             confirmPassTxt.TabIndex = 5;
             confirmPassTxt.UseSystemPasswordChar = true;
             // 
             // confirmPassLbl
             // 
             confirmPassLbl.AutoSize = true;
-            confirmPassLbl.Location = new Point(6, 154);
+            confirmPassLbl.Location = new Point(6, 168);
             confirmPassLbl.Name = "confirmPassLbl";
-            confirmPassLbl.Size = new Size(175, 25);
+            confirmPassLbl.Size = new Size(230, 35);
             confirmPassLbl.TabIndex = 4;
             confirmPassLbl.Text = "Confirm Password";
             // 
             // passTxt
             // 
-            passTxt.Location = new Point(6, 119);
+            passTxt.BackColor = Color.Black;
+            passTxt.Font = new Font("Segoe Script", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            passTxt.Location = new Point(6, 129);
             passTxt.Name = "passTxt";
-            passTxt.Size = new Size(438, 32);
+            passTxt.Size = new Size(438, 36);
             passTxt.TabIndex = 3;
             passTxt.UseSystemPasswordChar = true;
             // 
@@ -142,15 +146,17 @@
             passLbl.AutoSize = true;
             passLbl.Location = new Point(6, 91);
             passLbl.Name = "passLbl";
-            passLbl.Size = new Size(98, 25);
+            passLbl.Size = new Size(124, 35);
             passLbl.TabIndex = 2;
             passLbl.Text = "Password";
             // 
             // userTxt
             // 
+            userTxt.BackColor = Color.Black;
+            userTxt.Font = new Font("Segoe Script", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             userTxt.Location = new Point(6, 56);
             userTxt.Name = "userTxt";
-            userTxt.Size = new Size(438, 32);
+            userTxt.Size = new Size(438, 36);
             userTxt.TabIndex = 1;
             // 
             // userLbl
@@ -158,7 +164,7 @@
             userLbl.AutoSize = true;
             userLbl.Location = new Point(6, 28);
             userLbl.Name = "userLbl";
-            userLbl.Size = new Size(100, 25);
+            userLbl.Size = new Size(128, 35);
             userLbl.TabIndex = 0;
             userLbl.Text = "Username";
             // 
@@ -166,8 +172,8 @@
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.LightSeaGreen;
-            ClientSize = new Size(474, 407);
+            BackColor = Color.Black;
+            ClientSize = new Size(474, 440);
             Controls.Add(groupBox1);
             Name = "RegisterAccount";
             Text = "RegisterAccount";

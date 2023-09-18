@@ -1,151 +1,165 @@
-﻿using System.Data;
-using System.Text;
-using MessagePack;
-using System.IO;
-namespace Secure_Password_Vault
+﻿using System.Text;
+
+namespace Secure_Password_Vault;
+
+public partial class RegisterAccount : Form
 {
-    public partial class RegisterAccount : Form
+    private static bool _isAnimating;
+
+    public RegisterAccount()
     {
-        public RegisterAccount()
+        InitializeComponent();
+    }
+
+    private static bool CheckPasswordValidity(char[] password, char[] password2)
+    {
+        if (password.Length is < 8 or > 64)
+            return false;
+
+        if (!password.Any(char.IsUpper) || !password.Any(char.IsLower) || !password.Any(char.IsDigit))
+            return false;
+
+        if (password.Any(char.IsWhiteSpace) || password2.Any(char.IsWhiteSpace) || !password.SequenceEqual(password2))
+            return false;
+
+        return password.Any(char.IsSymbol) || password.Any(char.IsPunctuation);
+    }
+
+    private async void CreateAccount()
+    {
+        var userName = userTxt.Text;
+        var passArray = new char[passTxt.Text.Length];
+        passTxt.Text.CopyTo(0, passArray, 0, passTxt.Text.Length);
+
+        var confirmPassArray = new char[confirmPassTxt.Text.Length];
+        confirmPassTxt.Text.CopyTo(0, confirmPassArray, 0, confirmPassArray.Length);
+
+        var userDirectory = CreateDirectoryIfNotExists(Path.Combine("Password Vault", "Users", userName));
+        var userFile = Path.Combine(userDirectory, $"{userName}.user");
+        var userInfo = Path.Combine(userDirectory, $"{userName}.info");
+
+        var userExists = Authentication.UserExists(userName);
+
+        try
         {
-            InitializeComponent();
-        }
-        private static bool isAnimating = false;
-        private static bool CheckPasswordValidity(string password, string password2)
-        {
-            if (password.Length < 8 || password.Length > 64)
-                return false;
-
-            if (!password.Any(char.IsUpper) || !password.Any(char.IsLower) || !password.Any(char.IsDigit))
-                return false;
-
-            if (password.Contains(' ') || password != password2)
-                return false;
-
-            return password.Any(char.IsSymbol) || password.Any(char.IsPunctuation);
-        }
-
-
-        private async void CreateAccount()
-        {
-            try
+            if (!userExists)
             {
-                string userName = userTxt.Text;
-                string password = passTxt.Text;
+                StartAnimation();
+                ValidateUsernameAndPassword(userName, passArray, confirmPassArray);
 
-                string userDirectory = CreateDirectoryIfNotExists(Path.Combine("Password Vault", "Users", userName));
-                string userFile = Path.Combine(userDirectory, $"{userName}.user");
-                string userInfo = Path.Combine(userDirectory, "UserInfo.info");
+                var userId = Guid.NewGuid().ToString();
+                Crypto.Salt = Crypto.RndByteSized(Crypto.SaltSize);
+                Crypto.Iv = Crypto.RndByteSized(Crypto.IvBit / 8);
+                var hashedPassword = await Crypto.HashAsync(passArray, Crypto.Salt);
+                if (hashedPassword == null)
+                    throw new ArgumentException(@"Value was null or empty.", nameof(hashedPassword));
 
-                bool userExists = Authentication.UserExists(userName);
+                Crypto.Hash = hashedPassword;
+                var saltString = DataConversionHelpers.ByteArrayToBase64String(Crypto.Salt);
+
+                await File.WriteAllTextAsync(userFile,
+                    $"User:\n{userName}\nUserID:\n{userId}\nSalt:\n{saltString}\nHash:\n{DataConversionHelpers.ByteArrayToHexString(hashedPassword)}\n");
+
+                var textString = await File.ReadAllTextAsync(userFile);
+                var textBytes = DataConversionHelpers.StringToByteArray(textString);
 
 
-                if (!userExists)
-                {
-                    StartAnimation();
-                    ValidateUsernameAndPassword(userName, password);
+                var derivedKey = await Crypto.DeriveAsync(passArray, Crypto.Salt);
+                if (derivedKey == null)
+                    throw new ArgumentException(@"Value returned null or empty.", nameof(derivedKey));
+                var keyBytes = Encoding.UTF8.GetBytes(derivedKey);
 
-                    string userID = Guid.NewGuid().ToString();
-                    Crypto.Salt = Crypto.RndByteSized(Crypto.SaltSize);
-                    Crypto.IV = Crypto.RndByteSized(Crypto.IVBit / 8);
-                    string? hashedPassword = await Crypto.HashAsync(password, Crypto.Salt);
-                    string? saltString = DataConversionHelpers.ByteArrayToBase64String(Crypto.Salt);
+                var encrypted = Crypto.Encrypt(textBytes, keyBytes);
+                if (encrypted == null)
+                    throw new ArgumentException(@"Value returned null or empty.", nameof(encrypted));
 
-                    File.WriteAllText(userFile, $"User:\n{userName}\nUserID:\n{userID}\nSalt:\n{saltString}\nHash:\n{hashedPassword.Trim()}\n");
+                await File.WriteAllTextAsync(userFile, DataConversionHelpers.ByteArrayToBase64String(encrypted));
+                await File.AppendAllTextAsync(userInfo,
+                    DataConversionHelpers.ByteArrayToBase64String(Crypto.Salt) +
+                    DataConversionHelpers.ByteArrayToBase64String(Crypto.Iv));
 
-                    DialogResult dialogResult = MessageBox.Show("Registration successful! Make sure you do NOT forget your password or you will lose access " +
-                        "to all of your files.", "Registration Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Array.Clear(keyBytes, 0, keyBytes.Length);
+                Array.Clear(derivedKey, 0, derivedKey.Length);
+                Array.Clear(hashedPassword, 0, hashedPassword.Length);
 
-                    string textString = File.ReadAllText(userFile);
-                    byte[]? textBytes = DataConversionHelpers.StringToByteArray(textString);
-                    string? derivedKey = await Crypto.DeriveAsync(password, Crypto.Salt);
-                    if (derivedKey == null)
-                        throw new ArgumentException("Value returned null or empty.",  nameof(derivedKey));
-                    byte[] keyBytes = Encoding.UTF8.GetBytes(derivedKey);
-                    byte[]? encrypted = Crypto.Encrypt(textBytes, keyBytes);
-                    if (encrypted == null)
-                        throw new ArgumentException("Value returned null or empty.", nameof(encrypted));
-                    File.WriteAllText(userFile, DataConversionHelpers.ByteArrayToBase64String(encrypted));
-                    File.AppendAllText(userInfo, DataConversionHelpers.ByteArrayToBase64String(Crypto.Salt) + DataConversionHelpers.ByteArrayToBase64String(Crypto.IV));
+                var dialogResult = MessageBox.Show(
+                    @"Registration successful! Make sure you do NOT forget your password or you will lose access " +
+                    @"to all of your files.", @"Registration Complete", MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
 
-                    if (dialogResult == DialogResult.OK)
-                    {
-                        this.Hide();
-                        using Login form = new();
-                        form.ShowDialog();
-                        this.Close();
-                    }
-                }
-                else
-                {
-                    isAnimating = false;
-                    throw new ArgumentException("Username already exists", userTxt.Text);
-                }
+                if (dialogResult != DialogResult.OK)
+                    return;
+                Hide();
+                using Login form = new();
+                form.ShowDialog();
+                Close();
             }
-            catch (ArgumentException ex)
+            else
             {
-                isAnimating |= false;
-                ErrorLogging.ErrorLog(ex);
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                throw new ArgumentException(@"Username already exists", userTxt.Text);
             }
         }
-
-        private void ValidateUsernameAndPassword(string userName, string password)
+        catch (ArgumentException ex)
         {
-            if (!userName.All(c => char.IsLetterOrDigit(c) || c == '_' || c == ' '))
-                throw new ArgumentException("Value contains illegal characters. Valid characters are letters, digits, underscores, and spaces.", nameof(userName));
-
-            if (string.IsNullOrEmpty(userName) || userName.Length > 20)
-                throw new ArgumentException("Invalid username.", nameof(userName));
-
-            if (string.IsNullOrEmpty(password) || !CheckPasswordValidity(password, confirmPassTxt.Text))
-                throw new ArgumentException("Invalid password.", nameof(password));
-
-            if (!CheckPasswordValidity(passTxt.Text, confirmPassTxt.Text))
-                throw new ArgumentException("Password must contain between 8 and 64 characters. " +
-                                          "It also must include:\n1.) At least one uppercase letter.\n2.) At least one lowercase letter.\n" +
-                                          "3.) At least one number.\n4.) At least one special character.\n5.) Must not contain any spaces.\n" +
-                                          "6.) Both passwords must match.\n", nameof(passTxt));
+            outputLbl.Text = @"Idle...";
+            _isAnimating = false;
+            ErrorLogging.ErrorLog(ex);
+            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
 
+    private static void ValidateUsernameAndPassword(string userName, char[] password, char[] password2)
+    {
+        if (!userName.All(c => char.IsLetterOrDigit(c) || c == '_' || c == ' '))
+            throw new ArgumentException(
+                @"Value contains illegal characters. Valid characters are letters, digits, underscores, and spaces.",
+                nameof(userName));
 
+        if (string.IsNullOrEmpty(userName) || userName.Length > 20)
+            throw new ArgumentException(@"Invalid username.", nameof(userName));
 
+        if (password == Array.Empty<char>())
+            throw new ArgumentException(@"Invalid password.", nameof(password));
 
-        private static string CreateDirectoryIfNotExists(string directoryPath)
+        if (!CheckPasswordValidity(password, password2))
+            throw new ArgumentException("Password must contain between 8 and 64 characters. " +
+                                        "It also must include:\n1.) At least one uppercase letter.\n2.) At least one lowercase letter.\n" +
+                                        "3.) At least one number.\n4.) At least one special character.\n5.) Must not contain any spaces.\n" +
+                                        "6.) Both passwords must match.\n", nameof(passTxt));
+    }
+
+    private static string CreateDirectoryIfNotExists(string directoryPath)
+    {
+        var fullPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            directoryPath);
+        if (!Directory.Exists(fullPath))
+            Directory.CreateDirectory(fullPath);
+
+        return fullPath;
+    }
+
+    private void createAccountBtn_Click(object sender, EventArgs e)
+    {
+        CreateAccount();
+    }
+
+    private async void StartAnimation()
+    {
+        _isAnimating = true;
+        await AnimateLabel();
+    }
+
+    private async Task AnimateLabel()
+    {
+        while (_isAnimating)
         {
-            string fullPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), directoryPath);
-            if (!Directory.Exists(fullPath))
-                Directory.CreateDirectory(fullPath);
+            outputLbl.Text = @"Creating account";
 
-            return fullPath;
-        }
-
-
-        private void createAccountBtn_Click(object sender, EventArgs e)
-        {
-            CreateAccount();
-        }
-
-
-        private async void StartAnimation()
-        {
-            isAnimating = true;
-            await AnimateLabel();
-        }
-
-
-        private async Task AnimateLabel()
-        {
-            while (isAnimating)
+            // Add animated periods
+            for (var i = 0; i < 4; i++)
             {
-                outputLbl.Text = "Creating account";
-
-                // Add animated periods
-                for (int i = 0; i < 4; i++)
-                {
-                    outputLbl.Text += ".";
-                    await Task.Delay(400); // Delay between each period
-                }
+                outputLbl.Text += @".";
+                await Task.Delay(400); // Delay between each period
             }
         }
     }
