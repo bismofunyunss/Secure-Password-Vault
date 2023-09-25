@@ -1,4 +1,8 @@
-﻿namespace Secure_Password_Vault;
+﻿using System.Text.RegularExpressions;
+using Windows.Devices.PointOfService;
+using static System.Net.Mime.MediaTypeNames;
+
+namespace Secure_Password_Vault;
 
 public partial class Vault : Form
 {
@@ -15,6 +19,12 @@ public partial class Vault : Form
 
     private void deleteRowBtn_Click(object sender, EventArgs e)
     {
+        if (PassVault.SelectedRows.Count > 0)
+        {
+            var selectedRow = PassVault.SelectedRows[0].Index; 
+
+            PassVault.Rows.RemoveAt(selectedRow);
+        }
     }
 
     private void saveVaultBtn_Click(object sender, EventArgs e)
@@ -73,6 +83,9 @@ public partial class Vault : Form
                         var line = await sr.ReadLineAsync();
                         var values = line?.Split('\t'); // Split the line by tabs
 
+                        if (IsBase64(line))
+                            return;
+
                         if (values is { Length: <= 0 }) continue;
                         // Add a new row to the DataGridView and populate it with values
                         var rowIndex = PassVault.Rows.Add();
@@ -81,6 +94,7 @@ public partial class Vault : Form
                             PassVault.Rows[rowIndex].Cells[i].Value = values[i];
                     }
                 }
+
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                 var encryptedVault = await Crypto.EncryptUserFiles(Authentication.CurrentLoggedInUser,
                     PopupPassword.PasswordArray, Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
@@ -99,8 +113,8 @@ public partial class Vault : Form
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
-
-    private void PassVault_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+    private static bool IsBase64(string? str)
     {
+        return str != null && Regex.IsMatch(str, @"^[a-zA-Z0-9\+/]*={0,3}$") && (str.Length % 4 == 0);
     }
 }

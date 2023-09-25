@@ -27,6 +27,7 @@ public partial class RegisterAccount : Form
 
     private async void CreateAccount()
     {
+        createAccountBtn.Enabled = false;
         var userName = userTxt.Text;
         var passArray = new char[passTxt.Text.Length];
         passTxt.Text.CopyTo(0, passArray, 0, passTxt.Text.Length);
@@ -40,6 +41,8 @@ public partial class RegisterAccount : Form
 
         var userExists = Authentication.UserExists(userName);
 
+        passTxt.Enabled = false;
+        confirmPassTxt.Enabled = false;
         try
         {
             if (!userExists)
@@ -50,22 +53,23 @@ public partial class RegisterAccount : Form
                 var userId = Guid.NewGuid().ToString();
                 Crypto.Salt = Crypto.RndByteSized(Crypto.SaltSize);
                 Crypto.Iv = Crypto.RndByteSized(Crypto.IvBit / 8);
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                 var hashedPassword = await Crypto.HashAsync(passArray, Crypto.Salt);
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                 if (hashedPassword == null)
                     throw new ArgumentException(@"Value was null or empty.", nameof(hashedPassword));
 
                 Crypto.Hash = hashedPassword;
                 var saltString = DataConversionHelpers.ByteArrayToBase64String(Crypto.Salt);
 
+                // User ID not implemented
                 await File.WriteAllTextAsync(userFile,
                     $"User:\n{userName}\nUserID:\n{userId}\nSalt:\n{saltString}\nHash:\n{DataConversionHelpers.ByteArrayToHexString(hashedPassword)}\n");
 
                 var textString = await File.ReadAllTextAsync(userFile);
                 var textBytes = DataConversionHelpers.StringToByteArray(textString);
 
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                 var derivedKey = await Crypto.DeriveAsync(passArray, Crypto.Salt);
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                 if (derivedKey == null)
                     throw new ArgumentException(@"Value returned null or empty.", nameof(derivedKey));
                 var keyBytes = Encoding.UTF8.GetBytes(derivedKey);
@@ -82,7 +86,10 @@ public partial class RegisterAccount : Form
                 Array.Clear(keyBytes, 0, keyBytes.Length);
                 Array.Clear(derivedKey, 0, derivedKey.Length);
                 Array.Clear(hashedPassword, 0, hashedPassword.Length);
-
+                createAccountBtn.Enabled = true;
+                outputLbl.Text = @"Account created";
+                outputLbl.ForeColor = Color.LimeGreen;
+                _isAnimating = false;
                 var dialogResult = MessageBox.Show(
                     @"Registration successful! Make sure you do NOT forget your password or you will lose access " +
                     @"to all of your files.", @"Registration Complete", MessageBoxButtons.OK,
@@ -102,6 +109,10 @@ public partial class RegisterAccount : Form
         }
         catch (ArgumentException ex)
         {
+            createAccountBtn.Enabled = true;
+            passTxt.Enabled = true;
+            confirmPassTxt.Enabled = true;
+            outputLbl.ForeColor = Color.WhiteSmoke;
             outputLbl.Text = @"Idle...";
             _isAnimating = false;
             ErrorLogging.ErrorLog(ex);
@@ -126,7 +137,7 @@ public partial class RegisterAccount : Form
             throw new ArgumentException(@"Password must contain between 8 and 64 characters." +
                                         @"It also must include: 1.) At least one uppercase letter." +
                                         @"2.) At least one lowercase letter." +
-                                        @"3.) At least one number. " + 
+                                        @"3.) At least one number. " +
                                         @"4.) At least one special character." +
                                         @"5.) Must not contain any spaces.\n" +
                                         @"6.) Both passwords must match.", nameof(passTxt));
@@ -144,6 +155,9 @@ public partial class RegisterAccount : Form
 
     private void createAccountBtn_Click(object sender, EventArgs e)
     {
+        MessageBox.Show(
+            @"Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.", @"Info",
+            MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
         CreateAccount();
     }
 
@@ -156,7 +170,7 @@ public partial class RegisterAccount : Form
     private async Task AnimateLabel()
     {
         while (_isAnimating)
-        {
+        { 
             outputLbl.Text = @"Creating account";
 
             // Add animated periods

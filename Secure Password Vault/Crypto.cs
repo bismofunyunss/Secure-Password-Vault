@@ -7,7 +7,7 @@ namespace Secure_Password_Vault;
 public static class Crypto
 {
     private const int Iterations = 64;
-    private const double MemorySize = 1024 * 1024 * 10;
+    private const double MemorySize = 1024d * 1024d * 10d;
     public const int SaltSize = 384 / 8;
     public static readonly int ByteSize = 24;
     public static readonly int KeySize = 16;
@@ -18,6 +18,7 @@ public static class Crypto
     public static byte[] Salt { get; set; } = { };
     public static byte[] Iv { get; set; } = { };
     public static byte[]? Hash { get; set; } = { };
+    // Not implemented
     private static string? CheckSum { get; set; } = string.Empty;
 
     public static async Task<byte[]?> HashAsync(char[]? passWord, byte[]? salt)
@@ -25,19 +26,15 @@ public static class Crypto
         if (passWord == null || salt == null)
             return null;
 
-        using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord))
-        {
-            Salt = salt, // 64 bit
-            DegreeOfParallelism = Environment.ProcessorCount, //Maximum cores
-            Iterations = Iterations, // 50 Iterations
-            MemorySize =
-                (int)MemorySize //explicitly cast MemorySize from double to int                                 
-        };
+        using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord));
+        argon2.Salt = salt;
+        argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+        argon2.Iterations = Iterations;
+        argon2.MemorySize = (int)MemorySize;
         try
         {
-            var result = await argon2.GetBytesAsync(ByteSize).ConfigureAwait(false);
-
-            return result;
+            var result = await Task.Run(() => argon2.GetBytesAsync(ByteSize).ConfigureAwait(false));
+            return await result;
         }
         catch (CryptographicException ex)
         {
@@ -51,40 +48,41 @@ public static class Crypto
         if (passWord == null || salt == null)
             return null;
 
-
-        using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord))
-        {
-            Salt = salt,
-            DegreeOfParallelism = Environment.ProcessorCount,
-            Iterations = Iterations,
-            MemorySize = (int)MemorySize
-        };
+        using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord));
+        argon2.Salt = salt;
+        argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+        argon2.Iterations = Iterations;
+        argon2.MemorySize = (int)MemorySize;
 
         try
         {
-            var resultBytes = await argon2.GetBytesAsync(KeySize).ConfigureAwait(false);
+            // ReSharper disable once AccessToDisposedClosure
+            var resultBytes = await Task.Run(() => argon2.GetBytesAsync(KeySize))
+                .ConfigureAwait(false);
 
-            // Convert the byte array to a char array
             var result = Convert.ToBase64String(resultBytes).ToCharArray();
-
             return result;
         }
+
         catch (CryptographicException ex)
         {
             MessageBox.Show(ex.Message);
             ErrorLogging.ErrorLog(ex);
-            return Array.Empty<char>();
+            return null;
         }
     }
 
+
     public static Task<bool> ComparePassword(byte[]? inputHash)
     {
-        return Task.FromResult(inputHash != null && Hash is not null && CryptographicOperations.FixedTimeEquals(Hash, inputHash));
+        return Task.FromResult(inputHash != null && Hash is not null &&
+                               CryptographicOperations.FixedTimeEquals(Hash, inputHash));
     }
 
-    public static string ComputeChecksum(string input)
+    // Not implemented
+    public static string ComputeChecksum(byte[] input)
     {
-        var hashValue = SHA512.HashData(Encoding.UTF8.GetBytes(input));
+        var hashValue = SHA512.HashData(input);
         var checksum = DataConversionHelpers.ByteArrayToHexString(hashValue) ?? string.Empty;
         return checksum;
     }
@@ -116,8 +114,8 @@ public static class Crypto
         var textBytes = DataConversionHelpers.StringToByteArray(textString);
         if (passWord == null)
             throw new ArgumentException(@"Value was empty or null.", nameof(passWord));
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
         var derivedKey = await DeriveAsync(passWord, Salt);
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
         if (derivedKey == null)
             throw new ArgumentException(@"Value returned null or empty.", nameof(derivedKey));
         var keyBytes = Encoding.UTF8.GetBytes(derivedKey);
@@ -150,8 +148,8 @@ public static class Crypto
 
         var textString = await File.ReadAllTextAsync(file);
         var textBytes = DataConversionHelpers.Base64StringToByteArray(textString);
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
         var derivedKey = await DeriveAsync(passWord, Salt);
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
         if (derivedKey == null)
             throw new ArgumentException(@"Value returned null or empty.", nameof(derivedKey));
         var keyBytes = Encoding.UTF8.GetBytes(derivedKey);
