@@ -30,6 +30,8 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(RegisterAccount));
             groupBox1 = new GroupBox();
+            showPasswordCheckBox = new CheckBox();
+            cancelBtn = new Button();
             outputLbl = new Label();
             statusLbl = new Label();
             createAccountBtn = new Button();
@@ -45,6 +47,8 @@
             // groupBox1
             // 
             groupBox1.BackColor = SystemColors.ButtonShadow;
+            groupBox1.Controls.Add(showPasswordCheckBox);
+            groupBox1.Controls.Add(cancelBtn);
             groupBox1.Controls.Add(outputLbl);
             groupBox1.Controls.Add(statusLbl);
             groupBox1.Controls.Add(createAccountBtn);
@@ -58,15 +62,42 @@
             groupBox1.ForeColor = Color.WhiteSmoke;
             groupBox1.Location = new Point(12, 12);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(450, 436);
+            groupBox1.Size = new Size(450, 494);
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             groupBox1.Text = "Register Account";
             // 
+            // showPasswordCheckBox
+            // 
+            showPasswordCheckBox.AutoSize = true;
+            showPasswordCheckBox.Location = new Point(223, 401);
+            showPasswordCheckBox.Name = "showPasswordCheckBox";
+            showPasswordCheckBox.Size = new Size(221, 39);
+            showPasswordCheckBox.TabIndex = 11;
+            showPasswordCheckBox.Text = "Show Password";
+            showPasswordCheckBox.UseVisualStyleBackColor = true;
+            showPasswordCheckBox.CheckedChanged += showPasswordCheckBox_CheckedChanged;
+            // 
+            // cancelBtn
+            // 
+            cancelBtn.BackColor = SystemColors.ButtonShadow;
+            cancelBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            cancelBtn.FlatAppearance.BorderSize = 3;
+            cancelBtn.FlatStyle = FlatStyle.Flat;
+            cancelBtn.Font = new Font("Segoe Script", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            cancelBtn.ForeColor = Color.WhiteSmoke;
+            cancelBtn.Location = new Point(6, 351);
+            cancelBtn.Name = "cancelBtn";
+            cancelBtn.Size = new Size(438, 44);
+            cancelBtn.TabIndex = 10;
+            cancelBtn.Text = "&Cancel";
+            cancelBtn.UseVisualStyleBackColor = false;
+            cancelBtn.Click += cancelBtn_Click;
+            // 
             // outputLbl
             // 
             outputLbl.AutoSize = true;
-            outputLbl.Location = new Point(122, 398);
+            outputLbl.Location = new Point(122, 456);
             outputLbl.Name = "outputLbl";
             outputLbl.Size = new Size(78, 35);
             outputLbl.TabIndex = 9;
@@ -75,7 +106,7 @@
             // statusLbl
             // 
             statusLbl.AutoSize = true;
-            statusLbl.Location = new Point(6, 398);
+            statusLbl.Location = new Point(6, 456);
             statusLbl.Name = "statusLbl";
             statusLbl.Size = new Size(110, 35);
             statusLbl.TabIndex = 8;
@@ -162,7 +193,7 @@
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ButtonShadow;
-            ClientSize = new Size(474, 460);
+            ClientSize = new Size(474, 518);
             Controls.Add(groupBox1);
             FormBorderStyle = FormBorderStyle.Fixed3D;
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -186,5 +217,7 @@
         private Button createAccountBtn;
         private Label outputLbl;
         private Label statusLbl;
+        private Button cancelBtn;
+        private CheckBox showPasswordCheckBox;
     }
 }

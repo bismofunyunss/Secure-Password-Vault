@@ -8,16 +8,15 @@ public static class Crypto
 {
     private const int Iterations = 64;
     private const double MemorySize = 1024d * 1024d * 10d;
-    public const int SaltSize = 384 / 8;
+    public const int SaltSize = 512 / 8;
     public static readonly int ByteSize = 24;
     public static readonly int KeySize = 16;
     public static readonly int IvBit = 128;
 
-
     private static readonly RandomNumberGenerator RndNum = RandomNumberGenerator.Create();
-    public static byte[] Salt { get; set; } = { };
-    public static byte[] Iv { get; set; } = { };
-    public static byte[]? Hash { get; set; } = { };
+
+    public static byte[]? Hash { get; set; } = Array.Empty<byte>();
+
     // Not implemented
     private static string? CheckSum { get; set; } = string.Empty;
 
@@ -25,16 +24,17 @@ public static class Crypto
     {
         if (passWord == null || salt == null)
             return null;
-
-        using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord));
-        argon2.Salt = salt;
-        argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
-        argon2.Iterations = Iterations;
-        argon2.MemorySize = (int)MemorySize;
+        
         try
         {
-            var result = await Task.Run(() => argon2.GetBytesAsync(ByteSize).ConfigureAwait(false));
-            return await result;
+            using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord));
+            argon2.Salt = salt;
+            argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+            argon2.Iterations = Iterations;
+            argon2.MemorySize = (int)MemorySize;
+
+            var result = await argon2.GetBytesAsync(ByteSize);
+            return result;
         }
         catch (CryptographicException ex)
         {
@@ -48,17 +48,16 @@ public static class Crypto
         if (passWord == null || salt == null)
             return null;
 
-        using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord));
-        argon2.Salt = salt;
-        argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
-        argon2.Iterations = Iterations;
-        argon2.MemorySize = (int)MemorySize;
-
         try
         {
+            using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord));
+            argon2.Salt = salt;
+            argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+            argon2.Iterations = Iterations;
+            argon2.MemorySize = (int)MemorySize;
+
             // ReSharper disable once AccessToDisposedClosure
-            var resultBytes = await Task.Run(() => argon2.GetBytesAsync(KeySize))
-                .ConfigureAwait(false);
+            var resultBytes = await Task.Run(() => argon2.GetBytesAsync(KeySize)).ConfigureAwait(false);
 
             var result = Convert.ToBase64String(resultBytes).ToCharArray();
             return result;
@@ -75,7 +74,7 @@ public static class Crypto
 
     public static Task<bool> ComparePassword(byte[]? inputHash)
     {
-        return Task.FromResult(inputHash != null && Hash is not null &&
+        return Task.FromResult(inputHash != null && Hash != null &&
                                CryptographicOperations.FixedTimeEquals(Hash, inputHash));
     }
 
@@ -87,80 +86,6 @@ public static class Crypto
         return checksum;
     }
 
-    public static async Task<byte[]?> EncryptUserFiles(string userName, char[] passWord, string? file)
-    {
-        if (file == null)
-            return null;
-
-        var saltBuffer = new byte[SaltSize];
-        var ivBuffer = new byte[IvBit / 8];
-
-        Iv = RndByteSized(IvBit / 8);
-
-        await File.WriteAllTextAsync(Authentication.GetUserInfoPath(userName),
-            DataConversionHelpers.ByteArrayToBase64String(Salt) + DataConversionHelpers.ByteArrayToBase64String(Iv));
-        var userInfo = await File.ReadAllTextAsync(Authentication.GetUserInfoPath(userName));
-
-
-        var infoBytes = DataConversionHelpers.Base64StringToByteArray(userInfo);
-        if (infoBytes == null)
-            return null;
-        Buffer.BlockCopy(infoBytes, 0, saltBuffer, 0, saltBuffer.Length);
-        Buffer.BlockCopy(infoBytes, saltBuffer.Length, ivBuffer, 0, ivBuffer.Length);
-        Salt = saltBuffer;
-        Iv = ivBuffer;
-
-        var textString = await File.ReadAllTextAsync(file);
-        var textBytes = DataConversionHelpers.StringToByteArray(textString);
-        if (passWord == null)
-            throw new ArgumentException(@"Value was empty or null.", nameof(passWord));
-        var derivedKey = await DeriveAsync(passWord, Salt);
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-        if (derivedKey == null)
-            throw new ArgumentException(@"Value returned null or empty.", nameof(derivedKey));
-        var keyBytes = Encoding.UTF8.GetBytes(derivedKey);
-
-        var encryptedBytes = Encrypt(textBytes, keyBytes);
-        Array.Clear(keyBytes, 0, keyBytes.Length);
-        Array.Clear(derivedKey, 0, derivedKey.Length);
-        if (encryptedBytes == null)
-            throw new ArgumentException(@"Value returned empty or null.", nameof(encryptedBytes));
-        return encryptedBytes;
-    }
-
-    public static async Task<byte[]?> DecryptUserFiles(string userName, char[] passWord, string? file)
-    {
-        if (file == null)
-            return null;
-
-        var saltBuffer = new byte[SaltSize];
-        var ivBuffer = new byte[IvBit / 8];
-
-        var userInfo = await File.ReadAllTextAsync(Authentication.GetUserInfoPath(userName));
-
-        var infoBytes = DataConversionHelpers.Base64StringToByteArray(userInfo);
-        if (infoBytes == null)
-            return null;
-        Buffer.BlockCopy(infoBytes, 0, saltBuffer, 0, saltBuffer.Length);
-        Buffer.BlockCopy(infoBytes, saltBuffer.Length, ivBuffer, 0, ivBuffer.Length);
-        Salt = saltBuffer;
-        Iv = ivBuffer;
-
-        var textString = await File.ReadAllTextAsync(file);
-        var textBytes = DataConversionHelpers.Base64StringToByteArray(textString);
-        var derivedKey = await DeriveAsync(passWord, Salt);
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-        if (derivedKey == null)
-            throw new ArgumentException(@"Value returned null or empty.", nameof(derivedKey));
-        var keyBytes = Encoding.UTF8.GetBytes(derivedKey);
-        var decryptedBytes = Decrypt(textBytes, keyBytes);
-        if (decryptedBytes == null)
-            throw new ArgumentException(
-                @"Login failed due to decryption error. Please recheck your credentials and try again.",
-                nameof(decryptedBytes));
-        return decryptedBytes;
-    }
-
     private static int RndInt()
     {
         var buffer = new byte[sizeof(int)];
@@ -169,7 +94,7 @@ public static class Crypto
         return result;
     }
 
-/*
+
     private static int BoundedInt(int min, int max)
     {
         if (min >= max)
@@ -180,7 +105,7 @@ public static class Crypto
 
         return result;
     }
-*/
+
 
     public static byte[] RndByteSized(int size)
     {
@@ -188,17 +113,78 @@ public static class Crypto
         RndNum.GetBytes(buffer);
         return buffer;
     }
+
+    public static async Task<byte[]> EncryptFile(string userName, char[] passWord, string file)
+    {
+        if (userName == null || passWord == null || file == null)
+            throw new ArgumentNullException();
+
+        var iv = new byte[IvBit / 8];
+
+        iv = RndByteSized(IvBit / 8);
+
+        var saltString = await File.ReadAllTextAsync(Authentication.GetUserSalt(userName));
+
+        var salt = DataConversionHelpers.Base64StringToByteArray(saltString);
+
+        var fileStr = await File.ReadAllTextAsync(file);
+        var fileBytes = DataConversionHelpers.StringToByteArray(fileStr);
+
+        var passwordBytes = Encoding.UTF8.GetBytes(passWord);
+        var encryptedFile = await EncryptAsync(fileBytes, passwordBytes, iv, salt);
+        
+        return encryptedFile ?? Array.Empty<byte>();
+    }
+
+    public static async Task<byte[]?> DecryptFile(string? userName, char[]? passWord, string? file)
+    {
+        if (userName == null || passWord == null || file == null)
+            throw new ArgumentNullException();
+
+        var iv = new byte[IvBit / 8];
+
+        var saltString = await File.ReadAllTextAsync(Authentication.GetUserSalt(userName));
+
+        var salt = DataConversionHelpers.Base64StringToByteArray(saltString);
+
+        var fileStr = await File.ReadAllTextAsync(file);
+        var fileBytes = DataConversionHelpers.Base64StringToByteArray(fileStr);
+
+        var passwordBytes = Encoding.UTF8.GetBytes(passWord);
+        var decryptedFile = await DecryptAsync(fileBytes, passwordBytes, iv, salt);
+
+        return decryptedFile;
+    }
+
+    public static (byte[] cipherResult, byte[] iv) InitBuffer(byte[] cipherText, byte[] iv)
+    {
+        iv = new byte[iv.Length];
+        var cipherResult = new byte[cipherText.Length - iv.Length];
+
+        Buffer.BlockCopy(cipherText, 0, iv, 0, iv.Length);
+        Buffer.BlockCopy(cipherText, iv.Length, cipherResult, 0, cipherResult.Length);
+
+        return (cipherResult, iv);
+    }
 #pragma warning disable
     private const int BlockBitSize = 128;
     private const int KeyBitSize = 256;
 
-    public static byte[]? Encrypt(byte[]? plainText, byte[]? key)
+    public static async Task<byte[]?> EncryptAsync(byte[]? plainText, byte[]? password, byte[]? iv, byte[]? salt)
     {
         try
         {
             if (plainText == null)
                 throw new ArgumentException(@"Value was empty or null.", nameof(plainText));
+            if (password == null)
+                throw new ArgumentException(@"Value was empty or null.", nameof(password));
+            if (salt == null)
+                throw new ArgumentException(@"Value was empty or null.", nameof(salt));
+            if (iv == null)
+                throw new ArgumentException(@"Value was empty or null.", nameof(iv));
+
             byte[] cipherText;
+
             using (var aes = Aes.Create())
             {
                 aes.BlockSize = BlockBitSize;
@@ -206,45 +192,56 @@ public static class Crypto
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.PKCS7;
 
-                using (var encryptor = aes.CreateEncryptor(key, Iv))
-                using (var memStream = new MemoryStream())
+                using (var argon2 = new Argon2id(password))
                 {
-                    using (var cryptoStream = new CryptoStream(memStream, encryptor, CryptoStreamMode.Write))
+                    argon2.Salt = salt;
+                    argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+                    argon2.Iterations = Iterations;
+                    argon2.MemorySize = (int)MemorySize;
+
+                    var key = await argon2.GetBytesAsync(KeySize);
+
+                    using (var encryptor = aes.CreateEncryptor(key, iv))
+                    using (var memStream = new MemoryStream())
                     {
-                        using (var cipherStream = new MemoryStream(plainText))
+                        await using (var cryptoStream = new CryptoStream(memStream, encryptor, CryptoStreamMode.Write))
                         {
-                            cipherStream.CopyTo(cryptoStream, (int)cipherStream.Length);
-                            cipherStream.Flush();
-                            cryptoStream.FlushFinalBlock();
+                            using (var cipherStream = new MemoryStream(plainText))
+                            {
+                                cipherStream.CopyTo(cryptoStream, (int)cipherStream.Length);
+                                cipherStream.Flush();
+                                cryptoStream.FlushFinalBlockAsync();
+                            }
                         }
+
+                        cipherText = memStream.ToArray();
                     }
 
-                    cipherText = memStream.ToArray();
+                    Array.Clear(key, 0, key.Length);
                 }
             }
 
-            Array.Clear(key, 0, key.Length);
-            var prependItems = new byte[cipherText.Length + Iv.Length];
-            Buffer.BlockCopy(Iv, 0, prependItems, 0, Iv.Length);
-            Buffer.BlockCopy(cipherText, 0, prependItems, Iv.Length, cipherText.Length);
+            var prependItems = new byte[cipherText.Length + iv.Length];
+            Buffer.BlockCopy(iv, 0, prependItems, 0, iv.Length);
+            Buffer.BlockCopy(cipherText, 0, prependItems, iv.Length, cipherText.Length);
             return prependItems;
         }
         catch (CryptographicException ex)
         {
-            Array.Clear(key, 0, key.Length);
+            Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
             return null;
         }
 
         catch (Exception ex)
         {
-            Array.Clear(key, 0, key.Length);
+            Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
             return null;
         }
     }
 
-    public static byte[] Decrypt(byte[]? cipherText, byte[]? key)
+    public static async Task<byte[]> DecryptAsync(byte[]? cipherText, byte[]? password, byte[]? iv, byte[]? salt)
     {
         try
         {
@@ -256,35 +253,40 @@ public static class Crypto
             aes.Mode = CipherMode.CBC;
             aes.Padding = PaddingMode.PKCS7;
 
+            using var argon2 = new Argon2id(password);
+            argon2.Salt = salt;
+            argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+            argon2.Iterations = Iterations;
+            argon2.MemorySize = (int)MemorySize;
 
-            Buffer.BlockCopy(cipherText, 0, Iv, 0, Iv.Length);
-            var cipherResult = new byte[cipherText.Length - Iv.Length];
-            Buffer.BlockCopy(cipherText, Iv.Length, cipherResult, 0, cipherResult.Length);
+            var key = await argon2.GetBytesAsync(KeySize);
 
-            using var decryptor = aes.CreateDecryptor(key, Iv);
-            using var memStrm = new MemoryStream();
-            using (var decryptStream = new CryptoStream(memStrm, decryptor, CryptoStreamMode.Write))
+            var (cipherResult, ivResult) = InitBuffer(cipherText, iv);
+
+            using var decryptor = aes.CreateDecryptor(key, ivResult);
+            using var memStream = new MemoryStream();
+            await using (var decryptStream = new CryptoStream(memStream, decryptor, CryptoStreamMode.Write))
             {
                 using (var plainStream = new MemoryStream(cipherResult))
                 {
                     plainStream.CopyTo(decryptStream, (int)plainStream.Length);
                     plainStream.Flush();
-                    decryptStream.FlushFinalBlock();
+                    await decryptStream.FlushFinalBlockAsync();
                 }
             }
 
             Array.Clear(key, 0, key.Length);
-            return memStrm.ToArray();
+            return memStream.ToArray();
         }
         catch (CryptographicException ex)
         {
-            Array.Clear(key, 0, key.Length);
+            Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
             return null;
         }
         catch (Exception ex)
         {
-            Array.Clear(key, 0, key.Length);
+            Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
             return null;
         }

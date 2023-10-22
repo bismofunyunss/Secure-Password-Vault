@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace Secure_Password_Vault;
 
@@ -11,6 +12,7 @@ public partial class RegisterAccount : Form
         InitializeComponent();
     }
 
+    //private static char[]? PassArray { get; set; } = null;
     private static bool CheckPasswordValidity(IReadOnlyCollection<char> password, char[] password2)
     {
         if (password.Count is < 8 or > 64)
@@ -25,93 +27,34 @@ public partial class RegisterAccount : Form
         return password.Any(char.IsSymbol) || password.Any(char.IsPunctuation);
     }
 
-    private async void CreateAccount()
+    private async Task CreateAccountAsync()
     {
-        createAccountBtn.Enabled = false;
         var userName = userTxt.Text;
-        var passArray = new char[passTxt.Text.Length];
-        passTxt.Text.CopyTo(0, passArray, 0, passTxt.Text.Length);
+        var passArray = SetArray();
 
-        var confirmPassArray = new char[confirmPassTxt.Text.Length];
-        confirmPassTxt.Text.CopyTo(0, confirmPassArray, 0, confirmPassArray.Length);
+        var confirmPassArray = SetConfirmationArray();
 
         var userDirectory = CreateDirectoryIfNotExists(Path.Combine("Password Vault", "Users", userName));
         var userFile = Path.Combine(userDirectory, $"{userName}.user");
-        var userInfo = Path.Combine(userDirectory, $"{userName}.info");
+        var userSalt = Path.Combine(userDirectory, $"{userName}.salt");
 
         var userExists = Authentication.UserExists(userName);
 
-        passTxt.Enabled = false;
-        confirmPassTxt.Enabled = false;
         try
         {
             if (!userExists)
             {
-                StartAnimation();
-                ValidateUsernameAndPassword(userName, passArray, confirmPassArray);
-
-                var userId = Guid.NewGuid().ToString();
-                Crypto.Salt = Crypto.RndByteSized(Crypto.SaltSize);
-                Crypto.Iv = Crypto.RndByteSized(Crypto.IvBit / 8);
-                var hashedPassword = await Crypto.HashAsync(passArray, Crypto.Salt);
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-                if (hashedPassword == null)
-                    throw new ArgumentException(@"Value was null or empty.", nameof(hashedPassword));
-
-                Crypto.Hash = hashedPassword;
-                var saltString = DataConversionHelpers.ByteArrayToBase64String(Crypto.Salt);
-
-                // User ID not implemented
-                await File.WriteAllTextAsync(userFile,
-                    $"User:\n{userName}\nUserID:\n{userId}\nSalt:\n{saltString}\nHash:\n{DataConversionHelpers.ByteArrayToHexString(hashedPassword)}\n");
-
-                var textString = await File.ReadAllTextAsync(userFile);
-                var textBytes = DataConversionHelpers.StringToByteArray(textString);
-
-                var derivedKey = await Crypto.DeriveAsync(passArray, Crypto.Salt);
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-                if (derivedKey == null)
-                    throw new ArgumentException(@"Value returned null or empty.", nameof(derivedKey));
-                var keyBytes = Encoding.UTF8.GetBytes(derivedKey);
-
-                var encrypted = Crypto.Encrypt(textBytes, keyBytes);
-                if (encrypted == null)
-                    throw new ArgumentException(@"Value returned null or empty.", nameof(encrypted));
-
-                await File.WriteAllTextAsync(userFile, DataConversionHelpers.ByteArrayToBase64String(encrypted));
-                await File.AppendAllTextAsync(userInfo,
-                    DataConversionHelpers.ByteArrayToBase64String(Crypto.Salt) +
-                    DataConversionHelpers.ByteArrayToBase64String(Crypto.Iv));
-
-                Array.Clear(keyBytes, 0, keyBytes.Length);
-                Array.Clear(derivedKey, 0, derivedKey.Length);
-                Array.Clear(hashedPassword, 0, hashedPassword.Length);
-                createAccountBtn.Enabled = true;
-                outputLbl.Text = @"Account created";
-                outputLbl.ForeColor = Color.LimeGreen;
-                _isAnimating = false;
-                var dialogResult = MessageBox.Show(
-                    @"Registration successful! Make sure you do NOT forget your password or you will lose access " +
-                    @"to all of your files.", @"Registration Complete", MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
-
-                if (dialogResult != DialogResult.OK)
-                    return;
-                Hide();
-                using Login form = new();
-                form.ShowDialog();
-                Close();
+                DisableUi();
+                await RegisterAsync(userName, passArray, confirmPassArray, userFile, userSalt);
             }
             else
             {
                 throw new ArgumentException(@"Username already exists", userTxt.Text);
             }
         }
-        catch (ArgumentException ex)
+        catch (Exception ex)
         {
-            createAccountBtn.Enabled = true;
-            passTxt.Enabled = true;
-            confirmPassTxt.Enabled = true;
+            EnableUi();
             outputLbl.ForeColor = Color.WhiteSmoke;
             outputLbl.Text = @"Idle...";
             _isAnimating = false;
@@ -120,6 +63,113 @@ public partial class RegisterAccount : Form
         }
     }
 
+    private void DisableUi()
+    {
+        passTxt.Enabled = false;
+        confirmPassTxt.Enabled = false;
+        userTxt.Enabled = false;
+        createAccountBtn.Enabled = false;
+        cancelBtn.Enabled = false;
+    }
+
+    private void EnableUi()
+    {
+        userTxt.Enabled = true;
+        createAccountBtn.Enabled = true;
+        cancelBtn.Enabled = true;
+        passTxt.Enabled = true;
+        confirmPassTxt.Enabled = true;
+    }
+
+    private char[] SetArray()
+    {
+        var buffer = passTxt.Text.Length;
+        var passArray = new char[buffer];
+        passTxt.Text.CopyTo(0, passArray, 0, buffer);
+
+        return passArray;
+    }
+
+    private char[] SetConfirmationArray()
+    {
+        var confirmPassArray = new char[confirmPassTxt.Text.Length];
+        confirmPassTxt.Text.CopyTo(0, confirmPassArray, 0, confirmPassArray.Length);
+
+        return confirmPassArray;
+    }
+
+    private async Task RegisterAsync(string username, char[] password, char[] confirmPassword, string userFile,
+    string userSalt)
+    {
+        try
+        {
+            StartAnimation();
+
+            ValidateUsernameAndPassword(username, password, confirmPassword);
+
+            var salt = Crypto.RndByteSized(Crypto.SaltSize);
+            var iv = Crypto.RndByteSized(Crypto.IvBit / 8);
+            var hashedPassword = await Crypto.HashAsync(password, salt);
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+            if (hashedPassword == null)
+                throw new ArgumentException(@"Value was null or empty.", nameof(hashedPassword));
+
+            var saltString = DataConversionHelpers.ByteArrayToBase64String(salt);
+
+            Crypto.Hash = hashedPassword;
+            await File.WriteAllTextAsync(userFile,
+                $"User:\n{username}\nUserID:\nSalt:\n{saltString}\nHash:\n{DataConversionHelpers.ByteArrayToHexString(hashedPassword)}\n");
+
+            await File.WriteAllTextAsync(userSalt,
+                DataConversionHelpers.ByteArrayToBase64String(salt));
+
+            var passBytes = Encoding.UTF8.GetBytes(password);
+            var fileStr = await File.ReadAllTextAsync(userFile);
+            var fileBytes = DataConversionHelpers.StringToByteArray(fileStr);
+
+            var encrypted = await Crypto.EncryptAsync(fileBytes, passBytes, iv, salt);
+            if (encrypted == null)
+                throw new ArgumentException(@"Value returned null or empty.", nameof(encrypted));
+
+            await File.WriteAllTextAsync(userFile, DataConversionHelpers.ByteArrayToBase64String(encrypted));
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+
+            Array.Clear(hashedPassword, 0, hashedPassword.Length);
+            Array.Clear(password);
+            Array.Clear(confirmPassword);
+            outputLbl.Text = @"Account created";
+            outputLbl.ForeColor = Color.LimeGreen;
+            _isAnimating = false;
+            MessageBox.Show(
+                @"Registration successful! Make sure you do NOT forget your password or you will lose access " +
+                @"to all of your files.", @"Registration Complete", MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+            Hide();
+            using Login form = new();
+            form.ShowDialog();
+            Close();
+        }
+        catch (ArgumentException ex)
+        {
+            EnableUi();
+            outputLbl.ForeColor = Color.WhiteSmoke;
+            outputLbl.Text = @"Idle...";
+            _isAnimating = false;
+            ErrorLogging.ErrorLog(ex);
+            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        catch (Exception ex)
+        {
+            EnableUi();
+            outputLbl.ForeColor = Color.WhiteSmoke;
+            outputLbl.Text = @"Idle...";
+            _isAnimating = false;
+            ErrorLogging.ErrorLog(ex);
+            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
     private static void ValidateUsernameAndPassword(string userName, char[] password, char[] password2)
     {
         if (!userName.All(c => char.IsLetterOrDigit(c) || c == '_' || c == ' '))
@@ -153,12 +203,12 @@ public partial class RegisterAccount : Form
         return fullPath;
     }
 
-    private void createAccountBtn_Click(object sender, EventArgs e)
+    private async void createAccountBtn_Click(object sender, EventArgs e)
     {
         MessageBox.Show(
             @"Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.", @"Info",
             MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-        CreateAccount();
+        await CreateAccountAsync();
     }
 
     private async void StartAnimation()
@@ -170,7 +220,7 @@ public partial class RegisterAccount : Form
     private async Task AnimateLabel()
     {
         while (_isAnimating)
-        { 
+        {
             outputLbl.Text = @"Creating account";
 
             // Add animated periods
@@ -180,5 +230,19 @@ public partial class RegisterAccount : Form
                 await Task.Delay(400); // Delay between each period
             }
         }
+    }
+
+    private void cancelBtn_Click(object sender, EventArgs e)
+    {
+        Hide();
+        using Login form = new();
+        form.ShowDialog();
+        Close();
+    }
+
+    private void showPasswordCheckBox_CheckedChanged(object sender, EventArgs e)
+    {
+        passTxt.UseSystemPasswordChar = !showPasswordCheckBox.Checked;
+        confirmPassTxt.UseSystemPasswordChar = !showPasswordCheckBox.Checked;
     }
 }

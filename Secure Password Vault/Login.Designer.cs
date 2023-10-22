@@ -36,6 +36,8 @@
             logInBtn = new Button();
             createNewAccountBtn = new Button();
             loginBox = new GroupBox();
+            rememberMeCheckBox = new CheckBox();
+            showPasswordCheckBox = new CheckBox();
             outputLbl = new Label();
             statusLbl = new Label();
             loginBox.SuspendLayout();
@@ -59,7 +61,7 @@
             userNameTxt.ForeColor = Color.Gold;
             userNameTxt.Location = new Point(6, 89);
             userNameTxt.Name = "userNameTxt";
-            userNameTxt.Size = new Size(391, 36);
+            userNameTxt.Size = new Size(420, 36);
             userNameTxt.TabIndex = 1;
             // 
             // passWordLbl
@@ -80,7 +82,7 @@
             passTxt.ForeColor = Color.Gold;
             passTxt.Location = new Point(6, 175);
             passTxt.Name = "passTxt";
-            passTxt.Size = new Size(391, 36);
+            passTxt.Size = new Size(420, 36);
             passTxt.TabIndex = 3;
             passTxt.UseSystemPasswordChar = true;
             // 
@@ -94,7 +96,7 @@
             logInBtn.ForeColor = Color.WhiteSmoke;
             logInBtn.Location = new Point(6, 217);
             logInBtn.Name = "logInBtn";
-            logInBtn.Size = new Size(391, 44);
+            logInBtn.Size = new Size(420, 44);
             logInBtn.TabIndex = 4;
             logInBtn.Text = "&Login";
             logInBtn.UseVisualStyleBackColor = false;
@@ -110,7 +112,7 @@
             createNewAccountBtn.ForeColor = Color.WhiteSmoke;
             createNewAccountBtn.Location = new Point(6, 267);
             createNewAccountBtn.Name = "createNewAccountBtn";
-            createNewAccountBtn.Size = new Size(391, 44);
+            createNewAccountBtn.Size = new Size(420, 44);
             createNewAccountBtn.TabIndex = 5;
             createNewAccountBtn.Text = "&Create New Account";
             createNewAccountBtn.UseVisualStyleBackColor = false;
@@ -119,6 +121,8 @@
             // loginBox
             // 
             loginBox.BackColor = SystemColors.ButtonShadow;
+            loginBox.Controls.Add(rememberMeCheckBox);
+            loginBox.Controls.Add(showPasswordCheckBox);
             loginBox.Controls.Add(outputLbl);
             loginBox.Controls.Add(userNameTxt);
             loginBox.Controls.Add(statusLbl);
@@ -131,15 +135,36 @@
             loginBox.ForeColor = Color.WhiteSmoke;
             loginBox.Location = new Point(12, 12);
             loginBox.Name = "loginBox";
-            loginBox.Size = new Size(412, 392);
+            loginBox.Size = new Size(432, 441);
             loginBox.TabIndex = 6;
             loginBox.TabStop = false;
             loginBox.Text = "Login";
             // 
+            // rememberMeCheckBox
+            // 
+            rememberMeCheckBox.AutoSize = true;
+            rememberMeCheckBox.Location = new Point(205, 362);
+            rememberMeCheckBox.Name = "rememberMeCheckBox";
+            rememberMeCheckBox.Size = new Size(206, 39);
+            rememberMeCheckBox.TabIndex = 13;
+            rememberMeCheckBox.Text = "Remember Me";
+            rememberMeCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // showPasswordCheckBox
+            // 
+            showPasswordCheckBox.AutoSize = true;
+            showPasswordCheckBox.Location = new Point(205, 317);
+            showPasswordCheckBox.Name = "showPasswordCheckBox";
+            showPasswordCheckBox.Size = new Size(221, 39);
+            showPasswordCheckBox.TabIndex = 12;
+            showPasswordCheckBox.Text = "Show Password";
+            showPasswordCheckBox.UseVisualStyleBackColor = true;
+            showPasswordCheckBox.CheckedChanged += showPasswordCheckBox_CheckedChanged;
+            // 
             // outputLbl
             // 
             outputLbl.AutoSize = true;
-            outputLbl.Location = new Point(121, 346);
+            outputLbl.Location = new Point(122, 403);
             outputLbl.Name = "outputLbl";
             outputLbl.Size = new Size(78, 35);
             outputLbl.TabIndex = 10;
@@ -148,7 +173,7 @@
             // statusLbl
             // 
             statusLbl.AutoSize = true;
-            statusLbl.Location = new Point(6, 346);
+            statusLbl.Location = new Point(6, 403);
             statusLbl.Name = "statusLbl";
             statusLbl.Size = new Size(110, 35);
             statusLbl.TabIndex = 9;
@@ -160,13 +185,14 @@
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ButtonShadow;
-            ClientSize = new Size(437, 417);
+            ClientSize = new Size(456, 466);
             Controls.Add(loginBox);
             FormBorderStyle = FormBorderStyle.Fixed3D;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             Name = "Login";
             Text = "Login";
+            Load += Login_Load;
             loginBox.ResumeLayout(false);
             loginBox.PerformLayout();
             ResumeLayout(false);
@@ -183,5 +209,7 @@
         private GroupBox loginBox;
         private Label statusLbl;
         private Label outputLbl;
+        private CheckBox showPasswordCheckBox;
+        private CheckBox rememberMeCheckBox;
     }
 }

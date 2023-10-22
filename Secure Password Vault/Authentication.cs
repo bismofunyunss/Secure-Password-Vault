@@ -1,54 +1,54 @@
-﻿using System.Security;
-using System.Text;
+﻿namespace Secure_Password_Vault;
 
-namespace Secure_Password_Vault
+public static class Authentication
 {
-    public static class Authentication
+    public static string CurrentLoggedInUser { get; set; } = string.Empty;
+    private static string UserID { get; set; } = string.Empty;
+
+    public static string GetUserFilePath(string userName)
     {
-        public static string CurrentLoggedInUser { get; set; } = string.Empty;
-        private static string UserID { get; set; } = string.Empty;
-     
-        public static string GetUserFilePath(string userName) =>         
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault", "Users", userName, $"{userName}.user");
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault",
+            "Users", userName, $"{userName}.user");
+    }
 
-        public static string GetUserVault(string userName) =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault", "Users", userName, $"{userName}.vault");
+    public static string GetUserVault(string userName)
+    {
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault",
+            "Users", userName, $"{userName}.vault");
+    }
 
-        public static bool UserExists(string userName)
+    public static bool UserExists(string userName)
+    {
+        var path = GetUserFilePath(userName);
+        return File.Exists(path);
+    }
+
+
+    public static string GetUserSalt(string userName)
+    {
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault",
+            "Users", userName, $"{userName}.salt");
+    }
+
+
+    public static async void GetUserInfo(string userName, char[] passWord)
+    {
+        var path = GetUserFilePath(userName);
+
+        if (!File.Exists(path))
+            throw new IOException("File does not exist.");
+        try
         {
-            string path = GetUserFilePath(userName);
-            return File.Exists(path);
+            var lines = await File.ReadAllLinesAsync(path);
+            var index = Array.IndexOf(lines, "User:");
+            if (index == -1) return;
+            UserID = lines[index + 3];
+            Crypto.Hash = DataConversionHelpers.HexStringToByteArray(lines[index + 6]) ?? Array.Empty<byte>();
         }
-
-
-        public static string GetUserInfoPath(string userName) =>
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault",
-            "Users", userName, $"{userName}.info");
-
-
-        public static void GetUserInfo(string userName)
+        catch (IOException ex)
         {
-            try
-            {
-                string path = GetUserFilePath(userName);
-
-                if (!File.Exists(path))
-                    throw new IOException("File does not exist.");
-
-                string[] lines = File.ReadAllLines(path);
-                int index = Array.IndexOf(lines, "User:");
-                if (index != -1)
-                {
-                    UserID = lines[index + 3];
-                    byte[]? userHash = DataConversionHelpers.HexStringToByteArray(lines[index + 7]);
-                    Crypto.Hash = userHash;
-                }
-            }
-            catch (IOException ex)
-            {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                ErrorLogging.ErrorLog(ex);
-            }
+            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            ErrorLogging.ErrorLog(ex);
         }
     }
 }

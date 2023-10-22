@@ -1,6 +1,4 @@
 ﻿using System.Text.RegularExpressions;
-using Windows.Devices.PointOfService;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Secure_Password_Vault;
 
@@ -9,8 +7,9 @@ public partial class Vault : Form
     public Vault()
     {
         InitializeComponent();
-        PassVault.EnableHeadersVisualStyles = false;
     }
+
+    private static bool _isAnimating;
 
     private void addRowBtn_Click(object sender, EventArgs e)
     {
@@ -19,22 +18,23 @@ public partial class Vault : Form
 
     private void deleteRowBtn_Click(object sender, EventArgs e)
     {
-        if (PassVault.SelectedRows.Count > 0)
-        {
-            var selectedRow = PassVault.SelectedRows[0].Index; 
+        if (PassVault.SelectedRows.Count <= 0)
+            return;
+        var selectedRow = PassVault.SelectedRows[0].Index;
 
-            PassVault.Rows.RemoveAt(selectedRow);
-        }
+        PassVault.Rows.RemoveAt(selectedRow);
     }
 
-    private void saveVaultBtn_Click(object sender, EventArgs e)
+    private async void saveVaultBtn_Click(object sender, EventArgs e)
     {
         try
         {
+            DisableUI();
+            StartAnimation();
             var filePath = Path.Combine("Password Vault", "Users",
                 Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
 
-            using (var sw = new StreamWriter(filePath))
+            await using (var sw = new StreamWriter(filePath))
             {
                 sw.NewLine = null;
                 sw.AutoFlush = true;
@@ -44,77 +44,118 @@ public partial class Vault : Form
                     {
                         row.Cells[i].ValueType = typeof(char[]);
                         sw.Write(row.Cells[i].Value);
-                        if (i < PassVault.Columns.Count - 1) sw.Write("\t"); // Use a tab character to separate columns
+                        if (i < PassVault.Columns.Count - 1)
+                            await sw.WriteAsync("\t"); // Use a tab character to separate columns
                     }
 
-                    sw.WriteLine(); // Start a new line for each row
+                    await sw.WriteLineAsync(); // Start a new line for each row
                 }
             }
 
-            PopupPassword.Save = true;
-            using var form = new PopupPassword();
-            form.ShowDialog();
+            if (Login.PasswordArray != null)
+            {
+                Authentication.GetUserInfo(Authentication.CurrentLoggedInUser, Login.PasswordArray);
+                var encryptedVault = await Crypto.EncryptFile(Authentication.CurrentLoggedInUser,
+                    Login.PasswordArray,
+                    Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
+
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+                if (encryptedVault == null)
+                    throw new ArgumentException(@"Value returned empty or null.",
+                        nameof(encryptedVault));
+                Array.Clear(Login.PasswordArray, 0, Login.PasswordArray.Length);
+
+                await File.WriteAllTextAsync(Authentication.GetUserVault(Authentication.CurrentLoggedInUser),
+                    DataConversionHelpers.ByteArrayToBase64String(encryptedVault));
+                _isAnimating = false;
+                MessageBox.Show("Vault saved successfully.", "Save vault", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                EnableUI();
+            }
         }
         catch (Exception ex)
         {
+            EnableUI();
+            _isAnimating = false;
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
-    private async void loadVaultBtn_Click(object sender, EventArgs e)
+    public async void LoadVault()
     {
         try
         {
-            PopupPassword.Load = true;
-            using PopupPassword form = new();
-            form.ShowDialog();
-
-            var filePath = Path.Combine("Password Vault", "Users",
-                Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
-
+            var filePath = Authentication.GetUserVault(Authentication.CurrentLoggedInUser);
             if (File.Exists(filePath))
             {
-                using (var sr = new StreamReader(filePath))
+                using var sr = new StreamReader(filePath);
+                PassVault.Rows.Clear(); // Clear existing data in the DataGridView
+
+                while (!sr.EndOfStream)
                 {
-                    PassVault.Rows.Clear(); // Clear existing data in the DataGridView
+                    var line = await sr.ReadLineAsync();
+                    var values = line?.Split('\t'); // Split the line by tabs
 
-                    while (!sr.EndOfStream)
-                    {
-                        var line = await sr.ReadLineAsync();
-                        var values = line?.Split('\t'); // Split the line by tabs
+                    if (IsBase64(line))
+                        return;
 
-                        if (IsBase64(line))
-                            return;
-
-                        if (values is { Length: <= 0 }) continue;
-                        // Add a new row to the DataGridView and populate it with values
-                        var rowIndex = PassVault.Rows.Add();
-                        if (values == null) continue;
-                        for (var i = 0; i < values.Length; i++)
-                            PassVault.Rows[rowIndex].Cells[i].Value = values[i];
-                    }
+                    if (values is { Length: <= 0 }) continue;
+                    // Add a new row to the DataGridView and populate it with values
+                    var rowIndex = PassVault.Rows.Add();
+                    if (values == null) continue;
+                    for (var i = 0; i < values.Length; i++)
+                        PassVault.Rows[rowIndex].Cells[i].Value = values[i];
                 }
-
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-                var encryptedVault = await Crypto.EncryptUserFiles(Authentication.CurrentLoggedInUser,
-                    PopupPassword.PasswordArray, Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
-                if (encryptedVault != null)
-                    await File.WriteAllTextAsync(Authentication.GetUserVault(Authentication.CurrentLoggedInUser),
-                        DataConversionHelpers.ByteArrayToBase64String(encryptedVault));
-                Array.Clear(PopupPassword.PasswordArray, 0, PopupPassword.PasswordArray.Length);
             }
             else
             {
+                EnableUI();
                 MessageBox.Show(@"Vault file does not exist.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
         catch (Exception ex)
         {
+            EnableUI();
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
+
     private static bool IsBase64(string? str)
     {
-        return str != null && Regex.IsMatch(str, @"^[a-zA-Z0-9\+/]*={0,3}$") && (str.Length % 4 == 0);
+        return str != null && Regex.IsMatch(str, @"^[a-zA-Z0-9\+/]*={0,3}$") && str.Length % 4 == 0;
+    }
+
+    private void EnableUI()
+    {
+        saveVaultBtn.Enabled = true;
+        deleteRowBtn.Enabled = true;
+        addRowBtn.Enabled = true;
+        PassVault.Enabled = true;
+    }
+
+    private void DisableUI()
+    {
+        saveVaultBtn.Enabled = false; 
+        deleteRowBtn.Enabled = false; 
+        addRowBtn.Enabled = false;
+        PassVault.Enabled = false;
+    }
+    private async void StartAnimation()
+    {
+        _isAnimating = true;
+        await AnimateLabel();
+    }
+
+    private async Task AnimateLabel()
+    {
+        while (_isAnimating)
+        {
+            outputLbl.Text = @"Saving vault";
+            // Add animated periods
+            for (var i = 0; i < 4; i++)
+            {
+                outputLbl.Text += @".";
+                await Task.Delay(400); // Delay between each period
+            }
+        }
     }
 }
