@@ -1,7 +1,4 @@
-﻿using System.Text;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
-
-namespace Secure_Password_Vault;
+﻿namespace Secure_Password_Vault;
 
 public partial class RegisterAccount : Form
 {
@@ -11,11 +8,10 @@ public partial class RegisterAccount : Form
     {
         InitializeComponent();
     }
-
-    //private static char[]? PassArray { get; set; } = null;
+    
     private static bool CheckPasswordValidity(IReadOnlyCollection<char> password, char[] password2)
     {
-        if (password.Count is < 8 or > 64)
+        if (password.Count is < 16 or > 64)
             return false;
 
         if (!password.Any(char.IsUpper) || !password.Any(char.IsLower) || !password.Any(char.IsDigit))
@@ -29,6 +25,9 @@ public partial class RegisterAccount : Form
 
     private async Task CreateAccountAsync()
     {
+        if (showPasswordCheckBox.Checked)
+            showPasswordCheckBox.Checked = false;
+
         var userName = userTxt.Text;
         var passArray = SetArray();
 
@@ -104,11 +103,11 @@ public partial class RegisterAccount : Form
         try
         {
             StartAnimation();
-
+            
             ValidateUsernameAndPassword(username, password, confirmPassword);
 
             var salt = Crypto.RndByteSized(Crypto.SaltSize);
-            var iv = Crypto.RndByteSized(Crypto.IvBit / 8);
+           // var iv = Crypto.RndByteSized(12);
             var hashedPassword = await Crypto.HashAsync(password, salt);
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
@@ -124,12 +123,8 @@ public partial class RegisterAccount : Form
             await File.WriteAllTextAsync(userSalt,
                 DataConversionHelpers.ByteArrayToBase64String(salt));
 
-            var passBytes = Encoding.UTF8.GetBytes(password);
-            var fileStr = await File.ReadAllTextAsync(userFile);
-            var fileBytes = DataConversionHelpers.StringToByteArray(fileStr);
-
-            var encrypted = await Crypto.EncryptAsync(fileBytes, passBytes, iv, salt);
-            if (encrypted == null)
+            var encrypted = await Crypto.EncryptFile(username, password, Authentication.GetUserFilePath(username));
+            if (encrypted == Array.Empty<byte>())
                 throw new ArgumentException(@"Value returned null or empty.", nameof(encrypted));
 
             await File.WriteAllTextAsync(userFile, DataConversionHelpers.ByteArrayToBase64String(encrypted));
@@ -184,7 +179,7 @@ public partial class RegisterAccount : Form
             throw new ArgumentException(@"Invalid password.", nameof(password));
 
         if (!CheckPasswordValidity(password, password2))
-            throw new ArgumentException(@"Password must contain between 8 and 64 characters." +
+            throw new ArgumentException(@"Password must contain between 16 and 64 characters." +
                                         @"It also must include: 1.) At least one uppercase letter." +
                                         @"2.) At least one lowercase letter." +
                                         @"3.) At least one number. " +

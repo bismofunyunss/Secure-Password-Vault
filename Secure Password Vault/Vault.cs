@@ -60,7 +60,7 @@ public partial class Vault : Form
                     Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
 
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-                if (encryptedVault == null)
+                if (encryptedVault == Array.Empty<byte>())
                     throw new ArgumentException(@"Value returned empty or null.",
                         nameof(encryptedVault));
                 Array.Clear(Login.PasswordArray, 0, Login.PasswordArray.Length);
@@ -69,7 +69,11 @@ public partial class Vault : Form
                     DataConversionHelpers.ByteArrayToBase64String(encryptedVault));
                 _isAnimating = false;
                 MessageBox.Show("Vault saved successfully.", "Save vault", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                outputLbl.Text = "Saved successfully";
+                outputLbl.ForeColor = Color.LimeGreen;
                 EnableUI();
+                outputLbl.Text = "Idle...";
+                outputLbl.ForeColor = Color.WhiteSmoke;
             }
         }
         catch (Exception ex)

@@ -3,7 +3,7 @@ namespace Secure_Password_Vault;
 public partial class Login : Form
 {
     private static bool _isAnimating;
-    public static char[]? PasswordArray = Array.Empty<char>();
+    public static char[] PasswordArray = Array.Empty<char>();
 
     public Login()
     {
@@ -108,11 +108,14 @@ public partial class Login : Form
     {
         StartAnimation();
 
+        if (showPasswordCheckBox.Checked)
+            showPasswordCheckBox.Checked = false;
+
         var decryptedBytes = await Crypto.DecryptFile(userNameTxt.Text, PasswordArray,
             Authentication.GetUserFilePath(userNameTxt.Text));
 
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-        if (decryptedBytes != null)
+        if (decryptedBytes != Array.Empty<byte>())
         {
             var decryptedText = DataConversionHelpers.ByteArrayToString(decryptedBytes);
             await File.WriteAllTextAsync(Authentication.GetUserFilePath(userNameTxt.Text),
@@ -176,7 +179,7 @@ public partial class Login : Form
                 Authentication.GetUserFilePath(userNameTxt.Text));
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-            if (encryptedUserInfo == null)
+            if (encryptedUserInfo == Array.Empty<byte>())
                 throw new ArgumentException(@"Value returned empty or null.",
                     nameof(encryptedUserInfo));
             if (Crypto.Hash != null)
@@ -191,6 +194,10 @@ public partial class Login : Form
                 var decryptedVault = await Crypto.DecryptFile(userNameTxt.Text,
                     PasswordArray, Authentication.GetUserVault(userNameTxt.Text));
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+                if (decryptedVault == Array.Empty<byte>())
+                    throw new ArgumentException(@"Value returned empty or null",
+                        nameof(decryptedVault));
+
                 await File.WriteAllTextAsync(Authentication.GetUserVault(userNameTxt.Text),
                     DataConversionHelpers.ByteArrayToString(decryptedVault));
                 using var userVault = new Vault();
@@ -201,7 +208,7 @@ public partial class Login : Form
                         Crypto.EncryptFile(userNameTxt.Text, PasswordArray,
                             Authentication.GetUserVault(userNameTxt.Text));
                     GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-                    if (encryptedBytes == null)
+                    if (encryptedBytes == Array.Empty<byte>())
                         throw new ArgumentException(@"Value returned empty or null.",
                             nameof(encryptedBytes));
                     if (Crypto.Hash != null)
