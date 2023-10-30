@@ -46,7 +46,7 @@
             // 
             // groupBox1
             // 
-            groupBox1.BackColor = SystemColors.ButtonShadow;
+            groupBox1.BackColor = SystemColors.ControlDarkDark;
             groupBox1.Controls.Add(showPasswordCheckBox);
             groupBox1.Controls.Add(cancelBtn);
             groupBox1.Controls.Add(outputLbl);
@@ -58,11 +58,11 @@
             groupBox1.Controls.Add(passLbl);
             groupBox1.Controls.Add(userTxt);
             groupBox1.Controls.Add(userLbl);
-            groupBox1.Font = new Font("Segoe Script", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            groupBox1.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             groupBox1.ForeColor = Color.WhiteSmoke;
             groupBox1.Location = new Point(12, 12);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(450, 494);
+            groupBox1.Size = new Size(450, 434);
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             groupBox1.Text = "Register Account";
@@ -70,9 +70,9 @@
             // showPasswordCheckBox
             // 
             showPasswordCheckBox.AutoSize = true;
-            showPasswordCheckBox.Location = new Point(223, 401);
+            showPasswordCheckBox.Location = new Point(258, 339);
             showPasswordCheckBox.Name = "showPasswordCheckBox";
-            showPasswordCheckBox.Size = new Size(221, 39);
+            showPasswordCheckBox.Size = new Size(186, 29);
             showPasswordCheckBox.TabIndex = 11;
             showPasswordCheckBox.Text = "Show Password";
             showPasswordCheckBox.UseVisualStyleBackColor = true;
@@ -80,13 +80,13 @@
             // 
             // cancelBtn
             // 
-            cancelBtn.BackColor = SystemColors.ButtonShadow;
+            cancelBtn.BackColor = SystemColors.ControlDarkDark;
             cancelBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
             cancelBtn.FlatAppearance.BorderSize = 3;
             cancelBtn.FlatStyle = FlatStyle.Flat;
-            cancelBtn.Font = new Font("Segoe Script", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            cancelBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             cancelBtn.ForeColor = Color.WhiteSmoke;
-            cancelBtn.Location = new Point(6, 351);
+            cancelBtn.Location = new Point(6, 289);
             cancelBtn.Name = "cancelBtn";
             cancelBtn.Size = new Size(438, 44);
             cancelBtn.TabIndex = 10;
@@ -97,30 +97,30 @@
             // outputLbl
             // 
             outputLbl.AutoSize = true;
-            outputLbl.Location = new Point(122, 456);
+            outputLbl.Location = new Point(102, 387);
             outputLbl.Name = "outputLbl";
-            outputLbl.Size = new Size(78, 35);
+            outputLbl.Size = new Size(67, 25);
             outputLbl.TabIndex = 9;
             outputLbl.Text = "Idle...";
             // 
             // statusLbl
             // 
             statusLbl.AutoSize = true;
-            statusLbl.Location = new Point(6, 456);
+            statusLbl.Location = new Point(6, 387);
             statusLbl.Name = "statusLbl";
-            statusLbl.Size = new Size(110, 35);
+            statusLbl.Size = new Size(90, 25);
             statusLbl.TabIndex = 8;
             statusLbl.Text = "Status ::";
             // 
             // createAccountBtn
             // 
-            createAccountBtn.BackColor = SystemColors.ButtonShadow;
+            createAccountBtn.BackColor = SystemColors.ControlDarkDark;
             createAccountBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
             createAccountBtn.FlatAppearance.BorderSize = 3;
             createAccountBtn.FlatStyle = FlatStyle.Flat;
-            createAccountBtn.Font = new Font("Segoe Script", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            createAccountBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             createAccountBtn.ForeColor = Color.WhiteSmoke;
-            createAccountBtn.Location = new Point(6, 301);
+            createAccountBtn.Location = new Point(6, 239);
             createAccountBtn.Name = "createAccountBtn";
             createAccountBtn.Size = new Size(438, 44);
             createAccountBtn.TabIndex = 6;
@@ -130,60 +130,60 @@
             // 
             // confirmPassTxt
             // 
-            confirmPassTxt.BackColor = SystemColors.ButtonShadow;
-            confirmPassTxt.Font = new Font("Segoe Script", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            confirmPassTxt.BackColor = Color.Black;
+            confirmPassTxt.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             confirmPassTxt.ForeColor = Color.Gold;
-            confirmPassTxt.Location = new Point(6, 259);
+            confirmPassTxt.Location = new Point(6, 197);
             confirmPassTxt.Name = "confirmPassTxt";
-            confirmPassTxt.Size = new Size(438, 36);
+            confirmPassTxt.Size = new Size(438, 33);
             confirmPassTxt.TabIndex = 5;
             confirmPassTxt.UseSystemPasswordChar = true;
             // 
             // confirmPassLbl
             // 
             confirmPassLbl.AutoSize = true;
-            confirmPassLbl.Location = new Point(6, 211);
+            confirmPassLbl.Location = new Point(6, 169);
             confirmPassLbl.Name = "confirmPassLbl";
-            confirmPassLbl.Size = new Size(230, 35);
+            confirmPassLbl.Size = new Size(188, 25);
             confirmPassLbl.TabIndex = 4;
             confirmPassLbl.Text = "Confirm Password";
             // 
             // passTxt
             // 
-            passTxt.BackColor = SystemColors.ButtonShadow;
-            passTxt.Font = new Font("Segoe Script", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            passTxt.BackColor = Color.Black;
+            passTxt.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             passTxt.ForeColor = Color.Gold;
-            passTxt.Location = new Point(6, 172);
+            passTxt.Location = new Point(6, 133);
             passTxt.Name = "passTxt";
-            passTxt.Size = new Size(438, 36);
+            passTxt.Size = new Size(438, 33);
             passTxt.TabIndex = 3;
             passTxt.UseSystemPasswordChar = true;
             // 
             // passLbl
             // 
             passLbl.AutoSize = true;
-            passLbl.Location = new Point(6, 125);
+            passLbl.Location = new Point(6, 105);
             passLbl.Name = "passLbl";
-            passLbl.Size = new Size(124, 35);
+            passLbl.Size = new Size(103, 25);
             passLbl.TabIndex = 2;
             passLbl.Text = "Password";
             // 
             // userTxt
             // 
-            userTxt.BackColor = SystemColors.ButtonShadow;
-            userTxt.Font = new Font("Segoe Script", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            userTxt.BackColor = Color.Black;
+            userTxt.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             userTxt.ForeColor = Color.Gold;
-            userTxt.Location = new Point(6, 86);
+            userTxt.Location = new Point(6, 69);
             userTxt.Name = "userTxt";
-            userTxt.Size = new Size(438, 36);
+            userTxt.Size = new Size(438, 33);
             userTxt.TabIndex = 1;
             // 
             // userLbl
             // 
             userLbl.AutoSize = true;
-            userLbl.Location = new Point(6, 39);
+            userLbl.Location = new Point(6, 41);
             userLbl.Name = "userLbl";
-            userLbl.Size = new Size(128, 35);
+            userLbl.Size = new Size(107, 25);
             userLbl.TabIndex = 0;
             userLbl.Text = "Username";
             // 
@@ -192,8 +192,8 @@
             AcceptButton = createAccountBtn;
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = SystemColors.ButtonShadow;
-            ClientSize = new Size(474, 518);
+            BackColor = SystemColors.ControlDarkDark;
+            ClientSize = new Size(474, 458);
             Controls.Add(groupBox1);
             FormBorderStyle = FormBorderStyle.Fixed3D;
             Icon = (Icon)resources.GetObject("$this.Icon");

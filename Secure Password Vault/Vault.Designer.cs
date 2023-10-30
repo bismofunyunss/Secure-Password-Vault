@@ -37,16 +37,16 @@
             DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Vault));
             PassVault = new DataGridView();
-            Description = new DataGridViewTextBoxColumn();
-            Email = new DataGridViewTextBoxColumn();
-            Username = new DataGridViewTextBoxColumn();
-            Password = new DataGridViewTextBoxColumn();
             addRowBtn = new Button();
             deleteRowBtn = new Button();
             saveVaultBtn = new Button();
             vaultBox = new GroupBox();
             outputLbl = new Label();
             statusLbl = new Label();
+            Description = new DataGridViewTextBoxColumn();
+            Email = new DataGridViewTextBoxColumn();
+            Username = new DataGridViewTextBoxColumn();
+            Password = new DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)PassVault).BeginInit();
             vaultBox.SuspendLayout();
             SuspendLayout();
@@ -62,7 +62,7 @@
             PassVault.ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableWithoutHeaderText;
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle1.Font = new Font("Segoe Script", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            dataGridViewCellStyle1.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             dataGridViewCellStyle1.ForeColor = Color.WhiteSmoke;
             dataGridViewCellStyle1.SelectionBackColor = SystemColors.ControlDarkDark;
             dataGridViewCellStyle1.SelectionForeColor = Color.WhiteSmoke;
@@ -98,68 +98,20 @@
             PassVault.ShowCellToolTips = false;
             PassVault.ShowEditingIcon = false;
             PassVault.ShowRowErrors = false;
-            PassVault.Size = new Size(672, 221);
+            PassVault.Size = new Size(918, 221);
             PassVault.TabIndex = 0;
-            // 
-            // Description
-            // 
-            dataGridViewCellStyle2.BackColor = SystemColors.ControlDark;
-            dataGridViewCellStyle2.Font = new Font("Segoe Script", 8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            dataGridViewCellStyle2.ForeColor = Color.Gold;
-            dataGridViewCellStyle2.SelectionBackColor = SystemColors.ButtonShadow;
-            dataGridViewCellStyle2.SelectionForeColor = Color.WhiteSmoke;
-            Description.DefaultCellStyle = dataGridViewCellStyle2;
-            Description.HeaderText = "Description";
-            Description.MinimumWidth = 8;
-            Description.Name = "Description";
-            // 
-            // Email
-            // 
-            dataGridViewCellStyle3.BackColor = SystemColors.ButtonShadow;
-            dataGridViewCellStyle3.Font = new Font("Segoe Script", 8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            dataGridViewCellStyle3.ForeColor = Color.Gold;
-            dataGridViewCellStyle3.SelectionBackColor = SystemColors.ButtonShadow;
-            dataGridViewCellStyle3.SelectionForeColor = Color.WhiteSmoke;
-            Email.DefaultCellStyle = dataGridViewCellStyle3;
-            Email.HeaderText = "Email";
-            Email.MinimumWidth = 8;
-            Email.Name = "Email";
-            // 
-            // Username
-            // 
-            dataGridViewCellStyle4.BackColor = SystemColors.ButtonShadow;
-            dataGridViewCellStyle4.Font = new Font("Segoe Script", 8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            dataGridViewCellStyle4.ForeColor = Color.Gold;
-            dataGridViewCellStyle4.SelectionBackColor = SystemColors.ButtonShadow;
-            dataGridViewCellStyle4.SelectionForeColor = Color.WhiteSmoke;
-            Username.DefaultCellStyle = dataGridViewCellStyle4;
-            Username.HeaderText = "Username";
-            Username.MinimumWidth = 8;
-            Username.Name = "Username";
-            // 
-            // Password
-            // 
-            dataGridViewCellStyle5.BackColor = SystemColors.ButtonShadow;
-            dataGridViewCellStyle5.Font = new Font("Segoe Script", 8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            dataGridViewCellStyle5.ForeColor = Color.Gold;
-            dataGridViewCellStyle5.SelectionBackColor = SystemColors.ControlDark;
-            dataGridViewCellStyle5.SelectionForeColor = Color.WhiteSmoke;
-            Password.DefaultCellStyle = dataGridViewCellStyle5;
-            Password.HeaderText = "Password";
-            Password.MinimumWidth = 8;
-            Password.Name = "Password";
             // 
             // addRowBtn
             // 
-            addRowBtn.BackColor = SystemColors.ButtonShadow;
+            addRowBtn.BackColor = SystemColors.ControlDarkDark;
             addRowBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
             addRowBtn.FlatAppearance.BorderSize = 3;
             addRowBtn.FlatStyle = FlatStyle.Flat;
-            addRowBtn.Font = new Font("Segoe Script", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            addRowBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             addRowBtn.ForeColor = Color.WhiteSmoke;
             addRowBtn.Location = new Point(6, 256);
             addRowBtn.Name = "addRowBtn";
-            addRowBtn.Size = new Size(672, 44);
+            addRowBtn.Size = new Size(918, 44);
             addRowBtn.TabIndex = 5;
             addRowBtn.Text = "&Add New Row";
             addRowBtn.UseVisualStyleBackColor = false;
@@ -167,15 +119,15 @@
             // 
             // deleteRowBtn
             // 
-            deleteRowBtn.BackColor = SystemColors.ButtonShadow;
+            deleteRowBtn.BackColor = SystemColors.ControlDarkDark;
             deleteRowBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
             deleteRowBtn.FlatAppearance.BorderSize = 3;
             deleteRowBtn.FlatStyle = FlatStyle.Flat;
-            deleteRowBtn.Font = new Font("Segoe Script", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            deleteRowBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             deleteRowBtn.ForeColor = Color.WhiteSmoke;
             deleteRowBtn.Location = new Point(6, 306);
             deleteRowBtn.Name = "deleteRowBtn";
-            deleteRowBtn.Size = new Size(672, 44);
+            deleteRowBtn.Size = new Size(918, 44);
             deleteRowBtn.TabIndex = 6;
             deleteRowBtn.Text = "&Delete Row";
             deleteRowBtn.UseVisualStyleBackColor = false;
@@ -183,15 +135,15 @@
             // 
             // saveVaultBtn
             // 
-            saveVaultBtn.BackColor = SystemColors.ButtonShadow;
+            saveVaultBtn.BackColor = SystemColors.ControlDarkDark;
             saveVaultBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
             saveVaultBtn.FlatAppearance.BorderSize = 3;
             saveVaultBtn.FlatStyle = FlatStyle.Flat;
-            saveVaultBtn.Font = new Font("Segoe Script", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            saveVaultBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             saveVaultBtn.ForeColor = Color.WhiteSmoke;
             saveVaultBtn.Location = new Point(6, 352);
             saveVaultBtn.Name = "saveVaultBtn";
-            saveVaultBtn.Size = new Size(672, 44);
+            saveVaultBtn.Size = new Size(918, 44);
             saveVaultBtn.TabIndex = 7;
             saveVaultBtn.Text = "&Save Vault";
             saveVaultBtn.UseVisualStyleBackColor = false;
@@ -209,7 +161,7 @@
             vaultBox.ForeColor = Color.WhiteSmoke;
             vaultBox.Location = new Point(12, 12);
             vaultBox.Name = "vaultBox";
-            vaultBox.Size = new Size(684, 473);
+            vaultBox.Size = new Size(930, 473);
             vaultBox.TabIndex = 8;
             vaultBox.TabStop = false;
             vaultBox.Text = "Vault";
@@ -217,27 +169,77 @@
             // outputLbl
             // 
             outputLbl.AutoSize = true;
-            outputLbl.Location = new Point(122, 431);
+            outputLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            outputLbl.Location = new Point(102, 431);
             outputLbl.Name = "outputLbl";
-            outputLbl.Size = new Size(78, 35);
+            outputLbl.Size = new Size(67, 25);
             outputLbl.TabIndex = 12;
             outputLbl.Text = "Idle...";
             // 
             // statusLbl
             // 
             statusLbl.AutoSize = true;
+            statusLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             statusLbl.Location = new Point(6, 431);
             statusLbl.Name = "statusLbl";
-            statusLbl.Size = new Size(110, 35);
+            statusLbl.Size = new Size(90, 25);
             statusLbl.TabIndex = 11;
             statusLbl.Text = "Status ::";
+            // 
+            // Description
+            // 
+            dataGridViewCellStyle2.BackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle2.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            dataGridViewCellStyle2.ForeColor = Color.Gold;
+            dataGridViewCellStyle2.SelectionBackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle2.SelectionForeColor = Color.Gold;
+            Description.DefaultCellStyle = dataGridViewCellStyle2;
+            Description.HeaderText = "Description";
+            Description.MinimumWidth = 8;
+            Description.Name = "Description";
+            // 
+            // Email
+            // 
+            dataGridViewCellStyle3.BackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle3.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            dataGridViewCellStyle3.ForeColor = Color.Gold;
+            dataGridViewCellStyle3.SelectionBackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle3.SelectionForeColor = Color.Gold;
+            Email.DefaultCellStyle = dataGridViewCellStyle3;
+            Email.HeaderText = "Email";
+            Email.MinimumWidth = 8;
+            Email.Name = "Email";
+            // 
+            // Username
+            // 
+            dataGridViewCellStyle4.BackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle4.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            dataGridViewCellStyle4.ForeColor = Color.Gold;
+            dataGridViewCellStyle4.SelectionBackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle4.SelectionForeColor = Color.Gold;
+            Username.DefaultCellStyle = dataGridViewCellStyle4;
+            Username.HeaderText = "Username";
+            Username.MinimumWidth = 8;
+            Username.Name = "Username";
+            // 
+            // Password
+            // 
+            dataGridViewCellStyle5.BackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle5.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            dataGridViewCellStyle5.ForeColor = Color.Gold;
+            dataGridViewCellStyle5.SelectionBackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle5.SelectionForeColor = Color.Gold;
+            Password.DefaultCellStyle = dataGridViewCellStyle5;
+            Password.HeaderText = "Password";
+            Password.MinimumWidth = 8;
+            Password.Name = "Password";
             // 
             // Vault
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = SystemColors.ButtonShadow;
-            ClientSize = new Size(708, 511);
+            BackColor = SystemColors.ControlDarkDark;
+            ClientSize = new Size(954, 511);
             Controls.Add(vaultBox);
             FormBorderStyle = FormBorderStyle.Fixed3D;
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -256,12 +258,12 @@
         private Button addRowBtn;
         private Button deleteRowBtn;
         private Button saveVaultBtn;
+        private GroupBox vaultBox;
+        private Label outputLbl;
+        private Label statusLbl;
         private DataGridViewTextBoxColumn Description;
         private DataGridViewTextBoxColumn Email;
         private DataGridViewTextBoxColumn Username;
         private DataGridViewTextBoxColumn Password;
-        private GroupBox vaultBox;
-        private Label outputLbl;
-        private Label statusLbl;
     }
 }

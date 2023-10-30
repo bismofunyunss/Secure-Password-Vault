@@ -4,12 +4,12 @@ namespace Secure_Password_Vault;
 
 public partial class Vault : Form
 {
+    private static bool _isAnimating;
+
     public Vault()
     {
         InitializeComponent();
     }
-
-    private static bool _isAnimating;
 
     private void addRowBtn_Click(object sender, EventArgs e)
     {
@@ -29,56 +29,71 @@ public partial class Vault : Form
     {
         try
         {
-            DisableUI();
-            StartAnimation();
-            var filePath = Path.Combine("Password Vault", "Users",
-                Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
+            using var passwordForm = new EnterPassword();
+            passwordForm.ShowDialog();
 
-            await using (var sw = new StreamWriter(filePath))
+            if (EnterPassword.MatchedHash)
             {
-                sw.NewLine = null;
-                sw.AutoFlush = true;
-                foreach (DataGridViewRow row in PassVault.Rows)
-                {
-                    for (var i = 0; i < PassVault.Columns.Count; i++)
-                    {
-                        row.Cells[i].ValueType = typeof(char[]);
-                        sw.Write(row.Cells[i].Value);
-                        if (i < PassVault.Columns.Count - 1)
-                            await sw.WriteAsync("\t"); // Use a tab character to separate columns
-                    }
+                StartAnimation();
 
-                    await sw.WriteLineAsync(); // Start a new line for each row
-                }
-            }
-
-            if (Login.PasswordArray != null)
-            {
-                Authentication.GetUserInfo(Authentication.CurrentLoggedInUser, Login.PasswordArray);
-                var encryptedVault = await Crypto.EncryptFile(Authentication.CurrentLoggedInUser,
-                    Login.PasswordArray,
+                var filePath = Path.Combine("Password Vault", "Users",
                     Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
+
+                await using (var sw = new StreamWriter(filePath))
+                {
+                    sw.NewLine = null;
+                    sw.AutoFlush = true;
+                    foreach (DataGridViewRow row in PassVault.Rows)
+                    {
+                        for (var i = 0; i < PassVault.Columns.Count; i++)
+                        {
+                            row.Cells[i].ValueType = typeof(char[]);
+                            sw.Write(row.Cells[i].Value);
+                            if (i < PassVault.Columns.Count - 1)
+                                await sw.WriteAsync("\t"); // Use a tab character to separate columns
+                        }
+
+                        await sw.WriteLineAsync(); // Start a new line for each row
+                    }
+                }
+
+                EnterPassword.MatchedHash = false;
+                var encryptedVault = await Crypto.EncryptFile(Authentication.CurrentLoggedInUser,
+                    EnterPassword.PasswordArray,
+                    Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
+
+                Array.Clear(EnterPassword.PasswordArray, 0, EnterPassword.PasswordArray.Length);
 
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                 if (encryptedVault == Array.Empty<byte>())
                     throw new ArgumentException(@"Value returned empty or null.",
                         nameof(encryptedVault));
-                Array.Clear(Login.PasswordArray, 0, Login.PasswordArray.Length);
 
                 await File.WriteAllTextAsync(Authentication.GetUserVault(Authentication.CurrentLoggedInUser),
                     DataConversionHelpers.ByteArrayToBase64String(encryptedVault));
                 _isAnimating = false;
-                MessageBox.Show("Vault saved successfully.", "Save vault", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                outputLbl.Text = "Saved successfully";
+                outputLbl.Text = @"Saved successfully";
                 outputLbl.ForeColor = Color.LimeGreen;
-                EnableUI();
-                outputLbl.Text = "Idle...";
+                MessageBox.Show(@"Vault saved successfully.", @"Save vault", MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                outputLbl.Text = @"Idle...";
+                outputLbl.ForeColor = Color.WhiteSmoke;
+            }
+            else
+            {
+                _isAnimating = false;
+                EnterPassword.MatchedHash = false;
+                outputLbl.Text = @"Save failed";
+                outputLbl.ForeColor = Color.Red;
+                MessageBox.Show(@"Incorrect credentials. Please try again.", @"Save vault", MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                outputLbl.Text = @"Idle...";
                 outputLbl.ForeColor = Color.WhiteSmoke;
             }
         }
         catch (Exception ex)
         {
-            EnableUI();
+            EnableUi();
             _isAnimating = false;
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
@@ -112,13 +127,13 @@ public partial class Vault : Form
             }
             else
             {
-                EnableUI();
+                EnableUi();
                 MessageBox.Show(@"Vault file does not exist.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
         catch (Exception ex)
         {
-            EnableUI();
+            EnableUi();
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
@@ -128,7 +143,7 @@ public partial class Vault : Form
         return str != null && Regex.IsMatch(str, @"^[a-zA-Z0-9\+/]*={0,3}$") && str.Length % 4 == 0;
     }
 
-    private void EnableUI()
+    private void EnableUi()
     {
         saveVaultBtn.Enabled = true;
         deleteRowBtn.Enabled = true;
@@ -136,13 +151,14 @@ public partial class Vault : Form
         PassVault.Enabled = true;
     }
 
-    private void DisableUI()
+    private void DisableUi()
     {
-        saveVaultBtn.Enabled = false; 
-        deleteRowBtn.Enabled = false; 
+        saveVaultBtn.Enabled = false;
+        deleteRowBtn.Enabled = false;
         addRowBtn.Enabled = false;
         PassVault.Enabled = false;
     }
+
     private async void StartAnimation()
     {
         _isAnimating = true;

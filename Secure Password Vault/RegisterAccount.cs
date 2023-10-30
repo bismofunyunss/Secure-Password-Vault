@@ -8,7 +8,7 @@ public partial class RegisterAccount : Form
     {
         InitializeComponent();
     }
-    
+
     private static bool CheckPasswordValidity(IReadOnlyCollection<char> password, char[] password2)
     {
         if (password.Count is < 16 or > 64)
@@ -64,6 +64,7 @@ public partial class RegisterAccount : Form
 
     private void DisableUi()
     {
+        showPasswordCheckBox.Enabled = false;
         passTxt.Enabled = false;
         confirmPassTxt.Enabled = false;
         userTxt.Enabled = false;
@@ -73,6 +74,7 @@ public partial class RegisterAccount : Form
 
     private void EnableUi()
     {
+        showPasswordCheckBox.Enabled = true;
         userTxt.Enabled = true;
         createAccountBtn.Enabled = true;
         cancelBtn.Enabled = true;
@@ -98,16 +100,15 @@ public partial class RegisterAccount : Form
     }
 
     private async Task RegisterAsync(string username, char[] password, char[] confirmPassword, string userFile,
-    string userSalt)
+        string userSalt)
     {
         try
         {
             StartAnimation();
-            
+
             ValidateUsernameAndPassword(username, password, confirmPassword);
 
             var salt = Crypto.RndByteSized(Crypto.SaltSize);
-           // var iv = Crypto.RndByteSized(12);
             var hashedPassword = await Crypto.HashAsync(password, salt);
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
@@ -165,6 +166,7 @@ public partial class RegisterAccount : Form
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
+
     private static void ValidateUsernameAndPassword(string userName, char[] password, char[] password2)
     {
         if (!userName.All(c => char.IsLetterOrDigit(c) || c == '_' || c == ' '))

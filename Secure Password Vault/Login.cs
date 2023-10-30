@@ -3,7 +3,7 @@ namespace Secure_Password_Vault;
 public partial class Login : Form
 {
     private static bool _isAnimating;
-    public static char[] PasswordArray = Array.Empty<char>();
+    private static char[] _passwordArray = Array.Empty<char>();
 
     public Login()
     {
@@ -31,10 +31,10 @@ public partial class Login : Form
             if (userNameTxt.Text == string.Empty)
                 throw new ArgumentException(@"Value was null or empty.", nameof(userNameTxt));
 
-            PasswordArray = SetArray();
+            _passwordArray = SetArray();
 
-            if (PasswordArray.Length == 0)
-                throw new ArgumentException(@"Value was null or empty.", nameof(PasswordArray));
+            if (_passwordArray.Length == 0)
+                throw new ArgumentException(@"Value was null or empty.", nameof(_passwordArray));
 
             MessageBox.Show(
                 @"Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.",
@@ -43,7 +43,7 @@ public partial class Login : Form
 
             DisableUi();
 
-            bool userExists = Authentication.UserExists(userNameTxt.Text);
+            var userExists = Authentication.UserExists(userNameTxt.Text);
 
             await ProcessLoginAsync(userExists);
         }
@@ -77,10 +77,10 @@ public partial class Login : Form
     private char[] SetArray()
     {
         var buffer = passTxt.Text.Length;
-        PasswordArray = new char[buffer];
-        passTxt.Text.CopyTo(0, PasswordArray, 0, buffer);
+        _passwordArray = new char[buffer];
+        passTxt.Text.CopyTo(0, _passwordArray, 0, buffer);
 
-        return PasswordArray;
+        return _passwordArray;
     }
 
     private async Task<byte[]?> SetSalt()
@@ -111,7 +111,7 @@ public partial class Login : Form
         if (showPasswordCheckBox.Checked)
             showPasswordCheckBox.Checked = false;
 
-        var decryptedBytes = await Crypto.DecryptFile(userNameTxt.Text, PasswordArray,
+        var decryptedBytes = await Crypto.DecryptFile(userNameTxt.Text, _passwordArray,
             Authentication.GetUserFilePath(userNameTxt.Text));
 
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
@@ -123,30 +123,26 @@ public partial class Login : Form
 
             var saltBytes = await SetSalt();
 
-            if (PasswordArray != null)
-            {
-                Authentication.GetUserInfo(userNameTxt.Text, PasswordArray);
-                {
-                    var hashedInput = await Crypto.HashAsync(PasswordArray, saltBytes);
-                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-                    if (hashedInput == null)
-                        throw new ArgumentException(@"Hash value returned null.", nameof(hashedInput));
+            Authentication.GetUserInfo(userNameTxt.Text, _passwordArray);
 
-                    var loginSuccessful = await Crypto.ComparePassword(hashedInput);
-                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-                    Array.Clear(hashedInput, 0, hashedInput.Length);
-                    if (Crypto.Hash != null)
-                        Array.Clear(Crypto.Hash, 0, Crypto.Hash.Length);
-                    switch (loginSuccessful)
-                    {
-                        case true:
-                            HandleLogin();
-                            break;
-                        case false:
-                            HandleFailedLogin();
-                            break;
-                    }
-                }
+            var hashedInput = await Crypto.HashAsync(_passwordArray, saltBytes);
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+            if (hashedInput == null)
+                throw new ArgumentException(@"Hash value returned null.", nameof(hashedInput));
+
+            var loginSuccessful = await Crypto.ComparePassword(hashedInput);
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+            Array.Clear(hashedInput, 0, hashedInput.Length);
+            if (Crypto.Hash != null)
+                Array.Clear(Crypto.Hash, 0, Crypto.Hash.Length);
+            switch (loginSuccessful)
+            {
+                case true:
+                    HandleLogin();
+                    break;
+                case false:
+                    HandleFailedLogin();
+                    break;
             }
         }
         else
@@ -158,8 +154,7 @@ public partial class Login : Form
     private void UserDoesNotExist()
     {
         EnableUi();
-        if (PasswordArray != null)
-            Array.Clear(PasswordArray, 0, PasswordArray.Length);
+        Array.Clear(_passwordArray, 0, _passwordArray.Length);
         _isAnimating = false;
         outputLbl.ForeColor = Color.WhiteSmoke;
         outputLbl.Text = @"Idle...";
@@ -172,10 +167,10 @@ public partial class Login : Form
         if (!File.Exists(Authentication.GetUserFilePath(userNameTxt.Text)))
             return;
         Authentication.CurrentLoggedInUser = userNameTxt.Text;
-        if (PasswordArray != null)
+        try
         {
             var encryptedUserInfo = await Crypto.EncryptFile(userNameTxt.Text,
-                PasswordArray,
+                _passwordArray,
                 Authentication.GetUserFilePath(userNameTxt.Text));
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
@@ -192,7 +187,8 @@ public partial class Login : Form
             if (File.Exists(Authentication.GetUserVault(userNameTxt.Text)))
             {
                 var decryptedVault = await Crypto.DecryptFile(userNameTxt.Text,
-                    PasswordArray, Authentication.GetUserVault(userNameTxt.Text));
+                    _passwordArray, Authentication.GetUserVault(userNameTxt.Text));
+
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
                 if (decryptedVault == Array.Empty<byte>())
                     throw new ArgumentException(@"Value returned empty or null",
@@ -202,21 +198,20 @@ public partial class Login : Form
                     DataConversionHelpers.ByteArrayToString(decryptedVault));
                 using var userVault = new Vault();
                 userVault.LoadVault();
-                if (PasswordArray != null)
-                {
-                    var encryptedBytes = await
-                        Crypto.EncryptFile(userNameTxt.Text, PasswordArray,
-                            Authentication.GetUserVault(userNameTxt.Text));
-                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-                    if (encryptedBytes == Array.Empty<byte>())
-                        throw new ArgumentException(@"Value returned empty or null.",
-                            nameof(encryptedBytes));
-                    if (Crypto.Hash != null)
-                        Array.Clear(Crypto.Hash, 0, Crypto.Hash.Length);
+                var encryptedBytes = await
+                    Crypto.EncryptFile(userNameTxt.Text, _passwordArray,
+                        Authentication.GetUserVault(userNameTxt.Text));
 
-                    await File.WriteAllTextAsync(Authentication.GetUserVault(userNameTxt.Text),
-                        DataConversionHelpers.ByteArrayToBase64String(encryptedBytes));
-                }
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+                if (encryptedBytes == Array.Empty<byte>())
+                    throw new ArgumentException(@"Value returned empty or null.",
+                        nameof(encryptedBytes));
+                if (Crypto.Hash != null)
+                    Array.Clear(Crypto.Hash, 0, Crypto.Hash.Length);
+
+                await File.WriteAllTextAsync(Authentication.GetUserVault(userNameTxt.Text),
+                    DataConversionHelpers.ByteArrayToBase64String(encryptedBytes));
+                Array.Clear(_passwordArray, 0, _passwordArray.Length);
                 outputLbl.ForeColor = Color.LimeGreen;
                 outputLbl.Text = @"Access granted";
                 _isAnimating = false;
@@ -230,6 +225,8 @@ public partial class Login : Form
                 Close();
                 return;
             }
+
+            Array.Clear(_passwordArray, 0, _passwordArray.Length);
             outputLbl.ForeColor = Color.LimeGreen;
             outputLbl.Text = @"Access granted";
             _isAnimating = false;
@@ -242,6 +239,10 @@ public partial class Login : Form
             using var blankVault = new Vault();
             blankVault.ShowDialog();
             Close();
+        }
+        catch (Exception e)
+        {
+            ErrorLogging.ErrorLog(e);
         }
     }
 
@@ -283,7 +284,12 @@ public partial class Login : Form
     private void Login_Load(object sender, EventArgs e)
     {
         if (Settings.Default.userName == string.Empty)
+        {
+            userNameTxt.Text = string.Empty;
+            rememberMeCheckBox.Checked = false;
             return;
+        }
+
         userNameTxt.Text = Settings.Default.userName;
         rememberMeCheckBox.Checked = true;
     }

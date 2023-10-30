@@ -1,21 +1,22 @@
 ﻿using System.Security.Cryptography;
-using System.Security.Policy;
 using System.Text;
 using Konscious.Security.Cryptography;
 
 namespace Secure_Password_Vault;
+
 public static class Crypto
 {
-    private const int Iterations = 1;
-    private const double MemorySize = 1024d * 1024d * 1d;
+    private const int Iterations = 64;
+    private const double MemorySize = 1024d * 1024d * 10d;
     public const int SaltSize = 512 / 8;
     public static readonly int ByteSize = 24;
-    public static readonly int KeySize = 16;
+    public static readonly int KeySize = 32;
     public static readonly int IvBit = 128;
     private const int TagLen = 16;
     private const int NonceSize = 12;
 
     private static readonly RandomNumberGenerator RndNum = RandomNumberGenerator.Create();
+
 
     public static byte[]? Hash { get; set; } = Array.Empty<byte>();
 
@@ -23,7 +24,7 @@ public static class Crypto
     private static string? CheckSum { get; set; } = string.Empty;
 
     /// <summary>
-    /// Hashes a password inside of a char array.
+    ///     Hashes a password inside of a char array.
     /// </summary>
     /// <param name="passWord">The char array to hash.</param>
     /// <param name="salt">The salt used during the argon2id hashing process.</param>
@@ -32,7 +33,7 @@ public static class Crypto
     {
         if (passWord == null || salt == null)
             return null;
-        
+
         try
         {
             using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord));
@@ -84,12 +85,6 @@ public static class Crypto
     {
         return Task.FromResult(inputHash != null && Hash != null &&
                                CryptographicOperations.FixedTimeEquals(Hash, inputHash));
-    }
-
-    private static Task<bool> CheckIntegrity(byte[]? Hash, byte[]? inputHash)
-    {
-        return Task.FromResult(inputHash != null && Hash != null &&
-                            CryptographicOperations.FixedTimeEquals(Hash, inputHash));
     }
 
     // Not implemented
@@ -144,12 +139,11 @@ public static class Crypto
 
         var passwordBytes = Encoding.UTF8.GetBytes(passWord);
 
-        if (fileBytes != null && salt != null)
-        {
-            var encryptedFile = await EncryptAsyncV2(fileBytes, passwordBytes, nonce, salt);
-            return encryptedFile ?? Array.Empty<byte>();
-        }
-        return Array.Empty<byte>();
+        if (fileBytes == null || salt == null)
+            return Array.Empty<byte>();
+
+        var encryptedFile = await EncryptAsyncV2(fileBytes, passwordBytes, nonce, salt);
+        return encryptedFile;
     }
 
     public static async Task<byte[]> DecryptFile(string userName, char[] passWord, string file)
@@ -165,12 +159,11 @@ public static class Crypto
         var fileBytes = DataConversionHelpers.Base64StringToByteArray(fileStr);
 
         var passwordBytes = Encoding.UTF8.GetBytes(passWord);
-        if (fileBytes != null && salt != null)
-        {
-            var encryptedFile = await DecryptAsyncV2(fileBytes, passwordBytes, salt);
-            return encryptedFile ?? Array.Empty<byte>();
-        }
-        return Array.Empty<byte>();
+        if (fileBytes == null || salt == null)
+            return Array.Empty<byte>();
+
+        var encryptedFile = await DecryptAsyncV2(fileBytes, passwordBytes, salt);
+        return encryptedFile;
     }
 
     private static (byte[] cipherResult, byte[] iv) InitBuffer(byte[] cipherText)
@@ -182,20 +175,6 @@ public static class Crypto
         Buffer.BlockCopy(cipherText, iv.Length, cipherResult, 0, cipherResult.Length);
 
         return (cipherResult, iv);
-    }
-
-    public static (byte[] cipherResult, byte[] tag, byte[] nonce) InitBufferV2(byte[] cipherText)
-    {
-        var nonce = new byte[NonceSize]; // GCM IV length is 12 bytes
-        var cipherResult = new byte[cipherText.Length - nonce.Length - TagLen]; // Subtract 16 bytes for GCM tag
-
-        Buffer.BlockCopy(cipherText, 0, nonce, 0, nonce.Length);
-        Buffer.BlockCopy(cipherText, nonce.Length, cipherResult, 0, cipherResult.Length);
-
-        byte[] tag = new byte[TagLen]; // GCM tag length is typically 16 bytes
-        Buffer.BlockCopy(cipherText, nonce.Length + cipherResult.Length, tag, 0, tag.Length);
-
-        return (cipherResult, tag, nonce);
     }
 
 #pragma warning disable
@@ -355,8 +334,8 @@ public static class Crypto
             if (nonce == null)
                 throw new ArgumentException(@"Value was empty or null.", nameof(nonce));
 
-            byte[] cipherText = new byte[plainText.Length];
-            byte[] tag = new byte[TagLen];
+            var cipherText = new byte[plainText.Length];
+            var tag = new byte[TagLen];
 
             using (var argon2 = new Argon2id(password))
             {
@@ -368,9 +347,10 @@ public static class Crypto
                 var key = await argon2.GetBytesAsync(KeySize);
 
                 using var aesGcm = new AesGcm(key, TagLen);
-                aesGcm.Encrypt(nonce, plainText, cipherText, tag, null);
+                aesGcm.Encrypt(nonce, plainText, cipherText, tag);
                 Array.Clear(key, 0, key.Length);
             }
+
             cipherText = tag.Concat(nonce.Concat(cipherText)).ToArray();
             return cipherText;
         }
@@ -388,7 +368,7 @@ public static class Crypto
         }
         catch (Exception ex)
         {
-            Array.Clear(password, 0, password.Length);
+            Array.Clear(password!, 0, password!.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
         }
@@ -413,24 +393,22 @@ public static class Crypto
 
             var key = await argon2.GetBytesAsync(KeySize);
 
-            using (var aesGcm = new AesGcm(key, TagLen))
-            {
-                byte[] tag = new byte[TagLen];
-                byte[] nonce = new byte[NonceSize];
-                byte[] cipherResult = new byte[cipherText.Length - nonce.Length - tag.Length];
+            using var aesGcm = new AesGcm(key, TagLen);
+            var tag = new byte[TagLen];
+            var nonce = new byte[NonceSize];
+            var cipherResult = new byte[cipherText.Length - nonce.Length - tag.Length];
 
-                Buffer.BlockCopy(cipherText, 0, tag, 0, tag.Length);
-                Buffer.BlockCopy(cipherText, tag.Length, nonce, 0, nonce.Length);
-                Buffer.BlockCopy(cipherText, tag.Length + nonce.Length, cipherResult, 0, cipherResult.Length);
+            Buffer.BlockCopy(cipherText, 0, tag, 0, tag.Length);
+            Buffer.BlockCopy(cipherText, tag.Length, nonce, 0, nonce.Length);
+            Buffer.BlockCopy(cipherText, tag.Length + nonce.Length, cipherResult, 0, cipherResult.Length);
 
-                byte[] plainText = new byte[cipherResult.Length];
+            var plainText = new byte[cipherResult.Length];
 
-                aesGcm.Decrypt(nonce, cipherResult, tag, plainText, null);
+            aesGcm.Decrypt(nonce, cipherResult, tag, plainText);
 
-                Array.Clear(key, 0, key.Length);
+            Array.Clear(key, 0, key.Length);
 
-                return plainText;
-            }
+            return plainText;
         }
         catch (CryptographicException ex)
         {
@@ -446,7 +424,7 @@ public static class Crypto
         }
         catch (Exception ex)
         {
-            Array.Clear(password, 0, password.Length);
+            Array.Clear(password!, 0, password!.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
         }
