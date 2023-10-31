@@ -13,6 +13,7 @@ public static class Crypto
     public static readonly int KeySize = 32;
     public static readonly int IvBit = 128;
     private const int TagLen = 16;
+    private const int HmacTagLength = 64;
     private const int NonceSize = 12;
 
     private static readonly RandomNumberGenerator RndNum = RandomNumberGenerator.Create();
@@ -128,7 +129,7 @@ public static class Crypto
         if (userName == null || passWord == null || file == null)
             throw new ArgumentNullException();
 
-        var nonce = RndByteSized(NonceSize);
+        var iv = RndByteSized(IvBit / 8);
 
         var saltString = await File.ReadAllTextAsync(Authentication.GetUserSalt(userName));
 
@@ -142,7 +143,8 @@ public static class Crypto
         if (fileBytes == null || salt == null)
             return Array.Empty<byte>();
 
-        var encryptedFile = await EncryptAsyncV2(fileBytes, passwordBytes, nonce, salt);
+        var encryptedFile = await EncryptAsync(fileBytes, passwordBytes, iv, salt);
+
         return encryptedFile;
     }
 
@@ -162,7 +164,8 @@ public static class Crypto
         if (fileBytes == null || salt == null)
             return Array.Empty<byte>();
 
-        var encryptedFile = await DecryptAsyncV2(fileBytes, passwordBytes, salt);
+        var encryptedFile = await DecryptAsync(fileBytes, passwordBytes, salt);
+
         return encryptedFile;
     }
 
@@ -181,11 +184,11 @@ public static class Crypto
     private const int BlockBitSize = 128;
     private const int KeyBitSize = 256;
 
-    public static async Task<byte[]?> EncryptAsync(byte[]? plainText, byte[]? password, byte[]? iv, byte[]? salt)
+    public static async Task<byte[]> EncryptAsync(byte[]? plainText, byte[]? password, byte[]? iv, byte[]? salt)
     {
         try
         {
-            if (plainText == null)
+            if (plainText == Array.Empty<byte>())
                 throw new ArgumentException(@"Value was empty or null.", nameof(plainText));
             if (password == null)
                 throw new ArgumentException(@"Value was empty or null.", nameof(password));
@@ -194,66 +197,81 @@ public static class Crypto
             if (iv == null)
                 throw new ArgumentException(@"Value was empty or null.", nameof(iv));
 
+            using var aes = Aes.Create();
+            aes.BlockSize = BlockBitSize;
+            aes.KeySize = KeyBitSize;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+
+            using var argon2 = new Argon2id(password);
+            argon2.Salt = salt;
+            argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+            argon2.Iterations = Iterations;
+            argon2.MemorySize = (int)MemorySize;
+
+            var key = await argon2.GetBytesAsync(KeySize);
+
+            var hmacKey = await argon2.GetBytesAsync(HmacTagLength);
+
             byte[] cipherText;
-
-            using (var aes = Aes.Create())
+            using (var encryptor = aes.CreateEncryptor(key, iv))
+            using (var memStream = new MemoryStream())
             {
-                aes.BlockSize = BlockBitSize;
-                aes.KeySize = KeyBitSize;
-                aes.Mode = CipherMode.CBC;
-                aes.Padding = PaddingMode.PKCS7;
-
-                using (var argon2 = new Argon2id(password))
+                await using (var cryptoStream =
+                             new CryptoStream(memStream, encryptor, CryptoStreamMode.Write))
                 {
-                    argon2.Salt = salt;
-                    argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
-                    argon2.Iterations = Iterations;
-                    argon2.MemorySize = (int)MemorySize;
-
-                    var key = await argon2.GetBytesAsync(KeySize);
-
-                    using (var encryptor = aes.CreateEncryptor(key, iv))
-                    using (var memStream = new MemoryStream())
+                    using (var cipherStream = new MemoryStream(plainText))
                     {
-                        await using (var cryptoStream = new CryptoStream(memStream, encryptor, CryptoStreamMode.Write))
-                        {
-                            using (var cipherStream = new MemoryStream(plainText))
-                            {
-                                cipherStream.CopyTo(cryptoStream, (int)cipherStream.Length);
-                                cipherStream.Flush();
-                                cryptoStream.FlushFinalBlockAsync();
-                            }
-                        }
-
-                        cipherText = memStream.ToArray();
+                        cipherStream.CopyTo(cryptoStream, (int)cipherStream.Length);
+                        cipherStream.Flush();
+                        cryptoStream.FlushFinalBlockAsync();
                     }
-
-                    Array.Clear(key, 0, key.Length);
                 }
+
+                cipherText = memStream.ToArray();
             }
 
+            Array.Clear(key, 0, key.Length);
+
+            using var hmac = new HMACSHA512(hmacKey);
             var prependItems = new byte[cipherText.Length + iv.Length];
+
             Buffer.BlockCopy(iv, 0, prependItems, 0, iv.Length);
             Buffer.BlockCopy(cipherText, 0, prependItems, iv.Length, cipherText.Length);
-            return prependItems;
+
+            var tag = hmac.ComputeHash(prependItems);
+            var authenticatedBuffer = prependItems.Length + tag.Length;
+            var authenticatedBytes = new byte[authenticatedBuffer];
+
+            Buffer.BlockCopy(prependItems, 0, authenticatedBytes, 0, prependItems.Length);
+            Buffer.BlockCopy(tag, 0, authenticatedBytes, prependItems.Length, tag.Length);
+            Array.Clear(hmacKey, 0, hmacKey.Length);
+
+            return authenticatedBytes;
         }
         catch (CryptographicException ex)
         {
             Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
-            return null;
+            return Array.Empty<byte>();
         }
         catch (ArgumentNullException ex)
         {
             Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
-            return null;
+            return Array.Empty<byte>();
+        }
+        catch (ObjectDisposedException ex)
+        {
+            Array.Clear(password, 0, password.Length);
+            ErrorLogging.ErrorLog(ex);
+            return Array.Empty<byte>();
         }
         catch (Exception ex)
         {
             Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
-            return null;
+            return Array.Empty<byte>();
         }
     }
 
@@ -274,8 +292,6 @@ public static class Crypto
             aes.Mode = CipherMode.CBC;
             aes.Padding = PaddingMode.PKCS7;
 
-            var (cipherResult, iv) = InitBuffer(cipherText);
-
             using var argon2 = new Argon2id(password);
             argon2.Salt = salt;
             argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
@@ -284,6 +300,25 @@ public static class Crypto
 
             var key = await argon2.GetBytesAsync(KeySize);
 
+            var hmacKey = await argon2.GetBytesAsync(HmacTagLength);
+
+            using var hmac = new HMACSHA512(hmacKey);
+            var receivedHash = new byte[HmacTagLength];
+
+            Buffer.BlockCopy(cipherText, cipherText.Length - HmacTagLength, receivedHash, 0, HmacTagLength);
+
+            var cipherWithIv = new byte[cipherText.Length - HmacTagLength];
+
+            Buffer.BlockCopy(cipherText, 0, cipherWithIv, 0, cipherText.Length - HmacTagLength);
+
+            var hashedInput = hmac.ComputeHash(cipherWithIv);
+
+            var isMatch = CryptographicOperations.FixedTimeEquals(receivedHash, hashedInput);
+
+            if (!isMatch)
+                throw new CryptographicException("Invalid tag.");
+
+            var (cipherResult, iv) = InitBuffer(cipherWithIv);
 
             using var decryptor = aes.CreateDecryptor(key, iv);
             using var memStream = new MemoryStream();
@@ -298,25 +333,32 @@ public static class Crypto
             }
 
             Array.Clear(key, 0, key.Length);
+
             return memStream.ToArray();
         }
         catch (CryptographicException ex)
         {
             Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
-            return null;
+            return Array.Empty<byte>();
         }
         catch (ArgumentNullException ex)
         {
             Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
-            return null;
+            return Array.Empty<byte>();
+        }
+        catch (ObjectDisposedException ex)
+        {
+            Array.Clear(password, 0, password.Length);
+            ErrorLogging.ErrorLog(ex);
+            return Array.Empty<byte>();
         }
         catch (Exception ex)
         {
             Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
-            return null;
+            return Array.Empty<byte>();
         }
 #pragma warning restore
     }
