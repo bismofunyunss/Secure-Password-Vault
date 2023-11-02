@@ -1,4 +1,6 @@
-﻿namespace Secure_Password_Vault;
+﻿using System.Diagnostics;
+
+namespace Secure_Password_Vault;
 
 public partial class RegisterAccount : Form
 {
@@ -104,6 +106,8 @@ public partial class RegisterAccount : Form
     {
         try
         {
+            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.AboveNormal;
+
             StartAnimation();
 
             ValidateUsernameAndPassword(username, password, confirmPassword);

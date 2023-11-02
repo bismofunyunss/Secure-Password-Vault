@@ -29,20 +29,140 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(RegisterAccount));
-            groupBox1 = new GroupBox();
-            showPasswordCheckBox = new CheckBox();
-            cancelBtn = new Button();
-            outputLbl = new Label();
-            statusLbl = new Label();
-            createAccountBtn = new Button();
-            confirmPassTxt = new TextBox();
-            confirmPassLbl = new Label();
-            passTxt = new TextBox();
-            passLbl = new Label();
-            userTxt = new TextBox();
             userLbl = new Label();
+            userTxt = new TextBox();
+            passLbl = new Label();
+            passTxt = new TextBox();
+            confirmPassLbl = new Label();
+            confirmPassTxt = new TextBox();
+            createAccountBtn = new Button();
+            statusLbl = new Label();
+            outputLbl = new Label();
+            cancelBtn = new Button();
+            showPasswordCheckBox = new CheckBox();
+            groupBox1 = new GroupBox();
             groupBox1.SuspendLayout();
             SuspendLayout();
+            // 
+            // userLbl
+            // 
+            userLbl.AutoSize = true;
+            userLbl.Location = new Point(6, 41);
+            userLbl.Name = "userLbl";
+            userLbl.Size = new Size(107, 25);
+            userLbl.TabIndex = 0;
+            userLbl.Text = "Username";
+            // 
+            // userTxt
+            // 
+            userTxt.BackColor = Color.Black;
+            userTxt.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            userTxt.ForeColor = Color.Gold;
+            userTxt.Location = new Point(6, 69);
+            userTxt.Name = "userTxt";
+            userTxt.Size = new Size(438, 33);
+            userTxt.TabIndex = 1;
+            // 
+            // passLbl
+            // 
+            passLbl.AutoSize = true;
+            passLbl.Location = new Point(6, 105);
+            passLbl.Name = "passLbl";
+            passLbl.Size = new Size(103, 25);
+            passLbl.TabIndex = 2;
+            passLbl.Text = "Password";
+            // 
+            // passTxt
+            // 
+            passTxt.BackColor = Color.Black;
+            passTxt.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            passTxt.ForeColor = Color.Gold;
+            passTxt.Location = new Point(6, 133);
+            passTxt.Name = "passTxt";
+            passTxt.Size = new Size(438, 33);
+            passTxt.TabIndex = 3;
+            passTxt.UseSystemPasswordChar = true;
+            // 
+            // confirmPassLbl
+            // 
+            confirmPassLbl.AutoSize = true;
+            confirmPassLbl.Location = new Point(6, 169);
+            confirmPassLbl.Name = "confirmPassLbl";
+            confirmPassLbl.Size = new Size(188, 25);
+            confirmPassLbl.TabIndex = 4;
+            confirmPassLbl.Text = "Confirm Password";
+            // 
+            // confirmPassTxt
+            // 
+            confirmPassTxt.BackColor = Color.Black;
+            confirmPassTxt.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            confirmPassTxt.ForeColor = Color.Gold;
+            confirmPassTxt.Location = new Point(6, 197);
+            confirmPassTxt.Name = "confirmPassTxt";
+            confirmPassTxt.Size = new Size(438, 33);
+            confirmPassTxt.TabIndex = 5;
+            confirmPassTxt.UseSystemPasswordChar = true;
+            // 
+            // createAccountBtn
+            // 
+            createAccountBtn.BackColor = SystemColors.ControlDarkDark;
+            createAccountBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            createAccountBtn.FlatAppearance.BorderSize = 3;
+            createAccountBtn.FlatStyle = FlatStyle.Flat;
+            createAccountBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            createAccountBtn.ForeColor = Color.WhiteSmoke;
+            createAccountBtn.Location = new Point(6, 239);
+            createAccountBtn.Name = "createAccountBtn";
+            createAccountBtn.Size = new Size(438, 44);
+            createAccountBtn.TabIndex = 6;
+            createAccountBtn.Text = "&Create Account";
+            createAccountBtn.UseVisualStyleBackColor = false;
+            createAccountBtn.Click += createAccountBtn_Click;
+            // 
+            // statusLbl
+            // 
+            statusLbl.AutoSize = true;
+            statusLbl.Location = new Point(6, 387);
+            statusLbl.Name = "statusLbl";
+            statusLbl.Size = new Size(90, 25);
+            statusLbl.TabIndex = 8;
+            statusLbl.Text = "Status ::";
+            // 
+            // outputLbl
+            // 
+            outputLbl.AutoSize = true;
+            outputLbl.Location = new Point(102, 387);
+            outputLbl.Name = "outputLbl";
+            outputLbl.Size = new Size(67, 25);
+            outputLbl.TabIndex = 9;
+            outputLbl.Text = "Idle...";
+            // 
+            // cancelBtn
+            // 
+            cancelBtn.BackColor = SystemColors.ControlDarkDark;
+            cancelBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            cancelBtn.FlatAppearance.BorderSize = 3;
+            cancelBtn.FlatStyle = FlatStyle.Flat;
+            cancelBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            cancelBtn.ForeColor = Color.WhiteSmoke;
+            cancelBtn.Location = new Point(6, 289);
+            cancelBtn.Name = "cancelBtn";
+            cancelBtn.Size = new Size(438, 44);
+            cancelBtn.TabIndex = 10;
+            cancelBtn.Text = "&Cancel";
+            cancelBtn.UseVisualStyleBackColor = false;
+            cancelBtn.Click += cancelBtn_Click;
+            // 
+            // showPasswordCheckBox
+            // 
+            showPasswordCheckBox.AutoSize = true;
+            showPasswordCheckBox.Location = new Point(258, 339);
+            showPasswordCheckBox.Name = "showPasswordCheckBox";
+            showPasswordCheckBox.Size = new Size(186, 29);
+            showPasswordCheckBox.TabIndex = 11;
+            showPasswordCheckBox.Text = "Show Password";
+            showPasswordCheckBox.UseVisualStyleBackColor = true;
+            showPasswordCheckBox.CheckedChanged += showPasswordCheckBox_CheckedChanged;
             // 
             // groupBox1
             // 
@@ -67,126 +187,6 @@
             groupBox1.TabStop = false;
             groupBox1.Text = "Register Account";
             // 
-            // showPasswordCheckBox
-            // 
-            showPasswordCheckBox.AutoSize = true;
-            showPasswordCheckBox.Location = new Point(258, 339);
-            showPasswordCheckBox.Name = "showPasswordCheckBox";
-            showPasswordCheckBox.Size = new Size(186, 29);
-            showPasswordCheckBox.TabIndex = 11;
-            showPasswordCheckBox.Text = "Show Password";
-            showPasswordCheckBox.UseVisualStyleBackColor = true;
-            showPasswordCheckBox.CheckedChanged += showPasswordCheckBox_CheckedChanged;
-            // 
-            // cancelBtn
-            // 
-            cancelBtn.BackColor = SystemColors.ControlDarkDark;
-            cancelBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
-            cancelBtn.FlatAppearance.BorderSize = 3;
-            cancelBtn.FlatStyle = FlatStyle.Flat;
-            cancelBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            cancelBtn.ForeColor = Color.WhiteSmoke;
-            cancelBtn.Location = new Point(6, 289);
-            cancelBtn.Name = "cancelBtn";
-            cancelBtn.Size = new Size(438, 44);
-            cancelBtn.TabIndex = 10;
-            cancelBtn.Text = "&Cancel";
-            cancelBtn.UseVisualStyleBackColor = false;
-            cancelBtn.Click += cancelBtn_Click;
-            // 
-            // outputLbl
-            // 
-            outputLbl.AutoSize = true;
-            outputLbl.Location = new Point(102, 387);
-            outputLbl.Name = "outputLbl";
-            outputLbl.Size = new Size(67, 25);
-            outputLbl.TabIndex = 9;
-            outputLbl.Text = "Idle...";
-            // 
-            // statusLbl
-            // 
-            statusLbl.AutoSize = true;
-            statusLbl.Location = new Point(6, 387);
-            statusLbl.Name = "statusLbl";
-            statusLbl.Size = new Size(90, 25);
-            statusLbl.TabIndex = 8;
-            statusLbl.Text = "Status ::";
-            // 
-            // createAccountBtn
-            // 
-            createAccountBtn.BackColor = SystemColors.ControlDarkDark;
-            createAccountBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
-            createAccountBtn.FlatAppearance.BorderSize = 3;
-            createAccountBtn.FlatStyle = FlatStyle.Flat;
-            createAccountBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            createAccountBtn.ForeColor = Color.WhiteSmoke;
-            createAccountBtn.Location = new Point(6, 239);
-            createAccountBtn.Name = "createAccountBtn";
-            createAccountBtn.Size = new Size(438, 44);
-            createAccountBtn.TabIndex = 6;
-            createAccountBtn.Text = "&Create Account";
-            createAccountBtn.UseVisualStyleBackColor = false;
-            createAccountBtn.Click += createAccountBtn_Click;
-            // 
-            // confirmPassTxt
-            // 
-            confirmPassTxt.BackColor = Color.Black;
-            confirmPassTxt.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            confirmPassTxt.ForeColor = Color.Gold;
-            confirmPassTxt.Location = new Point(6, 197);
-            confirmPassTxt.Name = "confirmPassTxt";
-            confirmPassTxt.Size = new Size(438, 33);
-            confirmPassTxt.TabIndex = 5;
-            confirmPassTxt.UseSystemPasswordChar = true;
-            // 
-            // confirmPassLbl
-            // 
-            confirmPassLbl.AutoSize = true;
-            confirmPassLbl.Location = new Point(6, 169);
-            confirmPassLbl.Name = "confirmPassLbl";
-            confirmPassLbl.Size = new Size(188, 25);
-            confirmPassLbl.TabIndex = 4;
-            confirmPassLbl.Text = "Confirm Password";
-            // 
-            // passTxt
-            // 
-            passTxt.BackColor = Color.Black;
-            passTxt.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            passTxt.ForeColor = Color.Gold;
-            passTxt.Location = new Point(6, 133);
-            passTxt.Name = "passTxt";
-            passTxt.Size = new Size(438, 33);
-            passTxt.TabIndex = 3;
-            passTxt.UseSystemPasswordChar = true;
-            // 
-            // passLbl
-            // 
-            passLbl.AutoSize = true;
-            passLbl.Location = new Point(6, 105);
-            passLbl.Name = "passLbl";
-            passLbl.Size = new Size(103, 25);
-            passLbl.TabIndex = 2;
-            passLbl.Text = "Password";
-            // 
-            // userTxt
-            // 
-            userTxt.BackColor = Color.Black;
-            userTxt.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            userTxt.ForeColor = Color.Gold;
-            userTxt.Location = new Point(6, 69);
-            userTxt.Name = "userTxt";
-            userTxt.Size = new Size(438, 33);
-            userTxt.TabIndex = 1;
-            // 
-            // userLbl
-            // 
-            userLbl.AutoSize = true;
-            userLbl.Location = new Point(6, 41);
-            userLbl.Name = "userLbl";
-            userLbl.Size = new Size(107, 25);
-            userLbl.TabIndex = 0;
-            userLbl.Text = "Username";
-            // 
             // RegisterAccount
             // 
             AcceptButton = createAccountBtn;
@@ -207,17 +207,17 @@
 
         #endregion
 
-        private GroupBox groupBox1;
-        private TextBox confirmPassTxt;
-        private Label confirmPassLbl;
-        private TextBox passTxt;
-        private Label passLbl;
-        private TextBox userTxt;
         private Label userLbl;
+        private TextBox userTxt;
+        private Label passLbl;
+        private TextBox passTxt;
+        private Label confirmPassLbl;
+        private TextBox confirmPassTxt;
         private Button createAccountBtn;
-        private Label outputLbl;
         private Label statusLbl;
+        private Label outputLbl;
         private Button cancelBtn;
         private CheckBox showPasswordCheckBox;
+        private GroupBox groupBox1;
     }
 }

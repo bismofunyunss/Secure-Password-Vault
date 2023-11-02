@@ -37,18 +37,26 @@
             DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Vault));
             PassVault = new DataGridView();
+            Description = new DataGridViewTextBoxColumn();
+            Email = new DataGridViewTextBoxColumn();
+            Username = new DataGridViewTextBoxColumn();
+            Password = new DataGridViewTextBoxColumn();
             addRowBtn = new Button();
             deleteRowBtn = new Button();
             saveVaultBtn = new Button();
             vaultBox = new GroupBox();
             outputLbl = new Label();
             statusLbl = new Label();
-            Description = new DataGridViewTextBoxColumn();
-            Email = new DataGridViewTextBoxColumn();
-            Username = new DataGridViewTextBoxColumn();
-            Password = new DataGridViewTextBoxColumn();
+            FileEncryptDecryptBox = new GroupBox();
+            FileOutputLbl = new Label();
+            FileStatusLbl = new Label();
+            DecryptBtn = new Button();
+            EncryptBtn = new Button();
+            ExportFileBtn = new Button();
+            ImportFileBtn = new Button();
             ((System.ComponentModel.ISupportInitialize)PassVault).BeginInit();
             vaultBox.SuspendLayout();
+            FileEncryptDecryptBox.SuspendLayout();
             SuspendLayout();
             // 
             // PassVault
@@ -100,6 +108,54 @@
             PassVault.ShowRowErrors = false;
             PassVault.Size = new Size(918, 221);
             PassVault.TabIndex = 0;
+            // 
+            // Description
+            // 
+            dataGridViewCellStyle2.BackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle2.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            dataGridViewCellStyle2.ForeColor = Color.Gold;
+            dataGridViewCellStyle2.SelectionBackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle2.SelectionForeColor = Color.Gold;
+            Description.DefaultCellStyle = dataGridViewCellStyle2;
+            Description.HeaderText = "Description";
+            Description.MinimumWidth = 8;
+            Description.Name = "Description";
+            // 
+            // Email
+            // 
+            dataGridViewCellStyle3.BackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle3.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            dataGridViewCellStyle3.ForeColor = Color.Gold;
+            dataGridViewCellStyle3.SelectionBackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle3.SelectionForeColor = Color.Gold;
+            Email.DefaultCellStyle = dataGridViewCellStyle3;
+            Email.HeaderText = "Email";
+            Email.MinimumWidth = 8;
+            Email.Name = "Email";
+            // 
+            // Username
+            // 
+            dataGridViewCellStyle4.BackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle4.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            dataGridViewCellStyle4.ForeColor = Color.Gold;
+            dataGridViewCellStyle4.SelectionBackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle4.SelectionForeColor = Color.Gold;
+            Username.DefaultCellStyle = dataGridViewCellStyle4;
+            Username.HeaderText = "Username";
+            Username.MinimumWidth = 8;
+            Username.Name = "Username";
+            // 
+            // Password
+            // 
+            dataGridViewCellStyle5.BackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle5.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            dataGridViewCellStyle5.ForeColor = Color.Gold;
+            dataGridViewCellStyle5.SelectionBackColor = SystemColors.ControlDarkDark;
+            dataGridViewCellStyle5.SelectionForeColor = Color.Gold;
+            Password.DefaultCellStyle = dataGridViewCellStyle5;
+            Password.HeaderText = "Password";
+            Password.MinimumWidth = 8;
+            Password.Name = "Password";
             // 
             // addRowBtn
             // 
@@ -186,60 +242,110 @@
             statusLbl.TabIndex = 11;
             statusLbl.Text = "Status ::";
             // 
-            // Description
+            // FileEncryptDecryptBox
             // 
-            dataGridViewCellStyle2.BackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle2.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            dataGridViewCellStyle2.ForeColor = Color.Gold;
-            dataGridViewCellStyle2.SelectionBackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle2.SelectionForeColor = Color.Gold;
-            Description.DefaultCellStyle = dataGridViewCellStyle2;
-            Description.HeaderText = "Description";
-            Description.MinimumWidth = 8;
-            Description.Name = "Description";
+            FileEncryptDecryptBox.Controls.Add(FileOutputLbl);
+            FileEncryptDecryptBox.Controls.Add(FileStatusLbl);
+            FileEncryptDecryptBox.Controls.Add(DecryptBtn);
+            FileEncryptDecryptBox.Controls.Add(EncryptBtn);
+            FileEncryptDecryptBox.Controls.Add(ExportFileBtn);
+            FileEncryptDecryptBox.Controls.Add(ImportFileBtn);
+            FileEncryptDecryptBox.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            FileEncryptDecryptBox.ForeColor = Color.WhiteSmoke;
+            FileEncryptDecryptBox.Location = new Point(12, 491);
+            FileEncryptDecryptBox.Name = "FileEncryptDecryptBox";
+            FileEncryptDecryptBox.Size = new Size(930, 201);
+            FileEncryptDecryptBox.TabIndex = 10;
+            FileEncryptDecryptBox.TabStop = false;
+            FileEncryptDecryptBox.Text = "File Encryptor / Decryptor";
             // 
-            // Email
+            // FileOutputLbl
             // 
-            dataGridViewCellStyle3.BackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle3.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            dataGridViewCellStyle3.ForeColor = Color.Gold;
-            dataGridViewCellStyle3.SelectionBackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle3.SelectionForeColor = Color.Gold;
-            Email.DefaultCellStyle = dataGridViewCellStyle3;
-            Email.HeaderText = "Email";
-            Email.MinimumWidth = 8;
-            Email.Name = "Email";
+            FileOutputLbl.AutoSize = true;
+            FileOutputLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            FileOutputLbl.Location = new Point(102, 163);
+            FileOutputLbl.Name = "FileOutputLbl";
+            FileOutputLbl.Size = new Size(67, 25);
+            FileOutputLbl.TabIndex = 14;
+            FileOutputLbl.Text = "Idle...";
             // 
-            // Username
+            // FileStatusLbl
             // 
-            dataGridViewCellStyle4.BackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle4.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            dataGridViewCellStyle4.ForeColor = Color.Gold;
-            dataGridViewCellStyle4.SelectionBackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle4.SelectionForeColor = Color.Gold;
-            Username.DefaultCellStyle = dataGridViewCellStyle4;
-            Username.HeaderText = "Username";
-            Username.MinimumWidth = 8;
-            Username.Name = "Username";
+            FileStatusLbl.AutoSize = true;
+            FileStatusLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            FileStatusLbl.Location = new Point(6, 163);
+            FileStatusLbl.Name = "FileStatusLbl";
+            FileStatusLbl.Size = new Size(90, 25);
+            FileStatusLbl.TabIndex = 13;
+            FileStatusLbl.Text = "Status ::";
             // 
-            // Password
+            // DecryptBtn
             // 
-            dataGridViewCellStyle5.BackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle5.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            dataGridViewCellStyle5.ForeColor = Color.Gold;
-            dataGridViewCellStyle5.SelectionBackColor = SystemColors.ControlDarkDark;
-            dataGridViewCellStyle5.SelectionForeColor = Color.Gold;
-            Password.DefaultCellStyle = dataGridViewCellStyle5;
-            Password.HeaderText = "Password";
-            Password.MinimumWidth = 8;
-            Password.Name = "Password";
+            DecryptBtn.BackColor = SystemColors.ControlDarkDark;
+            DecryptBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            DecryptBtn.FlatAppearance.BorderSize = 3;
+            DecryptBtn.FlatStyle = FlatStyle.Flat;
+            DecryptBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            DecryptBtn.ForeColor = Color.WhiteSmoke;
+            DecryptBtn.Location = new Point(467, 82);
+            DecryptBtn.Name = "DecryptBtn";
+            DecryptBtn.Size = new Size(454, 44);
+            DecryptBtn.TabIndex = 8;
+            DecryptBtn.Text = "&Decrypt";
+            DecryptBtn.UseVisualStyleBackColor = false;
+            // 
+            // EncryptBtn
+            // 
+            EncryptBtn.BackColor = SystemColors.ControlDarkDark;
+            EncryptBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            EncryptBtn.FlatAppearance.BorderSize = 3;
+            EncryptBtn.FlatStyle = FlatStyle.Flat;
+            EncryptBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            EncryptBtn.ForeColor = Color.WhiteSmoke;
+            EncryptBtn.Location = new Point(467, 32);
+            EncryptBtn.Name = "EncryptBtn";
+            EncryptBtn.Size = new Size(454, 44);
+            EncryptBtn.TabIndex = 7;
+            EncryptBtn.Text = "&Encrypt";
+            EncryptBtn.UseVisualStyleBackColor = false;
+            // 
+            // ExportFileBtn
+            // 
+            ExportFileBtn.BackColor = SystemColors.ControlDarkDark;
+            ExportFileBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            ExportFileBtn.FlatAppearance.BorderSize = 3;
+            ExportFileBtn.FlatStyle = FlatStyle.Flat;
+            ExportFileBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            ExportFileBtn.ForeColor = Color.WhiteSmoke;
+            ExportFileBtn.Location = new Point(6, 82);
+            ExportFileBtn.Name = "ExportFileBtn";
+            ExportFileBtn.Size = new Size(449, 44);
+            ExportFileBtn.TabIndex = 6;
+            ExportFileBtn.Text = "&Export File";
+            ExportFileBtn.UseVisualStyleBackColor = false;
+            // 
+            // ImportFileBtn
+            // 
+            ImportFileBtn.BackColor = SystemColors.ControlDarkDark;
+            ImportFileBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            ImportFileBtn.FlatAppearance.BorderSize = 3;
+            ImportFileBtn.FlatStyle = FlatStyle.Flat;
+            ImportFileBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            ImportFileBtn.ForeColor = Color.WhiteSmoke;
+            ImportFileBtn.Location = new Point(7, 32);
+            ImportFileBtn.Name = "ImportFileBtn";
+            ImportFileBtn.Size = new Size(454, 44);
+            ImportFileBtn.TabIndex = 5;
+            ImportFileBtn.Text = "&Import File";
+            ImportFileBtn.UseVisualStyleBackColor = false;
             // 
             // Vault
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlDarkDark;
-            ClientSize = new Size(954, 511);
+            ClientSize = new Size(954, 704);
+            Controls.Add(FileEncryptDecryptBox);
             Controls.Add(vaultBox);
             FormBorderStyle = FormBorderStyle.Fixed3D;
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -249,6 +355,8 @@
             ((System.ComponentModel.ISupportInitialize)PassVault).EndInit();
             vaultBox.ResumeLayout(false);
             vaultBox.PerformLayout();
+            FileEncryptDecryptBox.ResumeLayout(false);
+            FileEncryptDecryptBox.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -265,5 +373,12 @@
         private DataGridViewTextBoxColumn Email;
         private DataGridViewTextBoxColumn Username;
         private DataGridViewTextBoxColumn Password;
+        private GroupBox FileEncryptDecryptBox;
+        private Button ImportFileBtn;
+        private Button EncryptBtn;
+        private Button ExportFileBtn;
+        private Button DecryptBtn;
+        private Label FileOutputLbl;
+        private Label FileStatusLbl;
     }
 }

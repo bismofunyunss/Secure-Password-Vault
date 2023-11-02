@@ -36,6 +36,8 @@
             logInBtn = new Button();
             createNewAccountBtn = new Button();
             loginBox = new GroupBox();
+            AttemptsNumber = new Label();
+            AttemptsLeft = new Label();
             rememberMeCheckBox = new CheckBox();
             showPasswordCheckBox = new CheckBox();
             outputLbl = new Label();
@@ -61,7 +63,7 @@
             userNameTxt.ForeColor = Color.Gold;
             userNameTxt.Location = new Point(6, 73);
             userNameTxt.Name = "userNameTxt";
-            userNameTxt.Size = new Size(420, 33);
+            userNameTxt.Size = new Size(438, 33);
             userNameTxt.TabIndex = 1;
             // 
             // passWordLbl
@@ -82,7 +84,7 @@
             passTxt.ForeColor = Color.Gold;
             passTxt.Location = new Point(6, 139);
             passTxt.Name = "passTxt";
-            passTxt.Size = new Size(420, 33);
+            passTxt.Size = new Size(438, 33);
             passTxt.TabIndex = 3;
             passTxt.UseSystemPasswordChar = true;
             // 
@@ -96,7 +98,7 @@
             logInBtn.ForeColor = Color.WhiteSmoke;
             logInBtn.Location = new Point(6, 178);
             logInBtn.Name = "logInBtn";
-            logInBtn.Size = new Size(420, 44);
+            logInBtn.Size = new Size(438, 44);
             logInBtn.TabIndex = 4;
             logInBtn.Text = "&Login";
             logInBtn.UseVisualStyleBackColor = false;
@@ -112,7 +114,7 @@
             createNewAccountBtn.ForeColor = Color.WhiteSmoke;
             createNewAccountBtn.Location = new Point(6, 228);
             createNewAccountBtn.Name = "createNewAccountBtn";
-            createNewAccountBtn.Size = new Size(420, 44);
+            createNewAccountBtn.Size = new Size(438, 44);
             createNewAccountBtn.TabIndex = 5;
             createNewAccountBtn.Text = "&Create New Account";
             createNewAccountBtn.UseVisualStyleBackColor = false;
@@ -121,6 +123,8 @@
             // loginBox
             // 
             loginBox.BackColor = SystemColors.ControlDarkDark;
+            loginBox.Controls.Add(AttemptsNumber);
+            loginBox.Controls.Add(AttemptsLeft);
             loginBox.Controls.Add(rememberMeCheckBox);
             loginBox.Controls.Add(showPasswordCheckBox);
             loginBox.Controls.Add(outputLbl);
@@ -135,15 +139,33 @@
             loginBox.ForeColor = Color.WhiteSmoke;
             loginBox.Location = new Point(12, 12);
             loginBox.Name = "loginBox";
-            loginBox.Size = new Size(432, 386);
+            loginBox.Size = new Size(450, 386);
             loginBox.TabIndex = 6;
             loginBox.TabStop = false;
             loginBox.Text = "Login";
             // 
+            // AttemptsNumber
+            // 
+            AttemptsNumber.AutoSize = true;
+            AttemptsNumber.Location = new Point(421, 342);
+            AttemptsNumber.Name = "AttemptsNumber";
+            AttemptsNumber.Size = new Size(23, 25);
+            AttemptsNumber.TabIndex = 15;
+            AttemptsNumber.Text = "3";
+            // 
+            // AttemptsLeft
+            // 
+            AttemptsLeft.AutoSize = true;
+            AttemptsLeft.Location = new Point(253, 342);
+            AttemptsLeft.Name = "AttemptsLeft";
+            AttemptsLeft.Size = new Size(162, 25);
+            AttemptsLeft.TabIndex = 14;
+            AttemptsLeft.Text = "Attempts Left ::";
+            // 
             // rememberMeCheckBox
             // 
             rememberMeCheckBox.AutoSize = true;
-            rememberMeCheckBox.Location = new Point(250, 278);
+            rememberMeCheckBox.Location = new Point(268, 278);
             rememberMeCheckBox.Name = "rememberMeCheckBox";
             rememberMeCheckBox.Size = new Size(176, 29);
             rememberMeCheckBox.TabIndex = 13;
@@ -185,7 +207,7 @@
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlDarkDark;
-            ClientSize = new Size(456, 416);
+            ClientSize = new Size(474, 412);
             Controls.Add(loginBox);
             FormBorderStyle = FormBorderStyle.Fixed3D;
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -211,5 +233,7 @@
         private Label outputLbl;
         private CheckBox showPasswordCheckBox;
         private CheckBox rememberMeCheckBox;
+        private Label AttemptsNumber;
+        private Label AttemptsLeft;
     }
 }

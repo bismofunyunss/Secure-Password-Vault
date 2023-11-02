@@ -1,9 +1,15 @@
+using System.Diagnostics;
+using System.Security;
+
 namespace Secure_Password_Vault;
 
 public partial class Login : Form
 {
     private static bool _isAnimating;
     private static char[] _passwordArray = Array.Empty<char>();
+    private static int _attemptsRemaining;
+
+    public static SecureString SecurePassword = new();
 
     public Login()
     {
@@ -20,10 +26,27 @@ public partial class Login : Form
 
     private async void logInBtn_Click(object sender, EventArgs e)
     {
-        if (rememberMeCheckBox.Checked)
+        Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.AboveNormal;
+
+        switch (rememberMeCheckBox.Checked)
         {
-            Settings.Default.userName = userNameTxt.Text;
-            Settings.Default.Save();
+            case true:
+                Settings.Default.userName = userNameTxt.Text;
+                Settings.Default.Save();
+                break;
+            case false:
+                Settings.Default.userName = string.Empty;
+                Settings.Default.Save();
+                break;
+        }
+
+        _attemptsRemaining = int.Parse(AttemptsNumber.Text);
+
+        if (_attemptsRemaining == 0)
+        {
+            MessageBox.Show(@"No attempts remaining. Please restart the program and try again.", @"Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
         }
 
         try
@@ -74,6 +97,34 @@ public partial class Login : Form
         showPasswordCheckBox.Enabled = true;
     }
 
+    public static SecureString ConvertCharArrayToSecureString(char[] charArray)
+    {
+        if (charArray == Array.Empty<char>())
+        {
+            throw new ArgumentNullException(nameof(charArray), @"Value was empty.");
+        }
+
+        var secureString = new SecureString();
+
+        try
+        {
+            foreach (var c in charArray)
+            {
+                secureString.AppendChar(c);
+            }
+
+            // Make sure the SecureString is read-only to enhance security.
+            secureString.MakeReadOnly();
+        }
+        catch
+        {
+            secureString.Dispose(); // Dispose if there is an exception to avoid memory leaks.
+            return secureString;
+        }
+
+        return secureString;
+    }
+
     private char[] SetArray()
     {
         var buffer = passTxt.Text.Length;
@@ -111,6 +162,8 @@ public partial class Login : Form
         if (showPasswordCheckBox.Checked)
             showPasswordCheckBox.Checked = false;
 
+        _passwordArray = SetArray();
+
         var decryptedBytes = await Crypto.DecryptFile(userNameTxt.Text, _passwordArray,
             Authentication.GetUserFilePath(userNameTxt.Text));
 
@@ -122,6 +175,8 @@ public partial class Login : Form
                 decryptedText);
 
             var saltBytes = await SetSalt();
+
+            _passwordArray = SetArray();
 
             Authentication.GetUserInfo(userNameTxt.Text, _passwordArray);
 
@@ -169,6 +224,7 @@ public partial class Login : Form
         Authentication.CurrentLoggedInUser = userNameTxt.Text;
         try
         {
+            _passwordArray = SetArray();
             var encryptedUserInfo = await Crypto.EncryptFile(userNameTxt.Text,
                 _passwordArray,
                 Authentication.GetUserFilePath(userNameTxt.Text));
@@ -186,6 +242,7 @@ public partial class Login : Form
 
             if (File.Exists(Authentication.GetUserVault(userNameTxt.Text)))
             {
+                _passwordArray = SetArray();
                 var decryptedVault = await Crypto.DecryptFile(userNameTxt.Text,
                     _passwordArray, Authentication.GetUserVault(userNameTxt.Text));
 
@@ -198,6 +255,7 @@ public partial class Login : Form
                     DataConversionHelpers.ByteArrayToString(decryptedVault));
                 using var userVault = new Vault();
                 userVault.LoadVault();
+                _passwordArray = SetArray();
                 var encryptedBytes = await
                     Crypto.EncryptFile(userNameTxt.Text, _passwordArray,
                         Authentication.GetUserVault(userNameTxt.Text));
@@ -211,11 +269,16 @@ public partial class Login : Form
 
                 await File.WriteAllTextAsync(Authentication.GetUserVault(userNameTxt.Text),
                     DataConversionHelpers.ByteArrayToBase64String(encryptedBytes));
-                Array.Clear(_passwordArray, 0, _passwordArray.Length);
                 outputLbl.ForeColor = Color.LimeGreen;
                 outputLbl.Text = @"Access granted";
                 _isAnimating = false;
                 UserLog.LogUser(Authentication.CurrentLoggedInUser);
+
+                _passwordArray = SetArray();
+                SecurePassword = ConvertCharArrayToSecureString(_passwordArray);
+
+                Array.Clear(_passwordArray, 0, _passwordArray.Length);
+
                 MessageBox.Show(@"Login successful. Loading vault...", @"Login success.",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -226,11 +289,15 @@ public partial class Login : Form
                 return;
             }
 
+            _passwordArray = SetArray();
+            SecurePassword = ConvertCharArrayToSecureString(_passwordArray);
+
             Array.Clear(_passwordArray, 0, _passwordArray.Length);
             outputLbl.ForeColor = Color.LimeGreen;
             outputLbl.Text = @"Access granted";
             _isAnimating = false;
             UserLog.LogUser(Authentication.CurrentLoggedInUser);
+
             MessageBox.Show(@"Login successful. Loading vault...", @"Login success.",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
@@ -242,18 +309,29 @@ public partial class Login : Form
         }
         catch (Exception e)
         {
+            Array.Clear(_passwordArray, 0, _passwordArray.Length);
             ErrorLogging.ErrorLog(e);
+            outputLbl.ForeColor = Color.WhiteSmoke;
+            outputLbl.Text = @"Login failed.";
+            MessageBox.Show(e.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            outputLbl.ForeColor = Color.WhiteSmoke;
+            outputLbl.Text = @"Idle...";
+            _isAnimating = false;
+            EnableUi();
         }
     }
 
     private void HandleFailedLogin()
     {
+        Array.Clear(_passwordArray, 0, _passwordArray.Length);
         _isAnimating = false;
         EnableUi();
         outputLbl.ForeColor = Color.WhiteSmoke;
         outputLbl.Text = @"Idle...";
         MessageBox.Show(@"Log in failed! Please recheck your login credentials and try again.", @"Error",
             MessageBoxButtons.OK, MessageBoxIcon.Error);
+        _attemptsRemaining--;
+        AttemptsNumber.Text = _attemptsRemaining.ToString();
     }
 
     private async void StartAnimation()

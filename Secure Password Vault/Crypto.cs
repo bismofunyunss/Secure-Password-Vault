@@ -6,23 +6,20 @@ namespace Secure_Password_Vault;
 
 public static class Crypto
 {
-    private const int Iterations = 64;
-    private const double MemorySize = 1024d * 1024d * 10d;
+    private const int Iterations = 32;
+    private const double MemorySize = 1024d * 1024d * 5d;
     public const int SaltSize = 512 / 8;
     public static readonly int ByteSize = 24;
     public static readonly int KeySize = 32;
     public static readonly int IvBit = 128;
     private const int TagLen = 16;
-    private const int HmacTagLength = 64;
+    private const int HmacLength = 64;
     private const int NonceSize = 12;
 
     private static readonly RandomNumberGenerator RndNum = RandomNumberGenerator.Create();
 
 
     public static byte[]? Hash { get; set; } = Array.Empty<byte>();
-
-    // Not implemented
-    private static string? CheckSum { get; set; } = string.Empty;
 
     /// <summary>
     ///     Hashes a password inside of a char array.
@@ -88,14 +85,6 @@ public static class Crypto
                                CryptographicOperations.FixedTimeEquals(Hash, inputHash));
     }
 
-    // Not implemented
-    public static string ComputeChecksum(byte[] input)
-    {
-        var hashValue = SHA512.HashData(input);
-        var checksum = DataConversionHelpers.ByteArrayToHexString(hashValue) ?? string.Empty;
-        return checksum;
-    }
-
     private static int RndInt()
     {
         var buffer = new byte[sizeof(int)];
@@ -126,7 +115,7 @@ public static class Crypto
 
     public static async Task<byte[]> EncryptFile(string userName, char[] passWord, string file)
     {
-        if (userName == null || passWord == null || file == null)
+        if (userName == string.Empty || passWord == Array.Empty<char>() || file == string.Empty)
             throw new ArgumentNullException();
 
         var iv = RndByteSized(IvBit / 8);
@@ -144,6 +133,8 @@ public static class Crypto
             return Array.Empty<byte>();
 
         var encryptedFile = await EncryptAsync(fileBytes, passwordBytes, iv, salt);
+
+        Array.Clear(passWord, 0, passWord.Length);
 
         return encryptedFile;
     }
@@ -166,6 +157,8 @@ public static class Crypto
 
         var encryptedFile = await DecryptAsync(fileBytes, passwordBytes, salt);
 
+        Array.Clear(passWord, 0, passWord.Length);
+
         return encryptedFile;
     }
 
@@ -184,17 +177,17 @@ public static class Crypto
     private const int BlockBitSize = 128;
     private const int KeyBitSize = 256;
 
-    public static async Task<byte[]> EncryptAsync(byte[]? plainText, byte[]? password, byte[]? iv, byte[]? salt)
+    public static async Task<byte[]> EncryptAsync(byte[] plainText, byte[] password, byte[] iv, byte[] salt)
     {
         try
         {
             if (plainText == Array.Empty<byte>())
                 throw new ArgumentException(@"Value was empty or null.", nameof(plainText));
-            if (password == null)
+            if (password == Array.Empty<byte>())
                 throw new ArgumentException(@"Value was empty or null.", nameof(password));
-            if (salt == null)
+            if (salt == Array.Empty<byte>())
                 throw new ArgumentException(@"Value was empty or null.", nameof(salt));
-            if (iv == null)
+            if (iv == Array.Empty<byte>())
                 throw new ArgumentException(@"Value was empty or null.", nameof(iv));
 
             using var aes = Aes.Create();
@@ -211,7 +204,7 @@ public static class Crypto
 
             var key = await argon2.GetBytesAsync(KeySize);
 
-            var hmacKey = await argon2.GetBytesAsync(HmacTagLength);
+            var hmacKey = await argon2.GetBytesAsync(HmacLength);
 
             byte[] cipherText;
             using (var encryptor = aes.CreateEncryptor(key, iv))
@@ -275,15 +268,15 @@ public static class Crypto
         }
     }
 
-    public static async Task<byte[]> DecryptAsync(byte[]? cipherText, byte[]? password, byte[]? salt)
+    public static async Task<byte[]> DecryptAsync(byte[] cipherText, byte[] password, byte[] salt)
     {
         try
         {
-            if (cipherText == null)
+            if (cipherText == Array.Empty<byte>())
                 throw new ArgumentException(@"Value was empty or null.", nameof(cipherText));
-            if (password == null)
+            if (password == Array.Empty<byte>())
                 throw new ArgumentException(@"Value was empty or null.", nameof(password));
-            if (salt == null)
+            if (salt == Array.Empty<byte>())
                 throw new ArgumentException(@"Value was empty or null.", nameof(salt));
 
             using var aes = Aes.Create();
@@ -300,16 +293,16 @@ public static class Crypto
 
             var key = await argon2.GetBytesAsync(KeySize);
 
-            var hmacKey = await argon2.GetBytesAsync(HmacTagLength);
+            var hmacKey = await argon2.GetBytesAsync(HmacLength);
 
             using var hmac = new HMACSHA512(hmacKey);
-            var receivedHash = new byte[HmacTagLength];
+            var receivedHash = new byte[HmacLength];
 
-            Buffer.BlockCopy(cipherText, cipherText.Length - HmacTagLength, receivedHash, 0, HmacTagLength);
+            Buffer.BlockCopy(cipherText, cipherText.Length - HmacLength, receivedHash, 0, HmacLength);
 
-            var cipherWithIv = new byte[cipherText.Length - HmacTagLength];
+            var cipherWithIv = new byte[cipherText.Length - HmacLength];
 
-            Buffer.BlockCopy(cipherText, 0, cipherWithIv, 0, cipherText.Length - HmacTagLength);
+            Buffer.BlockCopy(cipherText, 0, cipherWithIv, 0, cipherText.Length - HmacLength);
 
             var hashedInput = hmac.ComputeHash(cipherWithIv);
 
@@ -434,7 +427,6 @@ public static class Crypto
             argon2.MemorySize = (int)MemorySize;
 
             var key = await argon2.GetBytesAsync(KeySize);
-
             using var aesGcm = new AesGcm(key, TagLen);
             var tag = new byte[TagLen];
             var nonce = new byte[NonceSize];

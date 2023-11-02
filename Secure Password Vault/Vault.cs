@@ -1,20 +1,26 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Runtime.InteropServices;
+using System.Security;
+using System.Text.RegularExpressions;
 
 namespace Secure_Password_Vault;
 
 public partial class Vault : Form
 {
     private static bool _isAnimating;
-
+    private static char[] _passwordArray = Array.Empty<char>();
     public Vault()
     {
         InitializeComponent();
     }
 
+    private static bool enteredPassword;
+
     private void addRowBtn_Click(object sender, EventArgs e)
     {
         PassVault.Rows.Add();
     }
+
+
 
     private void deleteRowBtn_Click(object sender, EventArgs e)
     {
@@ -25,77 +31,87 @@ public partial class Vault : Form
         PassVault.Rows.RemoveAt(selectedRow);
     }
 
+    public static char[] ConvertSecureStringToCharArray(SecureString secureString)
+    {
+        if (secureString == null)
+        {
+            throw new ArgumentNullException(nameof(secureString));
+        }
+
+        var charArray = new char[secureString.Length];
+        var unmanagedString = IntPtr.Zero;
+
+        try
+        {
+            unmanagedString = Marshal.SecureStringToGlobalAllocUnicode(secureString);
+            for (var i = 0; i < secureString.Length; i++)
+            {
+                charArray[i] = (char)Marshal.ReadInt16(unmanagedString, i * 2);
+            }
+        }
+        finally
+        {
+            if (unmanagedString != IntPtr.Zero)
+            {
+                Marshal.ZeroFreeGlobalAllocUnicode(unmanagedString);
+            }
+        }
+
+        return charArray;
+    }
+
     private async void saveVaultBtn_Click(object sender, EventArgs e)
     {
         try
         {
-            using var passwordForm = new EnterPassword();
-            passwordForm.ShowDialog();
+            StartAnimation();
 
-            if (EnterPassword.MatchedHash)
+            var filePath = Path.Combine("Password Vault", "Users",
+                Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
+
+            await using (var sw = new StreamWriter(filePath))
             {
-                StartAnimation();
-
-                var filePath = Path.Combine("Password Vault", "Users",
-                    Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
-
-                await using (var sw = new StreamWriter(filePath))
+                sw.NewLine = null;
+                sw.AutoFlush = true;
+                foreach (DataGridViewRow row in PassVault.Rows)
                 {
-                    sw.NewLine = null;
-                    sw.AutoFlush = true;
-                    foreach (DataGridViewRow row in PassVault.Rows)
+                    for (var i = 0; i < PassVault.Columns.Count; i++)
                     {
-                        for (var i = 0; i < PassVault.Columns.Count; i++)
-                        {
-                            row.Cells[i].ValueType = typeof(char[]);
-                            sw.Write(row.Cells[i].Value);
-                            if (i < PassVault.Columns.Count - 1)
-                                await sw.WriteAsync("\t"); // Use a tab character to separate columns
-                        }
-
-                        await sw.WriteLineAsync(); // Start a new line for each row
+                        row.Cells[i].ValueType = typeof(char[]);
+                        sw.Write(row.Cells[i].Value);
+                        if (i < PassVault.Columns.Count - 1)
+                            await sw.WriteAsync("\t"); // Use a tab character to separate columns
                     }
+
+                    await sw.WriteLineAsync(); // Start a new line for each row
                 }
-
-                EnterPassword.MatchedHash = false;
-                var encryptedVault = await Crypto.EncryptFile(Authentication.CurrentLoggedInUser,
-                    EnterPassword.PasswordArray,
-                    Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
-
-                Array.Clear(EnterPassword.PasswordArray, 0, EnterPassword.PasswordArray.Length);
-
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-                if (encryptedVault == Array.Empty<byte>())
-                    throw new ArgumentException(@"Value returned empty or null.",
-                        nameof(encryptedVault));
-
-                await File.WriteAllTextAsync(Authentication.GetUserVault(Authentication.CurrentLoggedInUser),
-                    DataConversionHelpers.ByteArrayToBase64String(encryptedVault));
-                _isAnimating = false;
-                outputLbl.Text = @"Saved successfully";
-                outputLbl.ForeColor = Color.LimeGreen;
-                MessageBox.Show(@"Vault saved successfully.", @"Save vault", MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
-                outputLbl.Text = @"Idle...";
-                outputLbl.ForeColor = Color.WhiteSmoke;
             }
-            else
-            {
-                _isAnimating = false;
-                EnterPassword.MatchedHash = false;
-                outputLbl.Text = @"Save failed";
-                outputLbl.ForeColor = Color.Red;
-                MessageBox.Show(@"Incorrect credentials. Please try again.", @"Save vault", MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
-                outputLbl.Text = @"Idle...";
-                outputLbl.ForeColor = Color.WhiteSmoke;
-            }
+            _passwordArray = ConvertSecureStringToCharArray(Login.SecurePassword);
+
+            var encryptedVault = await Crypto.EncryptFile(Authentication.CurrentLoggedInUser, _passwordArray,
+                Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
+            var encryptedVaultString = DataConversionHelpers.ByteArrayToBase64String(encryptedVault);
+            await File.WriteAllTextAsync(Authentication.GetUserVault(Authentication.CurrentLoggedInUser),
+                encryptedVaultString);
+            Array.Clear(_passwordArray, 0, _passwordArray.Length);
+            
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+
+            _isAnimating = false;
+            outputLbl.Text = @"Saved successfully";
+            outputLbl.ForeColor = Color.LimeGreen;
+            MessageBox.Show(@"Vault saved successfully.", @"Save vault", MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+            outputLbl.Text = @"Idle...";
+            outputLbl.ForeColor = Color.WhiteSmoke;
         }
         catch (Exception ex)
         {
             EnableUi();
             _isAnimating = false;
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            ErrorLogging.ErrorLog(ex);
         }
     }
 
