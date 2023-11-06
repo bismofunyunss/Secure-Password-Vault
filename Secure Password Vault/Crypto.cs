@@ -550,4 +550,32 @@ public static class Crypto
             return Array.Empty<byte>();
         }
     }
+
+    public static async Task<byte[]> EncryptAsyncV3Debug(byte[] plaintext, byte[] salt, byte[] password, byte[] nonce)
+    {
+        // Debug method allows us to set the nonce manually.
+        try
+        {
+            using var argon2 = new Argon2id(password);
+            argon2.Salt = salt;
+            argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+            argon2.Iterations = Iterations;
+            argon2.MemorySize = (int)MemorySize;
+
+            var key = await argon2.GetBytesAsync(KeySize);
+
+            var cipherText = SecretAeadXChaCha20Poly1305.Encrypt(plaintext, nonce, key);
+
+            cipherText = nonce.Concat(cipherText).ToArray();
+
+            return cipherText;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Array.Clear(password, 0, password.Length);
+            ErrorLogging.ErrorLog(ex);
+            return Array.Empty<byte>();
+        }
+    }
 }
