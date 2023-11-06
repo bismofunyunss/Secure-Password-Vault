@@ -12,6 +12,7 @@ public partial class Vault : Form
     private static string _loadedFile = string.Empty;
     private static bool _fileOpened;
     private static string _result = string.Empty;
+    private static readonly ToolTip Tip = new();
 
     public Vault()
     {
@@ -136,7 +137,7 @@ public partial class Vault : Form
                     var values = line?.Split('\t'); // Split the line by tabs
 
                     if (IsBase64(line))
-                        return;
+                        throw new InvalidOperationException("Invalid input text");
 
                     if (values is { Length: <= 0 }) continue;
                     // Add a new row to the DataGridView and populate it with values
@@ -156,6 +157,7 @@ public partial class Vault : Form
         {
             EnableUi();
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            ErrorLogging.ErrorLog(ex);
         }
     }
 
@@ -210,7 +212,7 @@ public partial class Vault : Form
 
     private async void ImportFileBtn_Click(object? sender, EventArgs e)
     {
-        var maxFileSize = 750_000_000;
+        var maxFileSize = 950_000_000;
         try
         {
             using var openFileDialog = new OpenFileDialog();
@@ -280,11 +282,11 @@ public partial class Vault : Form
 
     private async void ExportFileBtn_Click(object sender, EventArgs e)
     {
-        if (!_fileOpened)
-            throw new ArgumentException(@"No file is opened.", nameof(_fileOpened));
-
         try
         {
+            if (!_fileOpened)
+                throw new Exception(@"No file is opened.");
+
             using var saveFileDialog = new SaveFileDialog();
             saveFileDialog.Filter = @"Txt files(*.txt) | *.txt";
             saveFileDialog.FilterIndex = 1;
@@ -298,7 +300,7 @@ public partial class Vault : Form
             if (saveFileDialog.ShowDialog() == DialogResult.OK)
             {
                 var selectedFileName = saveFileDialog.FileName;
-                
+
                 if (!string.IsNullOrEmpty(_result))
                 {
                     await using var fs = new FileStream(selectedFileName, FileMode.OpenOrCreate, FileAccess.Write);
@@ -318,7 +320,6 @@ public partial class Vault : Form
         }
         catch (Exception ex)
         {
-            FileSizeNumLbl.Text = @"0";
             FileOutputLbl.Text = @"Error saving file.";
             FileOutputLbl.ForeColor = Color.Red;
             ErrorLogging.ErrorLog(ex);
@@ -369,8 +370,10 @@ public partial class Vault : Form
 
             FileOutputLbl.Text = @"File encrypted.";
             FileOutputLbl.ForeColor = Color.LimeGreen;
+
             MessageBox.Show(@"File was encrypted successfully.", @"Success", MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
+
             FileOutputLbl.Text = @"Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
             Array.Clear(_passwordArray, 0, _passwordArray.Length);
@@ -491,4 +494,79 @@ public partial class Vault : Form
 
     [GeneratedRegex(@"^[a-zA-Z0-9\+/]*={0,3}$")]
     private static partial Regex MyRegex();
+
+    private async void Vault_Load(object sender, EventArgs e)
+    {
+        UserWelcomeLbl.Text = @$"Welcome, {Authentication.CurrentLoggedInUser}!";
+        await Task.Run(() => RainbowLabel(UserWelcomeLbl));
+    }
+
+    private static async Task RainbowLabel(Control label)
+    {
+        while (true)
+        {
+            label.ForeColor =
+                Color.FromArgb(Crypto.BoundedInt(0, 255), Crypto.BoundedInt(0, 255), Crypto.BoundedInt(0, 255));
+
+            await Task.Delay(125);
+        }
+    }
+
+    private void DecryptBtn_MouseHover(object sender, EventArgs e)
+    {
+        Tip.AutomaticDelay = 500;
+        Tip.IsBalloon = false;
+        Tip.ToolTipIcon = ToolTipIcon.Info;
+        Tip.Show("Decrypts the opened file.", DecryptBtn, int.MaxValue);
+    }
+
+    private void EncryptBtn_MouseHover(object sender, EventArgs e)
+    {
+        Tip.AutomaticDelay = 500;
+        Tip.IsBalloon = false;
+        Tip.ToolTipIcon = ToolTipIcon.Info;
+        Tip.Show("Encrypts the opened file.", EncryptBtn, int.MaxValue);
+    }
+
+    private void ExportFileBtn_MouseHover(object sender, EventArgs e)
+    {
+        Tip.AutomaticDelay = 500;
+        Tip.IsBalloon = false;
+        Tip.ToolTipIcon = ToolTipIcon.Info;
+        Tip.Show("Saves the output of the encrypted or decrypted file to a text file.", ExportFileBtn, int.MaxValue);
+    }
+
+    private void ImportFileBtn_MouseHover(object sender, EventArgs e)
+    {
+        Tip.AutomaticDelay = 500;
+        Tip.IsBalloon = false;
+        Tip.ToolTipIcon = ToolTipIcon.Info;
+        Tip.Show("Loads a text file to either encrypt or decrypt. The maximum file size is 950,000,000 bytes which is 0.95GB." + "\n" +
+                 "This is regardless of loading the file for encryption or decryption. Beware, the decrypted output size will always" + "\n" +     
+                 "be higher than the original file size when unencrypted.", ImportFileBtn, int.MaxValue);
+    }
+
+    private void saveVaultBtn_MouseHover(object sender, EventArgs e)
+    {
+        Tip.AutomaticDelay = 500;
+        Tip.IsBalloon = false;
+        Tip.ToolTipIcon = ToolTipIcon.Info;
+        Tip.Show("Saves the output of the encrypted or decrypted file to a text file.", saveVaultBtn, int.MaxValue);
+    }
+
+    private void deleteRowBtn_MouseHover(object sender, EventArgs e)
+    {
+        Tip.AutomaticDelay = 500;
+        Tip.IsBalloon = false;
+        Tip.ToolTipIcon = ToolTipIcon.Info;
+        Tip.Show("Deletes the selected row.", deleteRowBtn, int.MaxValue);
+    }
+
+    private void addRowBtn_MouseHover(object sender, EventArgs e)
+    {
+        Tip.AutomaticDelay = 500;
+        Tip.IsBalloon = false;
+        Tip.ToolTipIcon = ToolTipIcon.Info;
+        Tip.Show("Adds a new row that accepts values such as usernames, passwords, etc.", addRowBtn, int.MaxValue);
+    }
 }

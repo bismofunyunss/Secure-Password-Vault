@@ -15,7 +15,8 @@ public static class Crypto
     public static readonly int IvBit = 128;
     private const int TagLen = 16;
     private const int HmacLength = 64;
-    private const int NonceSize = 12;
+    private const int GcmNonceSize = 12;
+    private const int ChaChaNonceSize = 24;
 
     private static readonly RandomNumberGenerator RndNum = RandomNumberGenerator.Create();
 
@@ -30,11 +31,12 @@ public static class Crypto
     /// <returns>A password hash byte array.</returns>
     public static async Task<byte[]?> HashAsync(char[]? passWord, byte[]? salt)
     {
-        if (passWord == null || salt == null)
-            return null;
-
         try
         {
+            if (passWord == Array.Empty<char>() || salt == Array.Empty<byte>())
+                throw new ArgumentException(@"Value was empty.", passWord == Array.Empty<char>() ?
+                    nameof(passWord) : nameof(salt));
+
             using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord));
             argon2.Salt = salt;
             argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
@@ -95,7 +97,7 @@ public static class Crypto
     }
 
 
-    private static int BoundedInt(int min, int max)
+    public static int BoundedInt(int min, int max)
     {
         if (min >= max)
             throw new ArgumentException("Min must be less than max.");
@@ -119,7 +121,9 @@ public static class Crypto
         try
         {
             if (userName == string.Empty || passWord == Array.Empty<char>() || file == string.Empty)
-                throw new ArgumentNullException();
+                throw new ArgumentException(@"Value was empty.", userName == string.Empty ?
+            nameof(userName) :
+                passWord == Array.Empty<char>() ? nameof(passWord) : nameof(file));
 
             var saltString = await File.ReadAllTextAsync(Authentication.GetUserSalt(userName));
 
@@ -151,8 +155,10 @@ public static class Crypto
     {
         try
         {
-            if (userName == null || passWord == null || file == null)
-                throw new ArgumentNullException();
+            if (userName == string.Empty || passWord == Array.Empty<char>() || file == string.Empty)
+                throw new ArgumentException(@"Value was empty.", userName == string.Empty ?
+                    nameof(userName) :
+                    passWord == Array.Empty<char>() ? nameof(passWord) : nameof(file));
 
             var saltString = await File.ReadAllTextAsync(Authentication.GetUserSalt(userName));
 
@@ -447,7 +453,7 @@ public static class Crypto
             var key = await argon2.GetBytesAsync(KeySize);
             using var aesGcm = new AesGcm(key, TagLen);
             var tag = new byte[TagLen];
-            var nonce = new byte[NonceSize];
+            var nonce = new byte[GcmNonceSize];
             var cipherResult = new byte[cipherText.Length - nonce.Length - tag.Length];
 
             Buffer.BlockCopy(cipherText, 0, tag, 0, tag.Length);
@@ -495,7 +501,7 @@ public static class Crypto
 
             var key = await argon2.GetBytesAsync(KeySize);
 
-            var nonce = RndByteSized(24);
+            var nonce = RndByteSized(ChaChaNonceSize);
 
             var cipherText = SecretAeadXChaCha20Poly1305.Encrypt(plaintext, nonce, key);
 
@@ -524,7 +530,7 @@ public static class Crypto
 
             var key = await argon2.GetBytesAsync(KeySize);
 
-            var nonce = new byte[24];
+            var nonce = new byte[ChaChaNonceSize];
             var cipherResult = new byte[cipherText.Length - nonce.Length];
 
             Buffer.BlockCopy(cipherText, 0, nonce, 0, nonce.Length);

@@ -48,6 +48,7 @@
             outputLbl = new Label();
             statusLbl = new Label();
             FileEncryptDecryptBox = new GroupBox();
+            UserWelcomeLbl = new Label();
             FileSizeNumLbl = new Label();
             FileSizeLbl = new Label();
             FileOutputLbl = new Label();
@@ -174,6 +175,7 @@
             addRowBtn.Text = "&Add New Row";
             addRowBtn.UseVisualStyleBackColor = false;
             addRowBtn.Click += addRowBtn_Click;
+            addRowBtn.MouseHover += addRowBtn_MouseHover;
             // 
             // deleteRowBtn
             // 
@@ -190,6 +192,7 @@
             deleteRowBtn.Text = "&Delete Row";
             deleteRowBtn.UseVisualStyleBackColor = false;
             deleteRowBtn.Click += deleteRowBtn_Click;
+            deleteRowBtn.MouseHover += deleteRowBtn_MouseHover;
             // 
             // saveVaultBtn
             // 
@@ -206,6 +209,7 @@
             saveVaultBtn.Text = "&Save Vault";
             saveVaultBtn.UseVisualStyleBackColor = false;
             saveVaultBtn.Click += saveVaultBtn_Click;
+            saveVaultBtn.MouseHover += saveVaultBtn_MouseHover;
             // 
             // vaultBox
             // 
@@ -246,6 +250,7 @@
             // 
             // FileEncryptDecryptBox
             // 
+            FileEncryptDecryptBox.Controls.Add(UserWelcomeLbl);
             FileEncryptDecryptBox.Controls.Add(FileSizeNumLbl);
             FileEncryptDecryptBox.Controls.Add(FileSizeLbl);
             FileEncryptDecryptBox.Controls.Add(FileOutputLbl);
@@ -258,16 +263,25 @@
             FileEncryptDecryptBox.ForeColor = Color.WhiteSmoke;
             FileEncryptDecryptBox.Location = new Point(12, 491);
             FileEncryptDecryptBox.Name = "FileEncryptDecryptBox";
-            FileEncryptDecryptBox.Size = new Size(930, 226);
+            FileEncryptDecryptBox.Size = new Size(930, 268);
             FileEncryptDecryptBox.TabIndex = 10;
             FileEncryptDecryptBox.TabStop = false;
             FileEncryptDecryptBox.Text = "File Encryptor / Decryptor";
+            // 
+            // UserWelcomeLbl
+            // 
+            UserWelcomeLbl.AutoSize = true;
+            UserWelcomeLbl.Location = new Point(6, 222);
+            UserWelcomeLbl.Name = "UserWelcomeLbl";
+            UserWelcomeLbl.Size = new Size(146, 25);
+            UserWelcomeLbl.TabIndex = 17;
+            UserWelcomeLbl.Text = "Welcome, null";
             // 
             // FileSizeNumLbl
             // 
             FileSizeNumLbl.AutoSize = true;
             FileSizeNumLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            FileSizeNumLbl.Location = new Point(124, 188);
+            FileSizeNumLbl.Location = new Point(124, 187);
             FileSizeNumLbl.Name = "FileSizeNumLbl";
             FileSizeNumLbl.Size = new Size(23, 25);
             FileSizeNumLbl.TabIndex = 16;
@@ -277,7 +291,7 @@
             // 
             FileSizeLbl.AutoSize = true;
             FileSizeLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            FileSizeLbl.Location = new Point(7, 188);
+            FileSizeLbl.Location = new Point(7, 187);
             FileSizeLbl.Name = "FileSizeLbl";
             FileSizeLbl.Size = new Size(111, 25);
             FileSizeLbl.TabIndex = 15;
@@ -287,7 +301,7 @@
             // 
             FileOutputLbl.AutoSize = true;
             FileOutputLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            FileOutputLbl.Location = new Point(102, 163);
+            FileOutputLbl.Location = new Point(102, 153);
             FileOutputLbl.Name = "FileOutputLbl";
             FileOutputLbl.Size = new Size(67, 25);
             FileOutputLbl.TabIndex = 14;
@@ -297,7 +311,7 @@
             // 
             FileStatusLbl.AutoSize = true;
             FileStatusLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            FileStatusLbl.Location = new Point(6, 163);
+            FileStatusLbl.Location = new Point(6, 153);
             FileStatusLbl.Name = "FileStatusLbl";
             FileStatusLbl.Size = new Size(90, 25);
             FileStatusLbl.TabIndex = 13;
@@ -318,6 +332,7 @@
             DecryptBtn.Text = "&Decrypt";
             DecryptBtn.UseVisualStyleBackColor = false;
             DecryptBtn.Click += DecryptBtn_Click;
+            DecryptBtn.MouseHover += DecryptBtn_MouseHover;
             // 
             // EncryptBtn
             // 
@@ -334,6 +349,7 @@
             EncryptBtn.Text = "&Encrypt";
             EncryptBtn.UseVisualStyleBackColor = false;
             EncryptBtn.Click += EncryptBtn_Click;
+            EncryptBtn.MouseHover += EncryptBtn_MouseHover;
             // 
             // ExportFileBtn
             // 
@@ -350,6 +366,7 @@
             ExportFileBtn.Text = "&Export File";
             ExportFileBtn.UseVisualStyleBackColor = false;
             ExportFileBtn.Click += ExportFileBtn_Click;
+            ExportFileBtn.MouseHover += ExportFileBtn_MouseHover;
             // 
             // ImportFileBtn
             // 
@@ -366,13 +383,14 @@
             ImportFileBtn.Text = "&Import File";
             ImportFileBtn.UseVisualStyleBackColor = false;
             ImportFileBtn.Click += ImportFileBtn_Click;
+            ImportFileBtn.MouseHover += ImportFileBtn_MouseHover;
             // 
             // Vault
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlDarkDark;
-            ClientSize = new Size(954, 729);
+            ClientSize = new Size(954, 771);
             Controls.Add(FileEncryptDecryptBox);
             Controls.Add(vaultBox);
             FormBorderStyle = FormBorderStyle.Fixed3D;
@@ -380,6 +398,7 @@
             MaximizeBox = false;
             Name = "Vault";
             Text = "Vault";
+            Load += Vault_Load;
             ((System.ComponentModel.ISupportInitialize)PassVault).EndInit();
             vaultBox.ResumeLayout(false);
             vaultBox.PerformLayout();
@@ -410,5 +429,6 @@
         private Label FileStatusLbl;
         private Label FileSizeNumLbl;
         private Label FileSizeLbl;
+        private Label UserWelcomeLbl;
     }
 }
