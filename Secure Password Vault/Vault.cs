@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.IO;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -13,7 +14,8 @@ public partial class Vault : Form
     private static bool _fileOpened;
     private static string _result = string.Empty;
     private static readonly ToolTip Tip = new();
-
+    private const int maxFileSize = 950_000_000;
+    private static int _fileSize = 0;
     public Vault()
     {
         InitializeComponent();
@@ -212,7 +214,6 @@ public partial class Vault : Form
 
     private async void ImportFileBtn_Click(object? sender, EventArgs e)
     {
-        var maxFileSize = 950_000_000;
         try
         {
             using var openFileDialog = new OpenFileDialog();
@@ -254,6 +255,8 @@ public partial class Vault : Form
 
                 if (fileInfo.Length > maxFileSize)
                     throw new ArgumentException(@"File size is too large.", nameof(selectedFileName));
+
+                _fileSize = (int)fileInfo.Length;
 
                 var fileSize = fileInfo.Length.ToString("#,0");
                 FileSizeNumLbl.Text = $@"{fileSize} bytes";
@@ -403,6 +406,9 @@ public partial class Vault : Form
 
             if (!_fileOpened)
                 throw new ArgumentException(@"No file is opened.", nameof(_fileOpened));
+
+            if (_fileSize > maxFileSize)
+                throw new ArgumentException(@"File size is too large.");
 
             SetArray();
             DisableUi();
