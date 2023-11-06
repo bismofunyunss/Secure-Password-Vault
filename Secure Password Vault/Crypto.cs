@@ -1,6 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 using Konscious.Security.Cryptography;
+using Sodium;
 
 namespace Secure_Password_Vault;
 
@@ -115,51 +116,67 @@ public static class Crypto
 
     public static async Task<byte[]> EncryptFile(string userName, char[] passWord, string file)
     {
-        if (userName == string.Empty || passWord == Array.Empty<char>() || file == string.Empty)
-            throw new ArgumentNullException();
+        try
+        {
+            if (userName == string.Empty || passWord == Array.Empty<char>() || file == string.Empty)
+                throw new ArgumentNullException();
 
-        var iv = RndByteSized(IvBit / 8);
+            var saltString = await File.ReadAllTextAsync(Authentication.GetUserSalt(userName));
 
-        var saltString = await File.ReadAllTextAsync(Authentication.GetUserSalt(userName));
+            var salt = DataConversionHelpers.Base64StringToByteArray(saltString);
 
-        var salt = DataConversionHelpers.Base64StringToByteArray(saltString);
+            var fileStr = await File.ReadAllTextAsync(file);
+            var fileBytes = DataConversionHelpers.StringToByteArray(fileStr);
 
-        var fileStr = await File.ReadAllTextAsync(file);
-        var fileBytes = DataConversionHelpers.StringToByteArray(fileStr);
+            var passwordBytes = Encoding.UTF8.GetBytes(passWord);
 
-        var passwordBytes = Encoding.UTF8.GetBytes(passWord);
+            if (fileBytes == null || salt == null)
+                return Array.Empty<byte>();
 
-        if (fileBytes == null || salt == null)
+            var encryptedFile = await EncryptAsyncV3(fileBytes, salt, passwordBytes);
+
+            Array.Clear(passWord, 0, passWord.Length);
+
+            return encryptedFile;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
-
-        var encryptedFile = await EncryptAsync(fileBytes, passwordBytes, iv, salt);
-
-        Array.Clear(passWord, 0, passWord.Length);
-
-        return encryptedFile;
+        }
     }
 
     public static async Task<byte[]> DecryptFile(string userName, char[] passWord, string file)
     {
-        if (userName == null || passWord == null || file == null)
-            throw new ArgumentNullException();
+        try
+        {
+            if (userName == null || passWord == null || file == null)
+                throw new ArgumentNullException();
 
-        var saltString = await File.ReadAllTextAsync(Authentication.GetUserSalt(userName));
+            var saltString = await File.ReadAllTextAsync(Authentication.GetUserSalt(userName));
 
-        var salt = DataConversionHelpers.Base64StringToByteArray(saltString);
+            var salt = DataConversionHelpers.Base64StringToByteArray(saltString);
 
-        var fileStr = await File.ReadAllTextAsync(file);
-        var fileBytes = DataConversionHelpers.Base64StringToByteArray(fileStr);
+            var fileStr = await File.ReadAllTextAsync(file);
+            var fileBytes = DataConversionHelpers.Base64StringToByteArray(fileStr);
 
-        var passwordBytes = Encoding.UTF8.GetBytes(passWord);
-        if (fileBytes == null || salt == null)
+            var passwordBytes = Encoding.UTF8.GetBytes(passWord);
+            if (fileBytes == null || salt == null)
+                return Array.Empty<byte>();
+
+            var decryptedFile = await DecryptAsyncV3(fileBytes, salt, passwordBytes);
+
+            Array.Clear(passWord, 0, passWord.Length);
+
+            return decryptedFile;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
-
-        var encryptedFile = await DecryptAsync(fileBytes, passwordBytes, salt);
-
-        Array.Clear(passWord, 0, passWord.Length);
-
-        return encryptedFile;
+        }
     }
 
     private static (byte[] cipherResult, byte[] iv) InitBuffer(byte[] cipherText)
@@ -207,6 +224,7 @@ public static class Crypto
             var hmacKey = await argon2.GetBytesAsync(HmacLength);
 
             byte[] cipherText;
+
             using (var encryptor = aes.CreateEncryptor(key, iv))
             using (var memStream = new MemoryStream())
             {
@@ -215,17 +233,17 @@ public static class Crypto
                 {
                     using (var cipherStream = new MemoryStream(plainText))
                     {
-                        cipherStream.CopyTo(cryptoStream, (int)cipherStream.Length);
-                        cipherStream.Flush();
-                        cryptoStream.FlushFinalBlockAsync();
+                        cipherStream.FlushAsync();
+                        cipherStream.CopyToAsync(cryptoStream, (int)cipherStream.Length);
                     }
+                    cryptoStream.FlushFinalBlockAsync();
                 }
 
                 cipherText = memStream.ToArray();
             }
 
             Array.Clear(key, 0, key.Length);
-
+            
             using var hmac = new HMACSHA512(hmacKey);
             var prependItems = new byte[cipherText.Length + iv.Length];
 
@@ -320,9 +338,9 @@ public static class Crypto
                 using (var plainStream = new MemoryStream(cipherResult))
                 {
                     plainStream.CopyTo(decryptStream, (int)plainStream.Length);
-                    plainStream.Flush();
-                    await decryptStream.FlushFinalBlockAsync();
+                    plainStream.FlushAsync();
                 }
+                await decryptStream.FlushFinalBlockAsync();
             }
 
             Array.Clear(key, 0, key.Length);
@@ -463,5 +481,66 @@ public static class Crypto
             return Array.Empty<byte>();
         }
 #pragma warning restore
+    }
+
+    public static async Task<byte[]> EncryptAsyncV3(byte[] plaintext, byte[] salt, byte[] password)
+    {
+        try
+        {
+            using var argon2 = new Argon2id(password);
+            argon2.Salt = salt;
+            argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+            argon2.Iterations = Iterations;
+            argon2.MemorySize = (int)MemorySize;
+
+            var key = await argon2.GetBytesAsync(KeySize);
+
+            var nonce = RndByteSized(24);
+
+            var cipherText = SecretAeadXChaCha20Poly1305.Encrypt(plaintext, nonce, key);
+
+            cipherText = nonce.Concat(cipherText).ToArray();
+
+            return cipherText;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Array.Clear(password, 0, password.Length);
+            ErrorLogging.ErrorLog(ex);
+            return Array.Empty<byte>();
+        }
+    }
+
+    public static async Task<byte[]> DecryptAsyncV3(byte[] cipherText, byte[] salt, byte[] password)
+    {
+        try
+        {
+            using var argon2 = new Argon2id(password);
+            argon2.Salt = salt;
+            argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+            argon2.Iterations = Iterations;
+            argon2.MemorySize = (int)MemorySize;
+
+            var key = await argon2.GetBytesAsync(KeySize);
+
+            var nonce = new byte[24];
+            var cipherResult = new byte[cipherText.Length - nonce.Length];
+
+            Buffer.BlockCopy(cipherText, 0, nonce, 0, nonce.Length);
+
+            Buffer.BlockCopy(cipherText, nonce.Length, cipherResult, 0, cipherResult.Length);
+
+            var plainText = SecretAeadXChaCha20Poly1305.Decrypt(cipherResult, nonce, key);
+
+            return plainText;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Array.Clear(password, 0, password.Length);
+            ErrorLogging.ErrorLog(ex);
+            return Array.Empty<byte>();
+        }
     }
 }

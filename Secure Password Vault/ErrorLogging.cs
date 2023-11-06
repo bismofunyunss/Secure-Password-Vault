@@ -9,7 +9,7 @@ public static class ErrorLogging
 
         try
         {
-            using StreamWriter writer = File.AppendText("ErrorLog.txt");
+            using var writer = File.AppendText("ErrorLog.txt");
             writer.AutoFlush = true;
             writer.WriteLine($"{DateTime.Now} {ex.Message} {ex.InnerException} {ex.StackTrace}");
             writer.WriteLine();

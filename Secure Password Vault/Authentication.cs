@@ -3,7 +3,6 @@
 public static class Authentication
 {
     public static string CurrentLoggedInUser { get; set; } = string.Empty;
-    private static string UserID { get; set; } = string.Empty;
 
     public static string GetUserFilePath(string userName)
     {
@@ -42,7 +41,6 @@ public static class Authentication
             var lines = await File.ReadAllLinesAsync(path);
             var index = Array.IndexOf(lines, "User:");
             if (index == -1) return;
-            UserID = lines[index + 3];
             Crypto.Hash = DataConversionHelpers.HexStringToByteArray(lines[index + 6]) ?? Array.Empty<byte>();
         }
         catch (IOException ex)

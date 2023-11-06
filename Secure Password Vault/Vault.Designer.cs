@@ -48,6 +48,8 @@
             outputLbl = new Label();
             statusLbl = new Label();
             FileEncryptDecryptBox = new GroupBox();
+            FileSizeNumLbl = new Label();
+            FileSizeLbl = new Label();
             FileOutputLbl = new Label();
             FileStatusLbl = new Label();
             DecryptBtn = new Button();
@@ -244,6 +246,8 @@
             // 
             // FileEncryptDecryptBox
             // 
+            FileEncryptDecryptBox.Controls.Add(FileSizeNumLbl);
+            FileEncryptDecryptBox.Controls.Add(FileSizeLbl);
             FileEncryptDecryptBox.Controls.Add(FileOutputLbl);
             FileEncryptDecryptBox.Controls.Add(FileStatusLbl);
             FileEncryptDecryptBox.Controls.Add(DecryptBtn);
@@ -254,10 +258,30 @@
             FileEncryptDecryptBox.ForeColor = Color.WhiteSmoke;
             FileEncryptDecryptBox.Location = new Point(12, 491);
             FileEncryptDecryptBox.Name = "FileEncryptDecryptBox";
-            FileEncryptDecryptBox.Size = new Size(930, 201);
+            FileEncryptDecryptBox.Size = new Size(930, 226);
             FileEncryptDecryptBox.TabIndex = 10;
             FileEncryptDecryptBox.TabStop = false;
             FileEncryptDecryptBox.Text = "File Encryptor / Decryptor";
+            // 
+            // FileSizeNumLbl
+            // 
+            FileSizeNumLbl.AutoSize = true;
+            FileSizeNumLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            FileSizeNumLbl.Location = new Point(124, 188);
+            FileSizeNumLbl.Name = "FileSizeNumLbl";
+            FileSizeNumLbl.Size = new Size(23, 25);
+            FileSizeNumLbl.TabIndex = 16;
+            FileSizeNumLbl.Text = "0";
+            // 
+            // FileSizeLbl
+            // 
+            FileSizeLbl.AutoSize = true;
+            FileSizeLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            FileSizeLbl.Location = new Point(7, 188);
+            FileSizeLbl.Name = "FileSizeLbl";
+            FileSizeLbl.Size = new Size(111, 25);
+            FileSizeLbl.TabIndex = 15;
+            FileSizeLbl.Text = "File Size ::";
             // 
             // FileOutputLbl
             // 
@@ -293,6 +317,7 @@
             DecryptBtn.TabIndex = 8;
             DecryptBtn.Text = "&Decrypt";
             DecryptBtn.UseVisualStyleBackColor = false;
+            DecryptBtn.Click += DecryptBtn_Click;
             // 
             // EncryptBtn
             // 
@@ -308,6 +333,7 @@
             EncryptBtn.TabIndex = 7;
             EncryptBtn.Text = "&Encrypt";
             EncryptBtn.UseVisualStyleBackColor = false;
+            EncryptBtn.Click += EncryptBtn_Click;
             // 
             // ExportFileBtn
             // 
@@ -319,10 +345,11 @@
             ExportFileBtn.ForeColor = Color.WhiteSmoke;
             ExportFileBtn.Location = new Point(6, 82);
             ExportFileBtn.Name = "ExportFileBtn";
-            ExportFileBtn.Size = new Size(449, 44);
+            ExportFileBtn.Size = new Size(455, 44);
             ExportFileBtn.TabIndex = 6;
             ExportFileBtn.Text = "&Export File";
             ExportFileBtn.UseVisualStyleBackColor = false;
+            ExportFileBtn.Click += ExportFileBtn_Click;
             // 
             // ImportFileBtn
             // 
@@ -338,13 +365,14 @@
             ImportFileBtn.TabIndex = 5;
             ImportFileBtn.Text = "&Import File";
             ImportFileBtn.UseVisualStyleBackColor = false;
+            ImportFileBtn.Click += ImportFileBtn_Click;
             // 
             // Vault
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlDarkDark;
-            ClientSize = new Size(954, 704);
+            ClientSize = new Size(954, 729);
             Controls.Add(FileEncryptDecryptBox);
             Controls.Add(vaultBox);
             FormBorderStyle = FormBorderStyle.Fixed3D;
@@ -380,5 +408,7 @@
         private Button DecryptBtn;
         private Label FileOutputLbl;
         private Label FileStatusLbl;
+        private Label FileSizeNumLbl;
+        private Label FileSizeLbl;
     }
 }
