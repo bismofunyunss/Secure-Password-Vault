@@ -37,7 +37,7 @@ public static class Crypto
                 throw new ArgumentException(@"Value was empty.", passWord == Array.Empty<char>() ?
                     nameof(passWord) : nameof(salt));
 
-            using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord));
+            using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord ?? throw new ArgumentNullException(nameof(passWord))));
             argon2.Salt = salt;
             argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
             argon2.Iterations = Iterations;
@@ -134,8 +134,8 @@ public static class Crypto
 
             var passwordBytes = Encoding.UTF8.GetBytes(passWord);
 
-            if (fileBytes == null || salt == null)
-                return Array.Empty<byte>();
+            if (fileBytes == Array.Empty<byte>() || salt == Array.Empty<byte>())
+                throw new ArgumentException(@"Value was empty.", fileBytes == Array.Empty<byte>() ? nameof(fileBytes) : nameof(salt));
 
             var encryptedFile = await EncryptAsyncV3(fileBytes, salt, passwordBytes);
 
@@ -168,8 +168,9 @@ public static class Crypto
             var fileBytes = DataConversionHelpers.Base64StringToByteArray(fileStr);
 
             var passwordBytes = Encoding.UTF8.GetBytes(passWord);
-            if (fileBytes == null || salt == null)
-                return Array.Empty<byte>();
+
+            if (fileBytes == Array.Empty<byte>() || salt == Array.Empty<byte>())
+                throw new ArgumentException(@"Value was empty.", fileBytes == Array.Empty<byte>() ? nameof(fileBytes) : nameof(salt));
 
             var decryptedFile = await DecryptAsyncV3(fileBytes, salt, passwordBytes);
 
