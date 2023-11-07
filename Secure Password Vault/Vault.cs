@@ -74,7 +74,7 @@ public partial class Vault : Form
                 MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 
             StartAnimation();
-
+            DisableUi();
             var filePath = Path.Combine("Password Vault", "Users",
                 Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
 
@@ -180,6 +180,8 @@ public partial class Vault : Form
         ExportFileBtn.Enabled = true;
         EncryptBtn.Enabled = true;
         DecryptBtn.Enabled = true;
+        hashimportfile.Enabled = true;
+        calculatehashbtn.Enabled = true;
     }
 
     private void DisableUi()
@@ -192,6 +194,8 @@ public partial class Vault : Form
         ExportFileBtn.Enabled = false;
         EncryptBtn.Enabled = false;
         DecryptBtn.Enabled = false;
+        hashimportfile.Enabled = false;
+        calculatehashbtn.Enabled = false;
     }
 
     private async void StartAnimation()
