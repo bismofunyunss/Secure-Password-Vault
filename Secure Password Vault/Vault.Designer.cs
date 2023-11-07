@@ -48,7 +48,6 @@
             outputLbl = new Label();
             statusLbl = new Label();
             FileEncryptDecryptBox = new GroupBox();
-            UserWelcomeLbl = new Label();
             FileSizeNumLbl = new Label();
             FileSizeLbl = new Label();
             FileOutputLbl = new Label();
@@ -57,9 +56,17 @@
             EncryptBtn = new Button();
             ExportFileBtn = new Button();
             ImportFileBtn = new Button();
+            UserWelcomeLbl = new Label();
+            hashbox = new GroupBox();
+            filenamelbl = new Label();
+            calculatehashbtn = new Button();
+            hashoutputlbl = new Label();
+            hashoutputtxt = new TextBox();
+            hashimportfile = new Button();
             ((System.ComponentModel.ISupportInitialize)PassVault).BeginInit();
             vaultBox.SuspendLayout();
             FileEncryptDecryptBox.SuspendLayout();
+            hashbox.SuspendLayout();
             SuspendLayout();
             // 
             // PassVault
@@ -250,7 +257,6 @@
             // 
             // FileEncryptDecryptBox
             // 
-            FileEncryptDecryptBox.Controls.Add(UserWelcomeLbl);
             FileEncryptDecryptBox.Controls.Add(FileSizeNumLbl);
             FileEncryptDecryptBox.Controls.Add(FileSizeLbl);
             FileEncryptDecryptBox.Controls.Add(FileOutputLbl);
@@ -263,25 +269,16 @@
             FileEncryptDecryptBox.ForeColor = Color.WhiteSmoke;
             FileEncryptDecryptBox.Location = new Point(12, 491);
             FileEncryptDecryptBox.Name = "FileEncryptDecryptBox";
-            FileEncryptDecryptBox.Size = new Size(930, 268);
+            FileEncryptDecryptBox.Size = new Size(930, 249);
             FileEncryptDecryptBox.TabIndex = 10;
             FileEncryptDecryptBox.TabStop = false;
             FileEncryptDecryptBox.Text = "File Encryptor / Decryptor";
-            // 
-            // UserWelcomeLbl
-            // 
-            UserWelcomeLbl.AutoSize = true;
-            UserWelcomeLbl.Location = new Point(6, 222);
-            UserWelcomeLbl.Name = "UserWelcomeLbl";
-            UserWelcomeLbl.Size = new Size(146, 25);
-            UserWelcomeLbl.TabIndex = 17;
-            UserWelcomeLbl.Text = "Welcome, null";
             // 
             // FileSizeNumLbl
             // 
             FileSizeNumLbl.AutoSize = true;
             FileSizeNumLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            FileSizeNumLbl.Location = new Point(124, 187);
+            FileSizeNumLbl.Location = new Point(124, 204);
             FileSizeNumLbl.Name = "FileSizeNumLbl";
             FileSizeNumLbl.Size = new Size(23, 25);
             FileSizeNumLbl.TabIndex = 16;
@@ -291,7 +288,7 @@
             // 
             FileSizeLbl.AutoSize = true;
             FileSizeLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            FileSizeLbl.Location = new Point(7, 187);
+            FileSizeLbl.Location = new Point(7, 204);
             FileSizeLbl.Name = "FileSizeLbl";
             FileSizeLbl.Size = new Size(111, 25);
             FileSizeLbl.TabIndex = 15;
@@ -301,7 +298,7 @@
             // 
             FileOutputLbl.AutoSize = true;
             FileOutputLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            FileOutputLbl.Location = new Point(102, 153);
+            FileOutputLbl.Location = new Point(103, 179);
             FileOutputLbl.Name = "FileOutputLbl";
             FileOutputLbl.Size = new Size(67, 25);
             FileOutputLbl.TabIndex = 14;
@@ -311,7 +308,7 @@
             // 
             FileStatusLbl.AutoSize = true;
             FileStatusLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            FileStatusLbl.Location = new Point(6, 153);
+            FileStatusLbl.Location = new Point(7, 179);
             FileStatusLbl.Name = "FileStatusLbl";
             FileStatusLbl.Size = new Size(90, 25);
             FileStatusLbl.TabIndex = 13;
@@ -385,12 +382,106 @@
             ImportFileBtn.Click += ImportFileBtn_Click;
             ImportFileBtn.MouseHover += ImportFileBtn_MouseHover;
             // 
+            // UserWelcomeLbl
+            // 
+            UserWelcomeLbl.AutoSize = true;
+            UserWelcomeLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            UserWelcomeLbl.ForeColor = Color.WhiteSmoke;
+            UserWelcomeLbl.Location = new Point(12, 1064);
+            UserWelcomeLbl.Name = "UserWelcomeLbl";
+            UserWelcomeLbl.Size = new Size(146, 25);
+            UserWelcomeLbl.TabIndex = 17;
+            UserWelcomeLbl.Text = "Welcome, null";
+            // 
+            // hashbox
+            // 
+            hashbox.Controls.Add(filenamelbl);
+            hashbox.Controls.Add(calculatehashbtn);
+            hashbox.Controls.Add(hashoutputlbl);
+            hashbox.Controls.Add(hashoutputtxt);
+            hashbox.Controls.Add(hashimportfile);
+            hashbox.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            hashbox.ForeColor = Color.WhiteSmoke;
+            hashbox.Location = new Point(12, 746);
+            hashbox.Name = "hashbox";
+            hashbox.Size = new Size(930, 282);
+            hashbox.TabIndex = 11;
+            hashbox.TabStop = false;
+            hashbox.Text = "File Hash Calculator";
+            // 
+            // filenamelbl
+            // 
+            filenamelbl.AutoSize = true;
+            filenamelbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            filenamelbl.ForeColor = Color.WhiteSmoke;
+            filenamelbl.Location = new Point(7, 241);
+            filenamelbl.Name = "filenamelbl";
+            filenamelbl.Size = new Size(159, 25);
+            filenamelbl.TabIndex = 20;
+            filenamelbl.Text = "File Name: N/A";
+            // 
+            // calculatehashbtn
+            // 
+            calculatehashbtn.BackColor = SystemColors.ControlDarkDark;
+            calculatehashbtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            calculatehashbtn.FlatAppearance.BorderSize = 3;
+            calculatehashbtn.FlatStyle = FlatStyle.Flat;
+            calculatehashbtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            calculatehashbtn.ForeColor = Color.WhiteSmoke;
+            calculatehashbtn.Location = new Point(7, 116);
+            calculatehashbtn.Name = "calculatehashbtn";
+            calculatehashbtn.Size = new Size(917, 44);
+            calculatehashbtn.TabIndex = 19;
+            calculatehashbtn.Text = "&Calculate Hash";
+            calculatehashbtn.UseVisualStyleBackColor = false;
+            calculatehashbtn.Click += calculatehashbtn_Click;
+            calculatehashbtn.MouseHover += calculatehashbtn_MouseHover;
+            // 
+            // hashoutputlbl
+            // 
+            hashoutputlbl.AutoSize = true;
+            hashoutputlbl.Location = new Point(6, 40);
+            hashoutputlbl.Name = "hashoutputlbl";
+            hashoutputlbl.Size = new Size(134, 25);
+            hashoutputlbl.TabIndex = 18;
+            hashoutputlbl.Text = "Hash Output";
+            // 
+            // hashoutputtxt
+            // 
+            hashoutputtxt.BackColor = Color.Black;
+            hashoutputtxt.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            hashoutputtxt.ForeColor = Color.Gold;
+            hashoutputtxt.Location = new Point(10, 77);
+            hashoutputtxt.Name = "hashoutputtxt";
+            hashoutputtxt.ReadOnly = true;
+            hashoutputtxt.Size = new Size(914, 33);
+            hashoutputtxt.TabIndex = 6;
+            // 
+            // hashimportfile
+            // 
+            hashimportfile.BackColor = SystemColors.ControlDarkDark;
+            hashimportfile.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            hashimportfile.FlatAppearance.BorderSize = 3;
+            hashimportfile.FlatStyle = FlatStyle.Flat;
+            hashimportfile.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            hashimportfile.ForeColor = Color.WhiteSmoke;
+            hashimportfile.Location = new Point(10, 165);
+            hashimportfile.Name = "hashimportfile";
+            hashimportfile.Size = new Size(914, 44);
+            hashimportfile.TabIndex = 5;
+            hashimportfile.Text = "&Import File";
+            hashimportfile.UseVisualStyleBackColor = false;
+            hashimportfile.Click += hashimportfile_Click;
+            hashimportfile.MouseHover += hashimportfile_MouseHover;
+            // 
             // Vault
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlDarkDark;
-            ClientSize = new Size(954, 771);
+            ClientSize = new Size(954, 1098);
+            Controls.Add(UserWelcomeLbl);
+            Controls.Add(hashbox);
             Controls.Add(FileEncryptDecryptBox);
             Controls.Add(vaultBox);
             FormBorderStyle = FormBorderStyle.Fixed3D;
@@ -404,7 +495,10 @@
             vaultBox.PerformLayout();
             FileEncryptDecryptBox.ResumeLayout(false);
             FileEncryptDecryptBox.PerformLayout();
+            hashbox.ResumeLayout(false);
+            hashbox.PerformLayout();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -430,5 +524,11 @@
         private Label FileSizeNumLbl;
         private Label FileSizeLbl;
         private Label UserWelcomeLbl;
+        private GroupBox hashbox;
+        private Button hashimportfile;
+        private Label hashoutputlbl;
+        private TextBox hashoutputtxt;
+        private Label filenamelbl;
+        private Button calculatehashbtn;
     }
 }

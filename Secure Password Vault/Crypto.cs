@@ -82,10 +82,12 @@ public static class Crypto
     }
 
 
-    public static Task<bool> ComparePassword(byte[]? inputHash)
+    public static Task<bool> ComparePassword(byte[]? hash1, byte[]? hash2)
     {
-        return Task.FromResult(inputHash != null && Hash != null &&
-                               CryptographicOperations.FixedTimeEquals(Hash, inputHash));
+        if (hash1 == null || hash1 == Array.Empty<byte>() || hash2 == null || hash2 == Array.Empty<byte>())
+            throw new ArgumentException(@"Value was empty.", hash1 == null ? nameof(hash1) : nameof(hash2));
+
+        return Task.FromResult(CryptographicOperations.FixedTimeEquals(hash1, hash2));
     }
 
     private static int RndInt()

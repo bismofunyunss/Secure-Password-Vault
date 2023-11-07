@@ -1,6 +1,6 @@
-﻿using System.IO;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -11,11 +11,13 @@ public partial class Vault : Form
     private static bool _isAnimating;
     private static char[] _passwordArray = Array.Empty<char>();
     private static string _loadedFile = string.Empty;
+    private static string _loadedFileHash = string.Empty;
     private static bool _fileOpened;
     private static string _result = string.Empty;
     private static readonly ToolTip Tip = new();
     private const int maxFileSize = 950_000_000;
     private static int _fileSize = 0;
+
     public Vault()
     {
         InitializeComponent();
@@ -547,9 +549,12 @@ public partial class Vault : Form
         Tip.AutomaticDelay = 500;
         Tip.IsBalloon = false;
         Tip.ToolTipIcon = ToolTipIcon.Info;
-        Tip.Show("Loads a text file to either encrypt or decrypt. The maximum file size is 950,000,000 bytes which is 0.95GB." + "\n" +
-                 "This is regardless of loading the file for encryption or decryption. Beware, the decrypted output size will always" + "\n" +     
-                 "be higher than the original file size when unencrypted.", ImportFileBtn, int.MaxValue);
+        Tip.Show(
+            "Loads a text file to either encrypt or decrypt. The maximum file size is 950,000,000 bytes which is 0.95GB." +
+            "\n" +
+            "This is regardless of loading the file for encryption or decryption. Beware, the decrypted output size will always" +
+            "\n" +
+            "be higher than the original file size when unencrypted.", ImportFileBtn, int.MaxValue);
     }
 
     private void saveVaultBtn_MouseHover(object sender, EventArgs e)
@@ -574,5 +579,74 @@ public partial class Vault : Form
         Tip.IsBalloon = false;
         Tip.ToolTipIcon = ToolTipIcon.Info;
         Tip.Show("Adds a new row that accepts values such as usernames, passwords, etc.", addRowBtn, int.MaxValue);
+    }
+
+    private void hashimportfile_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            using var openFileDialog = new OpenFileDialog();
+            openFileDialog.FilterIndex = 1;
+            openFileDialog.ShowHiddenFiles = true;
+            openFileDialog.CheckFileExists = true;
+            openFileDialog.CheckPathExists = true;
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.InitialDirectory =
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
+
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                var selectedFileName = openFileDialog.FileName;
+                var selectedExtension = Path.GetExtension(selectedFileName).ToLower();
+                var fileInfo = new FileInfo(selectedFileName);
+
+                _loadedFileHash = selectedFileName;
+
+                if (!string.IsNullOrEmpty(selectedFileName))
+                {
+                    filenamelbl.Text = $@"File Name: {_loadedFileHash}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorLogging.ErrorLog(ex);
+            MessageBox.Show(ex.Message);
+        }
+    }
+
+    private async void calculatehashbtn_Click(object sender, EventArgs e)
+    {
+        try
+        {
+            await using var fs = new FileStream(_loadedFileHash, FileMode.Open, FileAccess.Read);
+            using var hashAlg = SHA512.Create();
+
+            var hashBytes = await hashAlg.ComputeHashAsync(fs);
+            var hashHexString = DataConversionHelpers.ByteArrayToHexString(hashBytes).ToLower();
+
+            hashoutputtxt.Text = hashHexString;
+        }
+        catch (Exception ex)
+        {
+            ErrorLogging.ErrorLog(ex);
+            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void calculatehashbtn_MouseHover(object sender, EventArgs e)
+    {
+        Tip.AutomaticDelay = 500;
+        Tip.IsBalloon = false;
+        Tip.ToolTipIcon = ToolTipIcon.Info;
+        Tip.Show("Calculates the hash of the opened file using SHA-512.", calculatehashbtn, int.MaxValue);
+    }
+
+    private void hashimportfile_MouseHover(object sender, EventArgs e)
+    {
+        Tip.AutomaticDelay = 500;
+        Tip.IsBalloon = false;
+        Tip.ToolTipIcon = ToolTipIcon.Info;
+        Tip.Show("Opens a file to calculate the hash.", calculatehashbtn, int.MaxValue);
     }
 }

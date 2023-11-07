@@ -185,7 +185,9 @@ public partial class Login : Form
             if (hashedInput == null)
                 throw new ArgumentException(@"Hash value returned null.", nameof(hashedInput));
 
-            var loginSuccessful = await Crypto.ComparePassword(hashedInput);
+            Authentication.GetUserInfo(userNameTxt.Text, _passwordArray);
+
+            var loginSuccessful = await Crypto.ComparePassword(hashedInput, Crypto.Hash);
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             Array.Clear(hashedInput, 0, hashedInput.Length);
             if (Crypto.Hash != null)
