@@ -38,7 +38,9 @@ public partial class RegisterAccount : Form
         var userDirectory = CreateDirectoryIfNotExists(Path.Combine("Password Vault", "Users", userName));
         var userFile = Path.Combine(userDirectory, $"{userName}.user");
         var userSalt = Path.Combine(userDirectory, $"{userName}.salt");
-
+        var userSalt2 = Path.Combine(userDirectory, $"{userName}-Salt2.salt");
+        var userSalt3 = Path.Combine(userDirectory, $"{userName}-Salt3.salt");
+        var userSalt4 = Path.Combine(userDirectory, $"{userName}-Salt4.salt");
         var userExists = Authentication.UserExists(userName);
 
         try
@@ -46,7 +48,7 @@ public partial class RegisterAccount : Form
             if (!userExists)
             {
                 DisableUi();
-                await RegisterAsync(userName, passArray, confirmPassArray, userFile, userSalt);
+                await RegisterAsync(userName, passArray, confirmPassArray, userFile, userSalt, userSalt2, userSalt3, userSalt4);
             }
             else
             {
@@ -102,7 +104,7 @@ public partial class RegisterAccount : Form
     }
 
     private async Task RegisterAsync(string username, char[] password, char[] confirmPassword, string userFile,
-        string userSalt)
+        string userSalt, string userSalt2, string userSalt3, string userSalt4)
     {
         try
         {
@@ -113,6 +115,9 @@ public partial class RegisterAccount : Form
             ValidateUsernameAndPassword(username, password, confirmPassword);
 
             var salt = Crypto.RndByteSized(Crypto.SaltSize);
+            var salt2 = Crypto.RndByteSized(Crypto.SaltSize);
+            var salt3 = Crypto.RndByteSized(Crypto.SaltSize);
+            var salt4 = Crypto.RndByteSized(Crypto.SaltSize);
             var hashedPassword = await Crypto.HashAsync(password, salt);
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
@@ -120,6 +125,9 @@ public partial class RegisterAccount : Form
                 throw new ArgumentException(@"Value was null or empty.", nameof(hashedPassword));
 
             var saltString = DataConversionHelpers.ByteArrayToBase64String(salt);
+            var saltString2 = DataConversionHelpers.ByteArrayToBase64String(salt2);
+            var saltstring3 = DataConversionHelpers.ByteArrayToBase64String(salt3);
+            var saltString4 = DataConversionHelpers.ByteArrayToBase64String(salt4);
 
             Crypto.Hash = hashedPassword;
             await File.WriteAllTextAsync(userFile,
@@ -127,6 +135,9 @@ public partial class RegisterAccount : Form
 
             await File.WriteAllTextAsync(userSalt,
                 DataConversionHelpers.ByteArrayToBase64String(salt));
+            await File.WriteAllTextAsync(userSalt2, saltString2);
+            await File.WriteAllTextAsync(userSalt3, saltstring3);
+            await File.WriteAllTextAsync(userSalt4, saltString4);
 
             var encrypted = await Crypto.EncryptFile(username, password, Authentication.GetUserFilePath(username));
             if (encrypted == Array.Empty<byte>())

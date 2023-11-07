@@ -29,6 +29,23 @@ public static class Authentication
             "Users", userName, $"{userName}.salt");
     }
 
+    public static string GetUserSalt2(string userName)
+    {
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault",
+            "Users", userName, $"{userName}-Salt2.salt");
+    }
+
+    public static string GetUserSalt3(string userName)
+    {
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault",
+            "Users", userName, $"{userName}-Salt3.salt");
+    }
+
+    public static string GetUserSalt4(string userName)
+    {
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault",
+            "Users", userName, $"{userName}-Salt4.salt");
+    }
 
     public static async void GetUserInfo(string userName, char[] passWord)
     {
