@@ -26,8 +26,7 @@ public partial class Login : Form
 
     private async void logInBtn_Click(object sender, EventArgs e)
     {
-        Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.AboveNormal;
-
+        Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
         switch (rememberMeCheckBox.Checked)
         {
             case true:
@@ -181,6 +180,7 @@ public partial class Login : Form
             Authentication.GetUserInfo(userNameTxt.Text, _passwordArray);
 
             var hashedInput = await Crypto.HashAsync(_passwordArray, saltBytes);
+
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             if (hashedInput == null)
                 throw new ArgumentException(@"Hash value returned null.", nameof(hashedInput));
@@ -188,6 +188,7 @@ public partial class Login : Form
             Authentication.GetUserInfo(userNameTxt.Text, _passwordArray);
 
             var loginSuccessful = await Crypto.ComparePassword(hashedInput, Crypto.Hash);
+
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             Array.Clear(hashedInput, 0, hashedInput.Length);
             if (Crypto.Hash != null)
@@ -280,7 +281,6 @@ public partial class Login : Form
                 SecurePassword = ConvertCharArrayToSecureString(_passwordArray);
 
                 Array.Clear(_passwordArray, 0, _passwordArray.Length);
-
                 MessageBox.Show(@"Login successful. Loading vault...", @"Login success.",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -293,7 +293,6 @@ public partial class Login : Form
 
             _passwordArray = SetArray();
             SecurePassword = ConvertCharArrayToSecureString(_passwordArray);
-
             Array.Clear(_passwordArray, 0, _passwordArray.Length);
             outputLbl.ForeColor = Color.LimeGreen;
             outputLbl.Text = @"Access granted";
@@ -313,7 +312,7 @@ public partial class Login : Form
         {
             Array.Clear(_passwordArray, 0, _passwordArray.Length);
             ErrorLogging.ErrorLog(e);
-            outputLbl.ForeColor = Color.WhiteSmoke;
+            outputLbl.ForeColor = Color.Red;
             outputLbl.Text = @"Login failed.";
             MessageBox.Show(e.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             outputLbl.ForeColor = Color.WhiteSmoke;
@@ -328,10 +327,12 @@ public partial class Login : Form
         Array.Clear(_passwordArray, 0, _passwordArray.Length);
         _isAnimating = false;
         EnableUi();
-        outputLbl.ForeColor = Color.WhiteSmoke;
-        outputLbl.Text = @"Idle...";
+        outputLbl.ForeColor = Color.Red;
+        outputLbl.Text = @"Login failed.";
         MessageBox.Show(@"Log in failed! Please recheck your login credentials and try again.", @"Error",
             MessageBoxButtons.OK, MessageBoxIcon.Error);
+        outputLbl.ForeColor = Color.WhiteSmoke;
+        outputLbl.Text = @"Idle...";
         _attemptsRemaining--;
         AttemptsNumber.Text = _attemptsRemaining.ToString();
     }

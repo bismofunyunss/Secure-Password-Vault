@@ -570,8 +570,6 @@ public static class Crypto
             Array.Clear(key2, 0, key2.Length);
             Array.Clear(key3, 0, key3.Length);
             Array.Clear(key4, 0, key4.Length);
-            MessageBox.Show(@"There was an error during encryption.", @"Error", MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
             Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
@@ -659,36 +657,72 @@ public static class Crypto
             Array.Clear(key2, 0, key2.Length);
             Array.Clear(key3, 0, key3.Length);
             Array.Clear(key4, 0, key4.Length);
-            MessageBox.Show(@"There was an error during decryption.", @"Error", MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
             Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
         }
     }
 
-    public static async Task<byte[]> EncryptAsyncV3Debug(byte[] plaintext, byte[] salt, byte[] password, byte[] nonce)
+    public static async Task<byte[]> EncryptAsyncV3Debug(byte[] plaintext, byte[] salt, byte[] salt2, byte[] salt3, byte[] salt4, byte[] password, byte[] nonce, byte[] nonce2, byte[] nonce3, byte[] nonce4)
     {
         // Debug method allows us to set the nonce manually.
+        using var argon2 = new Argon2id(password);
+        argon2.Salt = salt;
+        argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+        argon2.Iterations = Iterations;
+        argon2.MemorySize = (int)MemorySize;
+
+        var key = await argon2.GetBytesAsync(KeySize);
+
+        using var argon2L2 = new Argon2id(key);
+        argon2L2.Salt = salt2;
+        argon2L2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+        argon2L2.Iterations = Iterations;
+        argon2L2.MemorySize = (int)MemorySize;
+
+        var key2 = await argon2L2.GetBytesAsync(KeySize);
+
+        using var argon2L3 = new Argon2id(key2);
+        argon2L3.Salt = salt3;
+        argon2L3.DegreeOfParallelism = Environment.ProcessorCount * 2;
+        argon2L3.Iterations = Iterations;
+        argon2L3.MemorySize = (int)MemorySize;
+
+        var key3 = await argon2L3.GetBytesAsync(KeySize);
+
+        using var argon2L4 = new Argon2id(key3);
+        argon2L4.Salt = salt4;
+        argon2L4.DegreeOfParallelism = Environment.ProcessorCount * 2;
+        argon2L4.Iterations = Iterations;
+        argon2L4.MemorySize = (int)MemorySize;
+
+        var key4 = await argon2L4.GetBytesAsync(KeySize);
+
         try
         {
-            using var argon2 = new Argon2id(password);
-            argon2.Salt = salt;
-            argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
-            argon2.Iterations = Iterations;
-            argon2.MemorySize = (int)MemorySize;
-
-            var key = await argon2.GetBytesAsync(KeySize);
-
             var cipherText = SecretAeadXChaCha20Poly1305.Encrypt(plaintext, nonce, key);
+            var cipherTextL2 = SecretAeadXChaCha20Poly1305.Encrypt(cipherText, nonce2, key2);
+            var cipherTextL3 = SecretAeadXChaCha20Poly1305.Encrypt(cipherTextL2, nonce3, key3);
+            var cipherTextL4 = SecretAeadXChaCha20Poly1305.Encrypt(cipherTextL3, nonce4, key4);
 
-            cipherText = nonce.Concat(cipherText).ToArray();
+            Array.Clear(key, 0, key.Length);
+            Array.Clear(key2, 0, key2.Length);
+            Array.Clear(key3, 0, key3.Length);
+            Array.Clear(key4, 0, key4.Length);
 
-            return cipherText;
+            var cipherResult = nonce.Concat(nonce2).Concat(nonce3).Concat(nonce4).Concat(cipherTextL4).ToArray();
+
+            return cipherResult;
         }
+
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Array.Clear(key, 0, key.Length);
+            Array.Clear(key2, 0, key2.Length);
+            Array.Clear(key3, 0, key3.Length);
+            Array.Clear(key4, 0, key4.Length);
+            MessageBox.Show(@"There was an error during encryption.", @"Error", MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
             Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
