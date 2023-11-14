@@ -56,7 +56,7 @@
             userNameTxt.BackColor = Color.Black;
             userNameTxt.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             userNameTxt.ForeColor = Color.Gold;
-            userNameTxt.Location = new Point(6, 118);
+            userNameTxt.Location = new Point(6, 96);
             userNameTxt.Name = "userNameTxt";
             userNameTxt.Size = new Size(519, 33);
             userNameTxt.TabIndex = 1;
@@ -66,7 +66,7 @@
             passTxt.BackColor = Color.Black;
             passTxt.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             passTxt.ForeColor = Color.Gold;
-            passTxt.Location = new Point(6, 191);
+            passTxt.Location = new Point(6, 177);
             passTxt.Name = "passTxt";
             passTxt.Size = new Size(519, 33);
             passTxt.TabIndex = 3;
@@ -80,7 +80,7 @@
             logInBtn.FlatStyle = FlatStyle.Flat;
             logInBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             logInBtn.ForeColor = Color.WhiteSmoke;
-            logInBtn.Location = new Point(6, 230);
+            logInBtn.Location = new Point(6, 216);
             logInBtn.Name = "logInBtn";
             logInBtn.Size = new Size(519, 44);
             logInBtn.TabIndex = 4;
@@ -96,7 +96,7 @@
             createNewAccountBtn.FlatStyle = FlatStyle.Flat;
             createNewAccountBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             createNewAccountBtn.ForeColor = Color.WhiteSmoke;
-            createNewAccountBtn.Location = new Point(6, 280);
+            createNewAccountBtn.Location = new Point(6, 266);
             createNewAccountBtn.Name = "createNewAccountBtn";
             createNewAccountBtn.Size = new Size(519, 44);
             createNewAccountBtn.TabIndex = 5;
@@ -126,7 +126,7 @@
             loginBox.ForeColor = Color.WhiteSmoke;
             loginBox.Location = new Point(12, 12);
             loginBox.Name = "loginBox";
-            loginBox.Size = new Size(531, 432);
+            loginBox.Size = new Size(531, 410);
             loginBox.TabIndex = 6;
             loginBox.TabStop = false;
             loginBox.Text = "Login";
@@ -134,7 +134,7 @@
             // pictureBox3
             // 
             pictureBox3.Image = Properties.Resources.key__1_;
-            pictureBox3.Location = new Point(119, 154);
+            pictureBox3.Location = new Point(119, 135);
             pictureBox3.Name = "pictureBox3";
             pictureBox3.Size = new Size(34, 36);
             pictureBox3.TabIndex = 20;
@@ -143,7 +143,7 @@
             // pictureBox2
             // 
             pictureBox2.Image = Properties.Resources.profile;
-            pictureBox2.Location = new Point(119, 82);
+            pictureBox2.Location = new Point(119, 57);
             pictureBox2.Name = "pictureBox2";
             pictureBox2.Size = new Size(34, 33);
             pictureBox2.TabIndex = 19;
@@ -161,7 +161,7 @@
             // PasswordLbl
             // 
             PasswordLbl.AutoSize = true;
-            PasswordLbl.Location = new Point(6, 163);
+            PasswordLbl.Location = new Point(6, 146);
             PasswordLbl.Name = "PasswordLbl";
             PasswordLbl.Size = new Size(103, 25);
             PasswordLbl.TabIndex = 17;
@@ -170,7 +170,7 @@
             // Usernamelbl
             // 
             Usernamelbl.AutoSize = true;
-            Usernamelbl.Location = new Point(6, 90);
+            Usernamelbl.Location = new Point(6, 65);
             Usernamelbl.Name = "Usernamelbl";
             Usernamelbl.Size = new Size(107, 25);
             Usernamelbl.TabIndex = 16;
@@ -179,7 +179,7 @@
             // AttemptsNumber
             // 
             AttemptsNumber.AutoSize = true;
-            AttemptsNumber.Location = new Point(502, 379);
+            AttemptsNumber.Location = new Point(502, 367);
             AttemptsNumber.Name = "AttemptsNumber";
             AttemptsNumber.Size = new Size(23, 25);
             AttemptsNumber.TabIndex = 15;
@@ -188,7 +188,7 @@
             // AttemptsLeft
             // 
             AttemptsLeft.AutoSize = true;
-            AttemptsLeft.Location = new Point(272, 379);
+            AttemptsLeft.Location = new Point(272, 367);
             AttemptsLeft.Name = "AttemptsLeft";
             AttemptsLeft.Size = new Size(224, 25);
             AttemptsLeft.TabIndex = 14;
@@ -197,7 +197,7 @@
             // rememberMeCheckBox
             // 
             rememberMeCheckBox.AutoSize = true;
-            rememberMeCheckBox.Location = new Point(355, 330);
+            rememberMeCheckBox.Location = new Point(349, 316);
             rememberMeCheckBox.Name = "rememberMeCheckBox";
             rememberMeCheckBox.Size = new Size(176, 29);
             rememberMeCheckBox.TabIndex = 13;
@@ -207,7 +207,7 @@
             // showPasswordCheckBox
             // 
             showPasswordCheckBox.AutoSize = true;
-            showPasswordCheckBox.Location = new Point(6, 330);
+            showPasswordCheckBox.Location = new Point(6, 316);
             showPasswordCheckBox.Name = "showPasswordCheckBox";
             showPasswordCheckBox.Size = new Size(186, 29);
             showPasswordCheckBox.TabIndex = 12;
@@ -218,7 +218,7 @@
             // outputLbl
             // 
             outputLbl.AutoSize = true;
-            outputLbl.Location = new Point(102, 379);
+            outputLbl.Location = new Point(102, 367);
             outputLbl.Name = "outputLbl";
             outputLbl.Size = new Size(67, 25);
             outputLbl.TabIndex = 10;
@@ -227,7 +227,7 @@
             // statusLbl
             // 
             statusLbl.AutoSize = true;
-            statusLbl.Location = new Point(6, 379);
+            statusLbl.Location = new Point(6, 367);
             statusLbl.Name = "statusLbl";
             statusLbl.Size = new Size(90, 25);
             statusLbl.TabIndex = 9;
@@ -240,7 +240,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlDarkDark;
             BackgroundImageLayout = ImageLayout.Center;
-            ClientSize = new Size(555, 456);
+            ClientSize = new Size(555, 436);
             Controls.Add(loginBox);
             DoubleBuffered = true;
             FormBorderStyle = FormBorderStyle.Fixed3D;

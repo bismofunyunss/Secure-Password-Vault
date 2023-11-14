@@ -113,6 +113,7 @@ public partial class Vault : Form
             outputLbl.ForeColor = Color.LimeGreen;
             MessageBox.Show(@"Vault saved successfully.", @"Save vault", MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
+            EnableUi();
             outputLbl.Text = @"Idle...";
             outputLbl.ForeColor = Color.WhiteSmoke;
         }
