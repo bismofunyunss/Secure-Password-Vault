@@ -387,7 +387,7 @@
             UserWelcomeLbl.AutoSize = true;
             UserWelcomeLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             UserWelcomeLbl.ForeColor = Color.WhiteSmoke;
-            UserWelcomeLbl.Location = new Point(12, 1064);
+            UserWelcomeLbl.Location = new Point(22, 1053);
             UserWelcomeLbl.Name = "UserWelcomeLbl";
             UserWelcomeLbl.Size = new Size(146, 25);
             UserWelcomeLbl.TabIndex = 17;
@@ -465,9 +465,9 @@
             hashimportfile.FlatStyle = FlatStyle.Flat;
             hashimportfile.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             hashimportfile.ForeColor = Color.WhiteSmoke;
-            hashimportfile.Location = new Point(10, 165);
+            hashimportfile.Location = new Point(6, 165);
             hashimportfile.Name = "hashimportfile";
-            hashimportfile.Size = new Size(914, 44);
+            hashimportfile.Size = new Size(918, 44);
             hashimportfile.TabIndex = 5;
             hashimportfile.Text = "&Import File";
             hashimportfile.UseVisualStyleBackColor = false;

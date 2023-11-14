@@ -15,7 +15,7 @@ public partial class Vault : Form
     private static bool _fileOpened;
     private static string _result = string.Empty;
     private static readonly ToolTip Tip = new();
-    private const int maxFileSize = 950_000_000;
+    private const int MaxFileSize = 950_000_000;
     private static int _fileSize = 0;
 
     public Vault()
@@ -259,7 +259,7 @@ public partial class Vault : Form
                     throw new ArgumentException(@"Invalid file extension. Please select a text file.",
                         nameof(selectedFileName));
 
-                if (fileInfo.Length > maxFileSize)
+                if (fileInfo.Length > MaxFileSize)
                     throw new ArgumentException(@"File size is too large.", nameof(selectedFileName));
 
                 _fileSize = (int)fileInfo.Length;
@@ -413,7 +413,7 @@ public partial class Vault : Form
             if (!_fileOpened)
                 throw new ArgumentException(@"No file is opened.", nameof(_fileOpened));
 
-            if (_fileSize > maxFileSize)
+            if (_fileSize > MaxFileSize)
                 throw new ArgumentException(@"File size is too large.");
 
             SetArray();
@@ -522,6 +522,7 @@ public partial class Vault : Form
 
             await Task.Delay(125);
         }
+        // ReSharper disable once FunctionNeverReturns
     }
 
     private void DecryptBtn_MouseHover(object sender, EventArgs e)
@@ -601,8 +602,6 @@ public partial class Vault : Form
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 var selectedFileName = openFileDialog.FileName;
-                var selectedExtension = Path.GetExtension(selectedFileName).ToLower();
-                var fileInfo = new FileInfo(selectedFileName);
 
                 _loadedFileHash = selectedFileName;
 
@@ -635,6 +634,7 @@ public partial class Vault : Form
         {
             ErrorLogging.ErrorLog(ex);
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            hashoutputtxt.Text = string.Empty;
         }
     }
 
@@ -643,7 +643,8 @@ public partial class Vault : Form
         Tip.AutomaticDelay = 500;
         Tip.IsBalloon = false;
         Tip.ToolTipIcon = ToolTipIcon.Info;
-        Tip.Show("Calculates the hash of the opened file using SHA-512.", calculatehashbtn, int.MaxValue);
+        Tip.Show("Calculates the hash of the opened file using SHA-512. Beware, larger files take longer to hash so please be patient.",
+                  calculatehashbtn, int.MaxValue);
     }
 
     private void hashimportfile_MouseHover(object sender, EventArgs e)

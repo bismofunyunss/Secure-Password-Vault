@@ -65,7 +65,6 @@ public partial class RegisterAccount : Form
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
-
     private void DisableUi()
     {
         showPasswordCheckBox.Enabled = false;
@@ -131,10 +130,10 @@ public partial class RegisterAccount : Form
 
             Crypto.Hash = hashedPassword;
             await File.WriteAllTextAsync(userFile,
-                $"User:\n{username}\nUserID:\nSalt:\n{saltString}\nHash:\n{DataConversionHelpers.ByteArrayToHexString(hashedPassword)}\n");
+                $"User:\n{username}\nHash:\n{DataConversionHelpers.ByteArrayToHexString(hashedPassword)}");
 
             await File.WriteAllTextAsync(userSalt,
-                DataConversionHelpers.ByteArrayToBase64String(salt));
+                saltString);
             await File.WriteAllTextAsync(userSalt2, saltString2);
             await File.WriteAllTextAsync(userSalt3, saltstring3);
             await File.WriteAllTextAsync(userSalt4, saltString4);

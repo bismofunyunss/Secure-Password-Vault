@@ -1,4 +1,6 @@
-﻿namespace Secure_Password_Vault;
+﻿using System;
+
+namespace Secure_Password_Vault;
 
 public static class Authentication
 {
@@ -23,28 +25,32 @@ public static class Authentication
     }
 
 
-    public static string GetUserSalt(string userName)
-    {
-        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault",
-            "Users", userName, $"{userName}.salt");
-    }
+    public static async Task<(byte[] Salt, byte[] Salt2, byte[] Salt3, byte[] Salt4)> GetUserSaltAsync(string userName)
+    { 
+        try
+        {
+            var salt = await File.ReadAllTextAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), 
+                "Password Vault", "Users", userName, $"{userName}.salt"));
+            var salt2 = await File.ReadAllTextAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Password Vault", "Users", userName, $"{userName}-Salt2.salt"));
+            var salt3 = await File.ReadAllTextAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Password Vault", "Users", userName, $"{userName}-Salt3.salt"));
+            var salt4 = await File.ReadAllTextAsync(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Password Vault", "Users", userName, $"{userName}-Salt4.salt"));
 
-    public static string GetUserSalt2(string userName)
-    {
-        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault",
-            "Users", userName, $"{userName}-Salt2.salt");
-    }
+            var saltResult = DataConversionHelpers.Base64StringToByteArray(salt);
+            var saltResult2 = DataConversionHelpers.Base64StringToByteArray(salt2);
+            var saltResult3 = DataConversionHelpers.Base64StringToByteArray(salt3);
+            var saltResult4 = DataConversionHelpers.Base64StringToByteArray(salt4);
 
-    public static string GetUserSalt3(string userName)
-    {
-        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault",
-            "Users", userName, $"{userName}-Salt3.salt");
-    }
-
-    public static string GetUserSalt4(string userName)
-    {
-        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Password Vault",
-            "Users", userName, $"{userName}-Salt4.salt");
+            return (saltResult, saltResult2, saltResult3, saltResult4);
+        }
+        catch (IOException ex)
+        {
+            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            ErrorLogging.ErrorLog(ex);
+            return (Array.Empty<byte>(), Array.Empty<byte>(), Array.Empty<byte>(), Array.Empty<byte>());
+        }
     }
 
     public static async void GetUserInfo(string userName, char[] passWord)
@@ -58,7 +64,7 @@ public static class Authentication
             var lines = await File.ReadAllLinesAsync(path);
             var index = Array.IndexOf(lines, "User:");
             if (index == -1) return;
-            Crypto.Hash = DataConversionHelpers.HexStringToByteArray(lines[index + 6]) ?? Array.Empty<byte>();
+            Crypto.Hash = DataConversionHelpers.HexStringToByteArray(lines[index + 3]) ?? Array.Empty<byte>();
         }
         catch (IOException ex)
         {

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Security;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace Secure_Password_Vault;
 
@@ -26,7 +27,7 @@ public partial class Login : Form
 
     private async void logInBtn_Click(object sender, EventArgs e)
     {
-        Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
+        Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.AboveNormal;
         switch (rememberMeCheckBox.Checked)
         {
             case true:
@@ -133,12 +134,11 @@ public partial class Login : Form
         return _passwordArray;
     }
 
-    private async Task<byte[]?> SetSalt()
+    private async Task<(byte[] s, byte[] s2, byte[] s3, byte[] s4)> SetSalt()
     {
-        var saltString = await File.ReadAllTextAsync(Authentication.GetUserSalt(userNameTxt.Text));
-        var saltBytes = DataConversionHelpers.Base64StringToByteArray(saltString);
+        var saltBytes = await Authentication.GetUserSaltAsync(userNameTxt.Text);
 
-        return saltBytes;
+        return (saltBytes.Salt, saltBytes.Salt2, saltBytes.Salt3, saltBytes.Salt4);
     }
 
     private async Task ProcessLoginAsync(bool userExists)
@@ -160,7 +160,6 @@ public partial class Login : Form
 
         if (showPasswordCheckBox.Checked)
             showPasswordCheckBox.Checked = false;
-
         _passwordArray = SetArray();
 
         var decryptedBytes = await Crypto.DecryptFile(userNameTxt.Text, _passwordArray,
@@ -179,7 +178,7 @@ public partial class Login : Form
 
             Authentication.GetUserInfo(userNameTxt.Text, _passwordArray);
 
-            var hashedInput = await Crypto.HashAsync(_passwordArray, saltBytes);
+            var hashedInput = await Crypto.HashAsync(_passwordArray, saltBytes.s);
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             if (hashedInput == null)
