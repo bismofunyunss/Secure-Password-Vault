@@ -63,6 +63,26 @@ namespace Secure_Password_Vault.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap cryptography {
+            get {
+                object obj = ResourceManager.GetObject("cryptography", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap cyber {
+            get {
+                object obj = ResourceManager.GetObject("cyber", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap cyber_security {
             get {
                 object obj = ResourceManager.GetObject("cyber-security", resourceCulture);
@@ -163,9 +183,39 @@ namespace Secure_Password_Vault.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap lock__1_ {
+            get {
+                object obj = ResourceManager.GetObject("lock (1)", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap lock__2_ {
+            get {
+                object obj = ResourceManager.GetObject("lock (2)", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap profile {
             get {
                 object obj = ResourceManager.GetObject("profile", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap safe_box {
+            get {
+                object obj = ResourceManager.GetObject("safe-box", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

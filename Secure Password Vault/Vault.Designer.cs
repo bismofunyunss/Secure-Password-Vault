@@ -63,10 +63,16 @@
             hashoutputlbl = new Label();
             hashoutputtxt = new TextBox();
             hashimportfile = new Button();
+            pictureBox2 = new PictureBox();
+            pictureBox3 = new PictureBox();
+            pictureBox4 = new PictureBox();
             ((System.ComponentModel.ISupportInitialize)PassVault).BeginInit();
             vaultBox.SuspendLayout();
             FileEncryptDecryptBox.SuspendLayout();
             hashbox.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox3).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox4).BeginInit();
             SuspendLayout();
             // 
             // PassVault
@@ -220,13 +226,14 @@
             // 
             // vaultBox
             // 
+            vaultBox.Controls.Add(pictureBox4);
             vaultBox.Controls.Add(outputLbl);
             vaultBox.Controls.Add(statusLbl);
             vaultBox.Controls.Add(PassVault);
             vaultBox.Controls.Add(saveVaultBtn);
             vaultBox.Controls.Add(addRowBtn);
             vaultBox.Controls.Add(deleteRowBtn);
-            vaultBox.Font = new Font("Segoe Script", 11F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            vaultBox.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             vaultBox.ForeColor = Color.WhiteSmoke;
             vaultBox.Location = new Point(12, 12);
             vaultBox.Name = "vaultBox";
@@ -257,6 +264,7 @@
             // 
             // FileEncryptDecryptBox
             // 
+            FileEncryptDecryptBox.Controls.Add(pictureBox3);
             FileEncryptDecryptBox.Controls.Add(FileSizeNumLbl);
             FileEncryptDecryptBox.Controls.Add(FileSizeLbl);
             FileEncryptDecryptBox.Controls.Add(FileOutputLbl);
@@ -387,7 +395,7 @@
             UserWelcomeLbl.AutoSize = true;
             UserWelcomeLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             UserWelcomeLbl.ForeColor = Color.WhiteSmoke;
-            UserWelcomeLbl.Location = new Point(22, 1053);
+            UserWelcomeLbl.Location = new Point(12, 1056);
             UserWelcomeLbl.Name = "UserWelcomeLbl";
             UserWelcomeLbl.Size = new Size(146, 25);
             UserWelcomeLbl.TabIndex = 17;
@@ -395,6 +403,7 @@
             // 
             // hashbox
             // 
+            hashbox.Controls.Add(pictureBox2);
             hashbox.Controls.Add(filenamelbl);
             hashbox.Controls.Add(calculatehashbtn);
             hashbox.Controls.Add(hashoutputlbl);
@@ -474,12 +483,39 @@
             hashimportfile.Click += hashimportfile_Click;
             hashimportfile.MouseHover += hashimportfile_MouseHover;
             // 
+            // pictureBox2
+            // 
+            pictureBox2.Image = Properties.Resources.cryptography;
+            pictureBox2.Location = new Point(855, 211);
+            pictureBox2.Name = "pictureBox2";
+            pictureBox2.Size = new Size(69, 65);
+            pictureBox2.TabIndex = 21;
+            pictureBox2.TabStop = false;
+            // 
+            // pictureBox3
+            // 
+            pictureBox3.Image = Properties.Resources.cyber;
+            pictureBox3.Location = new Point(854, 168);
+            pictureBox3.Name = "pictureBox3";
+            pictureBox3.Size = new Size(67, 75);
+            pictureBox3.TabIndex = 17;
+            pictureBox3.TabStop = false;
+            // 
+            // pictureBox4
+            // 
+            pictureBox4.Image = Properties.Resources.safe_box;
+            pictureBox4.Location = new Point(862, 398);
+            pictureBox4.Name = "pictureBox4";
+            pictureBox4.Size = new Size(62, 69);
+            pictureBox4.TabIndex = 13;
+            pictureBox4.TabStop = false;
+            // 
             // Vault
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlDarkDark;
-            ClientSize = new Size(954, 1098);
+            ClientSize = new Size(954, 1097);
             Controls.Add(UserWelcomeLbl);
             Controls.Add(hashbox);
             Controls.Add(FileEncryptDecryptBox);
@@ -497,6 +533,9 @@
             FileEncryptDecryptBox.PerformLayout();
             hashbox.ResumeLayout(false);
             hashbox.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox3).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox4).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -530,5 +569,8 @@
         private TextBox hashoutputtxt;
         private Label filenamelbl;
         private Button calculatehashbtn;
+        private PictureBox pictureBox2;
+        private PictureBox pictureBox4;
+        private PictureBox pictureBox3;
     }
 }
