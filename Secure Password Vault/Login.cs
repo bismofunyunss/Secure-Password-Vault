@@ -313,7 +313,7 @@ public partial class Login : Form
             ErrorLogging.ErrorLog(e);
             outputLbl.ForeColor = Color.Red;
             outputLbl.Text = @"Login failed.";
-            MessageBox.Show(e.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(@"Log in failed. Please check your login credentials and try again.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             outputLbl.ForeColor = Color.WhiteSmoke;
             outputLbl.Text = @"Idle...";
             _isAnimating = false;

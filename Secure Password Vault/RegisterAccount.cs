@@ -168,7 +168,7 @@ public partial class RegisterAccount : Form
             outputLbl.Text = @"Idle...";
             _isAnimating = false;
             ErrorLogging.ErrorLog(ex);
-            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(@"There was an error while creating a new account.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         catch (Exception ex)
         {
@@ -177,7 +177,7 @@ public partial class RegisterAccount : Form
             outputLbl.Text = @"Idle...";
             _isAnimating = false;
             ErrorLogging.ErrorLog(ex);
-            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(@"There was an error while creating a new account.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 

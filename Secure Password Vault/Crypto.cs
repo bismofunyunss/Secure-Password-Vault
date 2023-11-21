@@ -7,8 +7,8 @@ namespace Secure_Password_Vault;
 
 public static class Crypto
 {
-    private const int Iterations = 32;
-    private const double MemorySize = 1024d * 1024d * 5d;
+    private const int Iterations = 1; // 32 iterations in release build
+    private const double MemorySize = 1024d * 1024d * 1d; // 5gib in release build
     public const int SaltSize = 512 / 8;
     public static readonly int ByteSize = 24;
     public static readonly int KeySize = 32;
@@ -204,35 +204,33 @@ public static class Crypto
     }
 
 #pragma warning disable
+
     private const int BlockBitSize = 128;
     private const int KeyBitSize = 256;
-
     public static async Task<byte[]> EncryptAsync(byte[] plainText, byte[] key, byte[] iv, byte[] salt)
     {
+        if (plainText == Array.Empty<byte>())
+            throw new ArgumentException(@"Value was empty or null.", nameof(plainText));
+        if (key == Array.Empty<byte>())
+            throw new ArgumentException(@"Value was empty or null.", nameof(key));
+        if (salt == Array.Empty<byte>())
+            throw new ArgumentException(@"Value was empty or null.", nameof(salt));
+
+        using var argon2 = new Argon2id(key);
+        argon2.Salt = salt;
+        argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+        argon2.Iterations = Iterations;
+        argon2.MemorySize = (int)MemorySize;
+
+        var hmacKey = await argon2.GetBytesAsync(HmacLength);
+
         try
         {
-            if (plainText == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty or null.", nameof(plainText));
-            if (key == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty or null.", nameof(key));
-            if (salt == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty or null.", nameof(salt));
-            if (iv == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty or null.", nameof(iv));
-
             using var aes = Aes.Create();
             aes.BlockSize = BlockBitSize;
             aes.KeySize = KeyBitSize;
             aes.Mode = CipherMode.CBC;
             aes.Padding = PaddingMode.PKCS7;
-
-            using var argon2 = new Argon2id(key);
-            argon2.Salt = salt;
-            argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
-            argon2.Iterations = Iterations;
-            argon2.MemorySize = (int)MemorySize;
-
-            var hmacKey = await argon2.GetBytesAsync(HmacLength);
 
             byte[] cipherText;
 
@@ -244,11 +242,11 @@ public static class Crypto
                 {
                     using (var cipherStream = new MemoryStream(plainText))
                     {
-                        cipherStream.FlushAsync();
-                        cipherStream.CopyToAsync(cryptoStream, (int)cipherStream.Length);
+                       await cipherStream.FlushAsync();
+                       await cipherStream.CopyToAsync(cryptoStream, (int)cipherStream.Length);
                     }
 
-                    cryptoStream.FlushFinalBlockAsync();
+                    await cryptoStream.FlushFinalBlockAsync();
                 }
 
                 cipherText = memStream.ToArray();
@@ -275,24 +273,28 @@ public static class Crypto
         catch (CryptographicException ex)
         {
             Array.Clear(key, 0, key.Length);
+            Array.Clear(hmacKey, 0, hmacKey.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
         }
         catch (ArgumentNullException ex)
         {
             Array.Clear(key, 0, key.Length);
+            Array.Clear(hmacKey, 0, hmacKey.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
         }
         catch (ObjectDisposedException ex)
         {
             Array.Clear(key, 0, key.Length);
+            Array.Clear(hmacKey, 0, hmacKey.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
         }
         catch (Exception ex)
         {
             Array.Clear(key, 0, key.Length);
+            Array.Clear(hmacKey, 0, hmacKey.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
         }
@@ -300,28 +302,28 @@ public static class Crypto
 
     public static async Task<byte[]> DecryptAsync(byte[] cipherText, byte[] key, byte[] salt)
     {
+        if (cipherText == Array.Empty<byte>())
+            throw new ArgumentException(@"Value was empty or null.", nameof(cipherText));
+        if (key == Array.Empty<byte>())
+            throw new ArgumentException(@"Value was empty or null.", nameof(key));
+        if (salt == Array.Empty<byte>())
+            throw new ArgumentException(@"Value was empty or null.", nameof(salt));
+
+        using var argon2 = new Argon2id(key);
+        argon2.Salt = salt;
+        argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
+        argon2.Iterations = Iterations;
+        argon2.MemorySize = (int)MemorySize;
+
+        var hmacKey = await argon2.GetBytesAsync(HmacLength);
+
         try
         {
-            if (cipherText == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty or null.", nameof(cipherText));
-            if (key == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty or null.", nameof(key));
-            if (salt == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty or null.", nameof(salt));
-
             using var aes = Aes.Create();
             aes.BlockSize = BlockBitSize;
             aes.KeySize = KeyBitSize;
             aes.Mode = CipherMode.CBC;
             aes.Padding = PaddingMode.PKCS7;
-
-            using var argon2 = new Argon2id(key);
-            argon2.Salt = salt;
-            argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
-            argon2.Iterations = Iterations;
-            argon2.MemorySize = (int)MemorySize;
-
-            var hmacKey = await argon2.GetBytesAsync(HmacLength);
 
             using var hmac = new HMACBlake2B(hmacKey, HmacLength * 8);
             var receivedHash = new byte[HmacLength];
@@ -337,7 +339,9 @@ public static class Crypto
             var isMatch = CryptographicOperations.FixedTimeEquals(receivedHash, hashedInput);
 
             if (!isMatch)
-                throw new CryptographicException("Invalid tag.");
+                throw new CryptographicException();
+
+            Array.Clear(hmacKey, 0, hmacKey.Length);
 
             var (cipherResult, iv) = InitBuffer(cipherWithIv);
 
@@ -347,8 +351,8 @@ public static class Crypto
             {
                 using (var plainStream = new MemoryStream(cipherResult))
                 {
-                    plainStream.CopyTo(decryptStream, (int)plainStream.Length);
-                    plainStream.FlushAsync();
+                    await plainStream.CopyToAsync(decryptStream, (int)plainStream.Length);
+                    await plainStream.FlushAsync();
                 }
 
                 await decryptStream.FlushFinalBlockAsync();
@@ -361,24 +365,28 @@ public static class Crypto
         catch (CryptographicException ex)
         {
             Array.Clear(key, 0, key.Length);
+            Array.Clear(hmacKey, 0, hmacKey.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
         }
         catch (ArgumentNullException ex)
         {
             Array.Clear(key, 0, key.Length);
+            Array.Clear(hmacKey, 0, hmacKey.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
         }
         catch (ObjectDisposedException ex)
         {
             Array.Clear(key, 0, key.Length);
+            Array.Clear(hmacKey, 0, hmacKey.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
         }
         catch (Exception ex)
         {
             Array.Clear(key, 0, key.Length);
+            Array.Clear(hmacKey, 0, hmacKey.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
         }
@@ -386,7 +394,7 @@ public static class Crypto
     }
 
     public static async Task<byte[]> EncryptAsyncV3(byte[] plaintext, byte[] salt, byte[] salt2, byte[] salt3,
-        byte[] password)
+          byte[] password)
     {
         using var argon2 = new Argon2id(password);
         argon2.Salt = salt;
@@ -464,7 +472,7 @@ public static class Crypto
 
         try
         {
-            if (cipherText == Array.Empty<byte>() || salt == Array.Empty<byte>() || salt2 == Array.Empty<byte>() 
+            if (cipherText == Array.Empty<byte>() || salt == Array.Empty<byte>() || salt2 == Array.Empty<byte>()
                 || password == Array.Empty<byte>())
                 throw new ArgumentException(@"Value was empty.",
                     cipherText == Array.Empty<byte>() ? nameof(cipherText) :
@@ -511,8 +519,8 @@ public static class Crypto
         }
     }
 
-    public static async Task<byte[]> EncryptAsyncV3Debug(byte[] plaintext, byte[] salt, byte[] salt2, byte[] salt3,
-        byte[] salt4, byte[] password, byte[] nonce, byte[] nonce2, byte[] nonce3, byte[] nonce4)
+    public static async Task<byte[]> EncryptAsyncV3Debug(byte[] plaintext, byte[] salt, byte[] salt2, 
+       byte[] salt3, byte[] password, byte[] nonce, byte[] nonce2)
     {
         // Debug method allows us to set the nonce manually.
         using var argon2 = new Argon2id(password);
@@ -531,47 +539,36 @@ public static class Crypto
 
         var key2 = await argon2L2.GetBytesAsync(KeySize);
 
-        using var argon2L3 = new Argon2id(key2);
-        argon2L3.Salt = salt3;
-        argon2L3.DegreeOfParallelism = Environment.ProcessorCount * 2;
-        argon2L3.Iterations = Iterations;
-        argon2L3.MemorySize = (int)MemorySize;
-
-        var key3 = await argon2L3.GetBytesAsync(KeySize);
-
-        using var argon2L4 = new Argon2id(key3);
-        argon2L4.Salt = salt4;
-        argon2L4.DegreeOfParallelism = Environment.ProcessorCount * 2;
-        argon2L4.Iterations = Iterations;
-        argon2L4.MemorySize = (int)MemorySize;
-
-        var key4 = await argon2L4.GetBytesAsync(KeySize);
-
         try
         {
+            if (plaintext == Array.Empty<byte>() || salt == Array.Empty<byte>() || salt2 == Array.Empty<byte>()
+                || password == Array.Empty<byte>())
+                throw new ArgumentException(@"Value was empty.",
+                    plaintext == Array.Empty<byte>() ? nameof(plaintext) :
+                    salt == Array.Empty<byte>() ? nameof(salt) :
+                    salt2 == Array.Empty<byte>() ? nameof(salt2) :
+                    nameof(password));
+
             var cipherText = SecretAeadXChaCha20Poly1305.Encrypt(plaintext, nonce, key);
-            var cipherTextL2 = SecretAeadXChaCha20Poly1305.Encrypt(cipherText, nonce2, key2);
-            var cipherTextL3 = SecretAeadXChaCha20Poly1305.Encrypt(cipherTextL2, nonce3, key3);
-            var cipherTextL4 = SecretAeadXChaCha20Poly1305.Encrypt(cipherTextL3, nonce4, key4);
+            var cipherTextL2 = await EncryptAsync(cipherText, key2, nonce2, salt3);
 
             Array.Clear(key, 0, key.Length);
             Array.Clear(key2, 0, key2.Length);
-            Array.Clear(key3, 0, key3.Length);
-            Array.Clear(key4, 0, key4.Length);
 
-            var cipherResult = nonce.Concat(nonce2).Concat(nonce3).Concat(nonce4).Concat(cipherTextL4).ToArray();
-
-            return cipherResult;
+            return nonce.Concat(nonce2).Concat(cipherTextL2).ToArray();
         }
-
+        catch (CryptographicException ex)
+        {
+            Array.Clear(key, 0, key.Length);
+            Array.Clear(key2, 0, key2.Length);
+            Array.Clear(password, 0, password.Length);
+            ErrorLogging.ErrorLog(ex);
+            return Array.Empty<byte>();
+        }
         catch (Exception ex)
         {
             Array.Clear(key, 0, key.Length);
             Array.Clear(key2, 0, key2.Length);
-            Array.Clear(key3, 0, key3.Length);
-            Array.Clear(key4, 0, key4.Length);
-            MessageBox.Show(@"There was an error during encryption.", @"Error", MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
             Array.Clear(password, 0, password.Length);
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();

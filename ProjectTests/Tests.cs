@@ -51,9 +51,8 @@ public class Tests
         0x1c, 0x8f, 0x5a, 0x63,
         0x2e, 0xd7, 0x49, 0x0b,
         0xc2, 0x7f, 0x38, 0x96,
-        0xe1, 0xa4, 0x72, 0x9d,
-        0x51, 0x3e, 0xb6, 0x19,
-        0x4d, 0x68, 0x7a, 0xf6
+        0xe1, 0xa4, 0x72, 0x9d
+
     };
     private static readonly byte[] Nonce3 = {
         0x1b, 0x7e, 0x3d, 0x98,
@@ -71,7 +70,8 @@ public class Tests
         0x89, 0x6a, 0xbf, 0x40,
         0x73, 0x14, 0xd6, 0x2f
     };
-    string expectedResult = "EjRWeJq83vARIjNEVWZ3iJmqu8zd7v+XHI9aYy7XSQvCfziW4aRynVE+thlNaHr2G349mGr0LNGPW+CTRXJtoccY9oUpDrRfVh+NoulcMnhLDfdhPpfKJYlqv0BzFNYvH3agkTdxm7IEknTeTVVw6B1NFMSjhybDl1sAk8k9fe/p6aUrBD1KeBmTh2Nxy/R5uVg0/FkNNmOIALrIJGg5riULHRdkCyN20jSHif+Z1Tsl3y4aLSd7rmJjkv4=";
+
+    private const string ExpectedResult = "EjRWeJq83vARIjNEVWZ3iJmqu8zd7v+XHI9aYy7XSQvCfziW4aRynRyPWmMu10kLwn84luGkcp2dRh9HmzIPO03uLd1t/uJ3Q6viwWSOFCPw5igwRfh0kN8N5lvMtLcS+RuuTz99iG0UaroCqb1XHbrNXAnePYkEECEDcKarp6msSMEtt3f24Zu63+yONbBCBCo8c3FoXasuwvoGAVBFYJS3FUYQlxaR";
 
     [TestMethod]
     [Description("Generates a random byte array of a specified length.")]
@@ -85,14 +85,14 @@ public class Tests
     public async Task xChaCha20Poly1305Decryption()
     {
         byte[] encryptedTest = await Crypto.EncryptAsyncV3Debug(DataConversionHelpers.StringToByteArray(plainText),
-            Salt, Salt2, Salt3, Salt4,
-            Encoding.UTF8.GetBytes(passString), Nonce, Nonce2, Nonce3, Nonce4);
+            Salt, Salt2, Salt3,
+            Encoding.UTF8.GetBytes(passString), Nonce, Nonce2);
 
         string encryptResult = DataConversionHelpers.ByteArrayToBase64String(encryptedTest);
         Assert.IsNotNull(encryptedTest);
-        Assert.AreEqual(encryptResult, expectedResult);
+        Assert.AreEqual(encryptResult, ExpectedResult);
 
-        byte[] decryptedTest = await Crypto.DecryptAsyncV3(encryptedTest, Salt, Salt2, Salt3, Salt4,Encoding.UTF8.GetBytes(passString));
+        byte[] decryptedTest = await Crypto.DecryptAsyncV3(encryptedTest, Salt, Salt2, Salt3, Encoding.UTF8.GetBytes(passString));
         string decryptResult = DataConversionHelpers.ByteArrayToString(decryptedTest);
         Assert.IsNotNull(decryptResult);
         Assert.AreEqual(plainText, decryptResult);
@@ -102,11 +102,11 @@ public class Tests
     public async Task xChaCha20Poly1305Encryption()
     {
         byte[] encryptedTest = await Crypto.EncryptAsyncV3Debug(DataConversionHelpers.StringToByteArray(plainText),
-            Salt, Salt2, Salt3, Salt4,
-            Encoding.UTF8.GetBytes(passString), Nonce, Nonce2, Nonce3, Nonce4);
+            Salt, Salt2, Salt3,
+            Encoding.UTF8.GetBytes(passString), Nonce, Nonce2);
         string s = DataConversionHelpers.ByteArrayToBase64String(encryptedTest);
         Assert.IsNotNull(encryptedTest);
-        Assert.AreEqual(expectedResult, s);
+        Assert.AreEqual(ExpectedResult, s);
     }
 
     [TestMethod]
