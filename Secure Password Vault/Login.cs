@@ -178,7 +178,7 @@ public partial class Login : Form
 
             Authentication.GetUserInfo(userNameTxt.Text, _passwordArray);
 
-            var hashedInput = await Crypto.HashAsync(_passwordArray, saltBytes.s);
+            var hashedInput = await Crypto.Argon2Id(_passwordArray, saltBytes.s, 24);
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             if (hashedInput == null)

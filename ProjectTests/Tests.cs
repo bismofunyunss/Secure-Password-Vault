@@ -71,7 +71,8 @@ public class Tests
         0x73, 0x14, 0xd6, 0x2f
     };
 
-    private const string ExpectedResult = "EjRWeJq83vARIjNEVWZ3iJmqu8zd7v+XHI9aYy7XSQvCfziW4aRynRyPWmMu10kLwn84luGkcp2dRh9HmzIPO03uLd1t/uJ3Q6viwWSOFCPw5igwRfh0kN8N5lvMtLcS+RuuTz99iG0UaroCqb1XHbrNXAnePYkEECEDcKarp6msSMEtt3f24Zu63+yONbBCBCo8c3FoXasuwvoGAVBFYJS3FUYQlxaR";
+    private const string ExpectedResult =
+        "EjRWeJq83vARIjNEVWZ3iJmqu8zd7v+XHI9aYy7XSQvCfziW4aRynRyPWmMu10kLwn84luGkcp2zYHJGIimTvMhsS1d0NuUNiU98xEnBZvHL3bUERDSlKFwwIxqw71869mnBt/tSO8WuZkSC+hhzLgLud9kSgI+yZ9rGfwLRqONsASGW1ol07VtLdhwo1/8gJRGR1P/hHoEklOWeJdYHtMDUhV/wgp4D";
 
     [TestMethod]
     [Description("Generates a random byte array of a specified length.")]
@@ -82,28 +83,56 @@ public class Tests
     }
     
     [TestMethod]
-    public async Task xChaCha20Poly1305Decryption()
+    public async Task Decryption()
     {
+        var bytes = await Crypto.Argon2Id(passString.ToCharArray(), Salt, 128);
+
+        var key = new byte[32];
+        var key2 = new byte[32];
+        var hMacKey = new byte[64];
+
+        Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
+        Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
+        Buffer.BlockCopy(bytes, key.Length + key2.Length, hMacKey, 0, hMacKey.Length);
+
         byte[] encryptedTest = await Crypto.EncryptAsyncV3Debug(DataConversionHelpers.StringToByteArray(plainText),
-            Salt, Salt2, Salt3,
-            Encoding.UTF8.GetBytes(passString), Nonce, Nonce2);
+            Nonce, Nonce2, key, key2, hMacKey);
 
         string encryptResult = DataConversionHelpers.ByteArrayToBase64String(encryptedTest);
         Assert.IsNotNull(encryptedTest);
-        Assert.AreEqual(encryptResult, ExpectedResult);
+        Assert.AreEqual(ExpectedResult, encryptResult);
+        
+        bytes = await Crypto.Argon2Id(passString.ToCharArray(), Salt, 128);
+        
+        key = new byte[32];
+        key2 = new byte[32];
+        hMacKey = new byte[64];
 
-        byte[] decryptedTest = await Crypto.DecryptAsyncV3(encryptedTest, Salt, Salt2, Salt3, Encoding.UTF8.GetBytes(passString));
+        Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
+        Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
+        Buffer.BlockCopy(bytes, key.Length + key2.Length, hMacKey, 0, hMacKey.Length);
+
+        byte[] decryptedTest = await Crypto.DecryptAsyncV3(DataConversionHelpers.Base64StringToByteArray(encryptResult), key, key2, hMacKey);
         string decryptResult = DataConversionHelpers.ByteArrayToString(decryptedTest);
         Assert.IsNotNull(decryptResult);
         Assert.AreEqual(plainText, decryptResult);
     }
 
     [TestMethod]
-    public async Task xChaCha20Poly1305Encryption()
+    public async Task Encryption()
     {
-        byte[] encryptedTest = await Crypto.EncryptAsyncV3Debug(DataConversionHelpers.StringToByteArray(plainText),
-            Salt, Salt2, Salt3,
-            Encoding.UTF8.GetBytes(passString), Nonce, Nonce2);
+        var bytes = await Crypto.Argon2Id(passString.ToCharArray(), Salt, 128);
+
+        var key = new byte[32];
+        var key2 = new byte[32];
+        var hMacKey = new byte[64];
+
+        Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
+        Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
+        Buffer.BlockCopy(bytes, key.Length + key2.Length, hMacKey, 0, hMacKey.Length);
+
+        byte[] encryptedTest = await Crypto.EncryptAsyncV3Debug(DataConversionHelpers.StringToByteArray(plainText), 
+            Nonce, Nonce2, key, key2, hMacKey);
         string s = DataConversionHelpers.ByteArrayToBase64String(encryptedTest);
         Assert.IsNotNull(encryptedTest);
         Assert.AreEqual(ExpectedResult, s);
@@ -113,7 +142,7 @@ public class Tests
     public async Task Hash()
     {
         char[] passArray = passString.ToCharArray();
-        byte[] result = await Crypto.HashAsync(passArray, Salt) ?? Array.Empty<byte>();
+        byte[] result = await Crypto.Argon2Id(passArray, Salt, 32) ?? Array.Empty<byte>();
 
         Assert.IsNotNull(result);
     }

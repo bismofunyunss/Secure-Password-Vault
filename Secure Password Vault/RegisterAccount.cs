@@ -117,7 +117,7 @@ public partial class RegisterAccount : Form
             var salt2 = Crypto.RndByteSized(Crypto.SaltSize);
             var salt3 = Crypto.RndByteSized(Crypto.SaltSize);
             var salt4 = Crypto.RndByteSized(Crypto.SaltSize);
-            var hashedPassword = await Crypto.HashAsync(password, salt);
+            var hashedPassword = await Crypto.Argon2Id(password, salt, 24);
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             if (hashedPassword == null)
