@@ -22,7 +22,7 @@ public static class Crypto
     public static byte[]? Hash { get; set; } = Array.Empty<byte>();
 
     /// <summary>
-    /// Hashes a password inside of a char array or derives a key from a password.
+    /// Hashes passwords, and derives keys from passwords using argon2id.
     /// </summary>
     /// <param name="passWord">The char array to hash.</param>
     /// <param name="salt">The salt used during the argon2id hashing process.</param>
