@@ -7,71 +7,145 @@ namespace Secure_Password_Vault;
 
 public static class Crypto
 {
-    private const int Iterations = 1; // 32 iterations in release build
-    private const double MemorySize = 1024d * 1024d * 1d; // 5gib in release build
-    public const int SaltSize = 512 / 8;
-    public static readonly int KeySize = 32;
-    public static readonly int IvBit = 128;
-    private const int TagLen = 16;
-    private const int HmacLength = 64;
-    private const int GcmNonceSize = 12;
-    private const int ChaChaNonceSize = 24;
+    /// <summary>
+    ///     Utility class for cryptographic settings and initialization.
+    ///     All values represent bytes.
+    /// </summary>
+    public static class CryptoConstants
+    {
+        /// <summary>
+        ///     Number of iterations for key derivation.
+        /// </summary>
+        public const int Iterations = 32;
 
-    private static readonly RandomNumberGenerator RndNum = RandomNumberGenerator.Create();
+        /// <summary>
+        ///     Memory size for key derivation in KiB.
+        /// </summary>
+        public const int MemorySize = 1024 * 1024 * 5;
 
-    public static byte[]? Hash { get; set; } = Array.Empty<byte>();
+        /// <summary>
+        ///     Size of the salt used in cryptographic operations.
+        /// </summary>
+        public const int SaltSize = 128;
+
+        /// <summary>
+        ///     Length of the authentication tag used in authenticated encryption.
+        /// </summary>
+        public const int TagLen = 16;
+
+        /// <summary>
+        ///     Length of the HMAC (Hash-based Message Authentication Code).
+        /// </summary>
+        public const int HmacLength = 64;
+
+        /// <summary>
+        ///     Size of the nonce used in ChaCha20-Poly1305 authenticated encryption.
+        /// </summary>
+        public const int ChaChaNonceSize = 24;
+
+        /// <summary>
+        ///     Constant representing the size of the nonce used in GCM encryption.
+        /// </summary>
+        public const int GcmNonceSize = 12;
+
+        /// <summary>
+        ///     Size of the derived key in bytes.
+        /// </summary>
+        public static readonly int KeySize = 32;
+
+        /// <summary>
+        ///     Size of the initialization vector (IV) in bytes.
+        /// </summary>
+        public static readonly int Iv = 16;
+
+        /// <summary>
+        ///     Random number generator for cryptographic operations.
+        /// </summary>
+        public static RandomNumberGenerator RndNum = RandomNumberGenerator.Create();
+
+        /// <summary>
+        ///     Hash value used for various cryptographic purposes.
+        /// </summary>
+        /// <remarks>
+        ///     Initialized as an empty byte array.
+        /// </remarks>
+        public static byte[]? Hash { get; set; } = Array.Empty<byte>();
+    }
+
 
     /// <summary>
-    /// Hashes passwords, and derives keys from passwords using argon2id.
+    /// Hashes a password inside of a char array or derives a key from a password.
     /// </summary>
     /// <param name="passWord">The char array to hash.</param>
     /// <param name="salt">The salt used during the argon2id hashing process.</param>
     /// <param name="outputSize">The output size in bytes.</param>
-    /// <returns>A password hash byte array.</returns>
+    /// <returns>Either a derived key or password hash byte array.</returns>
     public static async Task<byte[]> Argon2Id(char[] passWord, byte[] salt, int outputSize)
     {
         try
         {
-            if (passWord == Array.Empty<char>() || salt == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty.",
-                    passWord == Array.Empty<char>() ? nameof(passWord) : nameof(salt));
+            // Check for null or empty values
+            if (passWord == null || passWord.Length == 0 || salt == null || salt.Length == 0)
+                throw new ArgumentException("Value was null or empty.",
+                    passWord == null ? nameof(passWord) : nameof(salt));
 
-            using var argon2 =
-                new Argon2id(Encoding.UTF8.GetBytes(passWord ??
-                                                    throw new ArgumentException(@"Value was empty.",
-                                                        nameof(passWord))));
+            // Initialize Argon2id
+            using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord));
             argon2.Salt = salt;
             argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
-            argon2.Iterations = Iterations;
-            argon2.MemorySize = (int)MemorySize;
+            argon2.Iterations = CryptoConstants.Iterations;
+            argon2.MemorySize = CryptoConstants.MemorySize;
 
+            // Get the result
             var result = await argon2.GetBytesAsync(outputSize);
             return result;
         }
-        catch (CryptographicException ex)
+        catch (Exception ex)
         {
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
-        catch (ArgumentException ex)
-        {
+            // Log any other unexpected exceptions
             ErrorLogging.ErrorLog(ex);
             return Array.Empty<byte>();
         }
     }
 
+    /// <summary>
+    ///     Compares two password hashes in a secure manner using fixed-time comparison.
+    /// </summary>
+    /// <param name="hash1">The first password hash.</param>
+    /// <param name="hash2">The second password hash.</param>
+    /// <returns>
+    ///     A Task that completes with 'true' if the hashes are equal, and 'false' otherwise.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    ///     Thrown if either hash is null or empty.
+    /// </exception>
+    /// <remarks>
+    ///     This method uses fixed-time comparison to mitigate certain types of timing attacks.
+    /// </remarks>
     public static Task<bool> ComparePassword(byte[]? hash1, byte[]? hash2)
     {
-        if (hash1 == null || hash1 == Array.Empty<byte>() || hash2 == null || hash2 == Array.Empty<byte>())
-            throw new ArgumentException(@"Value was empty.", hash1 == null ? nameof(hash1) : nameof(hash2));
+        try
+        {
+            // Check if either hash is null or empty
+            if (hash1 == null || hash1.Length == 0 || hash2 == null || hash2.Length == 0)
+                throw new ArgumentException("Value was empty or null.",
+                    hash1 == null || hash1.Length == 0 ? nameof(hash1) : nameof(hash2));
 
-        return Task.FromResult(CryptographicOperations.FixedTimeEquals(hash1, hash2));
+            // Use CryptographicOperations.FixedTimeEquals for secure comparison
+            return Task.FromResult(CryptographicOperations.FixedTimeEquals(hash1, hash2));
+        }
+        catch (Exception ex)
+        {
+            // Log and handle unexpected exceptions
+            ErrorLogging.ErrorLog(ex);
+            throw;
+        }
     }
 
     private static int RndInt()
     {
         var buffer = new byte[sizeof(int)];
-        RndNum.GetBytes(buffer);
+        RandomNumberGenerator.Fill(buffer);
         var result = BitConverter.ToInt32(buffer, 0);
         return result;
     }
@@ -92,104 +166,168 @@ public static class Crypto
     public static byte[] RndByteSized(int size)
     {
         var buffer = new byte[size];
-        RndNum.GetBytes(buffer);
+        CryptoConstants.RndNum.GetBytes(buffer);
         return buffer;
     }
 
+    /// <summary>
+    ///     Clears sensitive data from memory.
+    /// </summary>
+    /// <param name="data">The data to be cleared.</param>
+    private static void ClearSensitiveData(params byte[][] data)
+    {
+        foreach (var array in data) Array.Clear(array, 0, array.Length);
+    }
+
+    /// <summary>
+    ///     Encrypts the contents of a file using Argon2 key derivation and xChaCha20-Poly1305 + AES-CBC-Blake2b encryption.
+    /// </summary>
+    /// <param name="userName">The username associated with the user's salt for key derivation.</param>
+    /// <param name="passWord">The user's password used for key derivation.</param>
+    /// <param name="file">The path to the file to be encrypted.</param>
+    /// <returns>
+    ///     A Task that completes with the encrypted content of the specified file.
+    ///     If any error occurs during the process, returns an empty byte array.
+    /// </returns>
+    /// <remarks>
+    ///     This method performs the following steps:
+    ///     1. Retrieves the user-specific salt using the provided username.
+    ///     2. Derives an encryption key from the user's password and the obtained salt using Argon2id.
+    ///     3. Extracts key components for encryption, including two keys and an HMAC key.
+    ///     4. Reads the content of the specified file.
+    ///     5. Encrypts the file content using xChaCha20-Poly1305 + AES-CBC-Blake2b encryption.
+    ///     6. Clears sensitive information, such as the user's password, from memory.
+    /// </remarks>
     public static async Task<byte[]> EncryptFile(string userName, char[] passWord, string file)
     {
-        try
-        {
-            if (userName == string.Empty || passWord == Array.Empty<char>() || file == string.Empty)
-                throw new ArgumentException(@"Value was empty.", userName == string.Empty ? nameof(userName) :
-                    passWord == Array.Empty<char>() ? nameof(passWord) : nameof(file));
+            // Check if any required input is null or empty
+            if (string.IsNullOrEmpty(userName) || passWord == null || passWord.Length == 0 || string.IsNullOrEmpty(file))
+                throw new ArgumentException("Value was empty.",
+                    string.IsNullOrEmpty(userName) ? nameof(userName) :
+                    passWord == null || passWord.Length == 0 ? nameof(passWord) : nameof(file));
 
-            var saltResult = await Authentication.GetUserSaltAsync(userName);
+            // Retrieve user-specific salt
+            var salt = await Authentication.GetUserSaltAsync(userName);
 
-            var salt = saltResult.Salt;
-            var salt2 = saltResult.Salt2;
-            var salt3 = saltResult.Salt3;
+            // Derive encryption key from password and salt
+            var bytes = await Argon2Id(passWord, salt, 128);
+            if (bytes == Array.Empty<byte>())
+                throw new Exception("Value was empty.");
 
-            var bytes = await Argon2Id(passWord, salt2, 128);
-
-            var key = new byte[KeyBitSize];
-            var key2 = new byte[KeyBitSize];
-            var hMacKey = new byte[HmacLength];
+            // Extract key components for encryption
+            var key = new byte[CryptoConstants.KeySize];
+            var key2 = new byte[CryptoConstants.KeySize];
+            var hMacKey = new byte[CryptoConstants.HmacLength];
 
             Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
             Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
             Buffer.BlockCopy(bytes, key.Length + key2.Length, hMacKey, 0, hMacKey.Length);
 
+            // Read content of the specified file
             var fileStr = await File.ReadAllTextAsync(file);
             var fileBytes = DataConversionHelpers.StringToByteArray(fileStr);
 
-            if (fileBytes == Array.Empty<byte>() || salt == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty.",
-                    fileBytes == Array.Empty<byte>() ? nameof(fileBytes) : nameof(salt));
+            // Check if file content or salt is empty
+            if (fileBytes == null || fileBytes.Length == 0 || salt == null || salt.Length == 0)
+                throw new ArgumentException("Value was empty.",
+                    fileBytes == null || fileBytes.Length == 0 ? nameof(fileBytes) : nameof(salt));
 
+            // Encrypt the file content
             var encryptedFile = await EncryptAsyncV3(fileBytes, key, key2, hMacKey);
 
-            Array.Clear(passWord, 0, passWord.Length);
+            // Clear sensitive information
+            ClearSensitiveData(key, key2, hMacKey, Encoding.UTF8.GetBytes(passWord));
 
             return encryptedFile;
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
-    }
 
+    /// <summary>
+    ///     Decrypts the contents of an encrypted file using Argon2 key derivation and ChaCha20-Poly1305 decryption.
+    /// </summary>
+    /// <param name="userName">The username associated with the user's salt for key derivation.</param>
+    /// <param name="passWord">The user's password used for key derivation.</param>
+    /// <param name="file">The path to the encrypted file to be decrypted.</param>
+    /// <returns>
+    ///     A Task that completes with the decrypted content of the specified encrypted file.
+    ///     If any error occurs during the process, returns an empty byte array.
+    /// </returns>
+    /// <remarks>
+    ///     This method performs the following steps:
+    ///     1. Validates input parameters to ensure they are not null or empty.
+    ///     2. Retrieves the user-specific salts for key derivation.
+    ///     3. Derives an encryption key from the user's password and the obtained salt using Argon2id.
+    ///     4. Extracts key components for decryption, including two keys and an HMAC key.
+    ///     5. Reads and decodes the content of the encrypted file.
+    ///     6. Decrypts the file content using ChaCha20-Poly1305 decryption.
+    ///     7. Clears sensitive information, such as the user's password, from memory.
+    /// </remarks>
     public static async Task<byte[]> DecryptFile(string userName, char[] passWord, string file)
     {
-        try
-        {
-            if (userName == string.Empty || passWord == Array.Empty<char>() || file == string.Empty)
-                throw new ArgumentException(@"Value was empty.", userName == string.Empty ? nameof(userName) :
-                    passWord == Array.Empty<char>() ? nameof(passWord) : nameof(file));
+        // Validate input parameters
+        if (string.IsNullOrEmpty(userName) || passWord == null || passWord.Length == 0 ||
+            string.IsNullOrEmpty(file))
+            throw new ArgumentException("Value was empty.",
+                string.IsNullOrEmpty(userName) ? nameof(userName) :
+                passWord == null || passWord.Length == 0 ? nameof(passWord) : nameof(file));
 
-            var saltResult = await Authentication.GetUserSaltAsync(userName);
+        // Retrieve user-specific salts for key derivation
+        var salt = await Authentication.GetUserSaltAsync(userName);
 
-            var salt = saltResult.Salt;
-            var salt2 = saltResult.Salt2;
-            var salt3 = saltResult.Salt3;
+        // Derive decryption key from password and salts using Argon2id
+        var bytes = await Argon2Id(passWord, salt, 128);
 
-            var bytes = await Argon2Id(passWord, salt2, 128);
+        // Extract key components for decryption
+        var key = new byte[CryptoConstants.KeySize];
+        var key2 = new byte[CryptoConstants.KeySize];
+        var hMacKey = new byte[CryptoConstants.HmacLength];
 
-            var key = new byte[KeyBitSize];
-            var key2 = new byte[KeyBitSize];
-            var hMacKey = new byte[HmacLength];
+        Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
+        Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
+        Buffer.BlockCopy(bytes, key.Length + key2.Length, hMacKey, 0, hMacKey.Length);
 
-            Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
-            Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
-            Buffer.BlockCopy(bytes, key.Length + key2.Length, hMacKey, 0, hMacKey.Length);
+        // Read and decode the content of the encrypted file
+        var fileStr = await File.ReadAllTextAsync(file);
+        var fileBytes = DataConversionHelpers.Base64StringToByteArray(fileStr);
 
-            var fileStr = await File.ReadAllTextAsync(file);
-            var fileBytes = DataConversionHelpers.Base64StringToByteArray(fileStr);
+        // Check if file content or salt is empty
+        if (fileBytes == Array.Empty<byte>() || salt == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.",
+                fileBytes == Array.Empty<byte>() ? nameof(fileBytes) : nameof(salt));
 
-            if (fileBytes == Array.Empty<byte>() || salt == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty.",
-                    fileBytes == Array.Empty<byte>() ? nameof(fileBytes) : nameof(salt));
+        // Decrypt the file content
+        var decryptedFile = await DecryptAsyncV3(fileBytes, key, key2, hMacKey);
 
-            var decryptedFile = await DecryptAsyncV3(fileBytes, key, key2, hMacKey);
+        // Clear sensitive information
+        Array.Clear(passWord, 0, passWord.Length);
 
-            Array.Clear(passWord, 0, passWord.Length);
-
-            return decryptedFile;
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
+        return decryptedFile;
     }
 
 #pragma warning disable
 
     private const int BlockBitSize = 128;
     private const int KeyBitSize = 256;
+
+    /// <summary>
+    ///     Encrypts the provided plaintext using AES encryption with CBC mode and PKCS7 padding.
+    ///     The ciphertext is then authenticated using HMAC-Blake2B.
+    /// </summary>
+    /// <param name="plainText">The plaintext to be encrypted.</param>
+    /// <param name="key">The encryption key.</param>
+    /// <param name="iv">The initialization vector.</param>
+    /// <param name="hMacKey">The HMAC key for authentication.</param>
+    /// <returns>
+    ///     A Task that completes with the authenticated ciphertext.
+    ///     If any error occurs during the process, returns an empty byte array.
+    /// </returns>
+    /// <remarks>
+    ///     This method performs the following steps:
+    ///     1. Validates input parameters to ensure they are not null or empty.
+    ///     2. Creates an AES object with specified block size, key size, mode, and padding.
+    ///     3. Encrypts the plaintext using AES encryption with CBC mode and PKCS7 padding.
+    ///     4. Computes HMAC-Blake2B over the IV and ciphertext for authentication.
+    ///     5. Clears sensitive information, such as encryption key and HMAC key, from memory.
+    /// </remarks>
     public static async Task<byte[]> EncryptAsync(byte[] plainText, byte[] key, byte[] iv, byte[] hMacKey)
     {
         // Parameter checks
@@ -219,8 +357,8 @@ public static class Crypto
                 {
                     using (var cipherStream = new MemoryStream(plainText))
                     {
-                       await cipherStream.FlushAsync();
-                       await cipherStream.CopyToAsync(cryptoStream, (int)cipherStream.Length);
+                        await cipherStream.FlushAsync();
+                        await cipherStream.CopyToAsync(cryptoStream, (int)cipherStream.Length);
                     }
 
                     await cryptoStream.FlushFinalBlockAsync();
@@ -233,7 +371,7 @@ public static class Crypto
             Array.Clear(key, 0, key.Length);
 
             // Create HMAC object
-            using var hmac = new HMACBlake2B(hMacKey, HmacLength * 8);
+            using var hmac = new HMACBlake2B(hMacKey, CryptoConstants.HmacLength * 8);
             var prependItems = new byte[cipherText.Length + iv.Length];
 
             Buffer.BlockCopy(iv, 0, prependItems, 0, iv.Length);
@@ -251,37 +389,33 @@ public static class Crypto
             // Return authenticatedBytes byte array.
             return authenticatedBytes;
         }
-        // Catch blocks
-        catch (CryptographicException ex)
-        {
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
-        catch (ArgumentNullException ex)
-        {
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
-        catch (ObjectDisposedException ex)
-        {
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
         catch (Exception ex)
         {
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
+            // Clear sensitive information
+            ClearSensitiveData(key, hMacKey);
+            throw;
         }
     }
 
+    /// <summary>
+    ///     Decrypts the provided ciphertext using AES decryption with CBC mode and PKCS7 padding.
+    ///     The authenticity of the ciphertext is verified using HMAC-Blake2B.
+    /// </summary>
+    /// <param name="cipherText">The ciphertext to be decrypted.</param>
+    /// <param name="key">The decryption key.</param>
+    /// <param name="hMacKey">The HMAC key for authentication.</param>
+    /// <returns>
+    ///     A Task that completes with the decrypted plaintext.
+    ///     If any error occurs during the process, returns an empty byte array.
+    /// </returns>
+    /// <remarks>
+    ///     This method performs the following steps:
+    ///     1. Validates input parameters to ensure they are not null or empty.
+    ///     2. Creates an AES object with specified block size, key size, mode, and padding.
+    ///     3. Verifies the authenticity of the ciphertext using HMAC-Blake2B.
+    ///     4. Decrypts the ciphertext using AES decryption with CBC mode and PKCS7 padding.
+    ///     5. Clears sensitive information, such as the decryption key and HMAC key, from memory.
+    /// </remarks>
     public static async Task<byte[]> DecryptAsync(byte[] cipherText, byte[] key, byte[] hMacKey)
     {
         // Parameter checks
@@ -300,17 +434,18 @@ public static class Crypto
             aes.Padding = PaddingMode.PKCS7;
 
             // Create HMAC object
-            using var hmac = new HMACBlake2B(hMacKey, HmacLength * 8);
-            var receivedHash = new byte[HmacLength];
+            using var hmac = new HMACBlake2B(hMacKey, CryptoConstants.HmacLength * 8);
+            var receivedHash = new byte[CryptoConstants.HmacLength];
 
             // Place the received hash into receivedHash byte array
-            Buffer.BlockCopy(cipherText, cipherText.Length - HmacLength, receivedHash, 0, HmacLength);
+            Buffer.BlockCopy(cipherText, cipherText.Length - CryptoConstants.HmacLength, receivedHash, 0,
+                CryptoConstants.HmacLength);
 
             // Create byte array for IV and cipherText
-            var cipherWithIv = new byte[cipherText.Length - HmacLength];
+            var cipherWithIv = new byte[cipherText.Length - CryptoConstants.HmacLength];
 
             // Place cipherText and IV into cipherWithIv byte array
-            Buffer.BlockCopy(cipherText, 0, cipherWithIv, 0, cipherText.Length - HmacLength);
+            Buffer.BlockCopy(cipherText, 0, cipherWithIv, 0, cipherText.Length - CryptoConstants.HmacLength);
 
             // Get the hash value of cipherText and IV
             var hashedInput = hmac.ComputeHash(cipherWithIv);
@@ -326,8 +461,8 @@ public static class Crypto
             Array.Clear(hMacKey, 0, hMacKey.Length);
 
             // Get cipherResult and IV values
-            var iv = new byte[IvBit / 8];
-            var cipherResult = new byte[cipherText.Length - iv.Length - HmacLength];
+            var iv = new byte[CryptoConstants.Iv];
+            var cipherResult = new byte[cipherText.Length - iv.Length - CryptoConstants.HmacLength];
 
             Buffer.BlockCopy(cipherText, 0, iv, 0, iv.Length);
             Buffer.BlockCopy(cipherText, iv.Length, cipherResult, 0, cipherResult.Length);
@@ -352,97 +487,105 @@ public static class Crypto
             // Return memStream as byte array
             return memStream.ToArray();
         }
-
-        // Catch blocks
-        catch (CryptographicException ex)
-        {
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
-        catch (ArgumentNullException ex)
-        {
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
-        catch (ObjectDisposedException ex)
-        {
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
         catch (Exception ex)
         {
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
+            // Clear sensitive information
+            ClearSensitiveData(key, hMacKey);
+            throw;
         }
 #pragma warning restore
     }
 
-    public static async Task<byte[]> EncryptAsyncV3(byte[] plaintext, 
-          byte[] key, byte[] key2, byte[] hMacKey)
+    /// <summary>
+    ///     Encrypts the provided plaintext using a combination of XChaCha20-Poly1305 and AES encryption.
+    /// </summary>
+    /// <param name="plaintext">The plaintext to be encrypted.</param>
+    /// <param name="key">The first encryption key.</param>
+    /// <param name="key2">The second encryption key.</param>
+    /// <param name="hMacKey">The HMAC key for authentication.</param>
+    /// <returns>
+    ///     A Task that completes with the encrypted ciphertext.
+    ///     If any error occurs during the process, returns an empty byte array.
+    /// </returns>
+    /// <remarks>
+    ///     This method performs the following steps:
+    ///     1. Validates input parameters to ensure they are not null or empty.
+    ///     2. Generates nonces for XChaCha20-Poly1305 and AES encryption.
+    ///     3. Encrypts the plaintext using XChaCha20-Poly1305 with the first key.
+    ///     4. Encrypts the XChaCha20-Poly1305 ciphertext using AES encryption with the second key.
+    ///     5. Clears sensitive information, such as encryption keys, from memory.
+    /// </remarks>
+    public static async Task<byte[]> EncryptAsyncV3(byte[] plaintext,
+        byte[] key, byte[] key2, byte[] hMacKey)
     {
         try
         {
+            // Parameter checks
             if (plaintext == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty.",
-                    plaintext == Array.Empty<byte>() ? nameof(plaintext) :
-                    key == Array.Empty<byte>() ? nameof(key2) :
-                    key2 == Array.Empty<byte>() ? nameof(key2) : 
-                    nameof(hMacKey));
+                throw new ArgumentException(@"Value was empty.", nameof(plaintext));
 
-            var nonce = RndByteSized(ChaChaNonceSize);
-            var nonce2 = RndByteSized(IvBit / 8);
+            // Generate nonces
+            var nonce = RndByteSized(CryptoConstants.ChaChaNonceSize);
+            var nonce2 = RndByteSized(CryptoConstants.Iv);
 
+            // Encrypt using XChaCha20-Poly1305
             var cipherText = SecretAeadXChaCha20Poly1305.Encrypt(plaintext, nonce, key);
+            if (cipherText == null)
+                throw new Exception("Value was empty.");
+
+            // Encrypt the XChaCha20-Poly1305 ciphertext using AES
             var cipherTextL2 = await EncryptAsync(cipherText, key2, nonce2, hMacKey);
+            if (cipherTextL2 == null)
+                throw new Exception("Value was empty.");
 
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(key2, 0, key2.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
+            // Clear sensitive information
+            ClearSensitiveData(key, key2, hMacKey);
 
+            // Concatenate nonces and the second level ciphertext
             return nonce.Concat(nonce2).Concat(cipherTextL2).ToArray();
         }
-        catch (CryptographicException ex)
+        catch (Exception)
         {
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(key2, 0, key2.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
-        catch (Exception ex)
-        {
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(key2, 0, key2.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
+            // Clear sensitive information
+            ClearSensitiveData(key, key2, hMacKey);
+            throw;
         }
     }
 
+
+    /// <summary>
+    ///     Decrypts the provided ciphertext using a combination of XChaCha20-Poly1305 and AES decryption.
+    /// </summary>
+    /// <param name="cipherText">The ciphertext to be decrypted.</param>
+    /// <param name="key">The first decryption key.</param>
+    /// <param name="key2">The second decryption key.</param>
+    /// <param name="hMacKey">The HMAC key for authentication.</param>
+    /// <returns>
+    ///     A Task that completes with the decrypted plaintext.
+    ///     If any error occurs during the process, returns an empty byte array.
+    /// </returns>
+    /// <remarks>
+    ///     This method performs the following steps:
+    ///     1. Validates input parameters to ensure they are not null or empty.
+    ///     2. Extracts nonces and ciphertext from the provided cipherText.
+    ///     3. Decrypts the ciphertext using AES decryption with the second key.
+    ///     4. Decrypts the AES ciphertext using XChaCha20-Poly1305 with the first key.
+    ///     5. Clears sensitive information, such as decryption keys, from memory.
+    /// </remarks>
     public static async Task<byte[]> DecryptAsyncV3(byte[] cipherText,
         byte[] key, byte[] key2, byte[] hMacKey)
     {
         try
         {
+            // Parameter checks
             if (cipherText == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty.",
-                    cipherText == Array.Empty<byte>() ? nameof(cipherText) :
-                    key == Array.Empty<byte>() ? nameof(key2) :
-                    key2 == Array.Empty<byte>() ? nameof(key2) :
-                    nameof(hMacKey));
+                throw new ArgumentException(@"Value was empty.", nameof(cipherText));
 
-            var nonce = new byte[ChaChaNonceSize];
+            // Extract nonces and ciphertext
+            var nonce = new byte[CryptoConstants.ChaChaNonceSize];
             Buffer.BlockCopy(cipherText, 0, nonce, 0, nonce.Length);
 
-            var nonce2 = new byte[IvBit / 8];
+            var nonce2 = new byte[CryptoConstants.Iv];
             Buffer.BlockCopy(cipherText, nonce.Length, nonce2, 0, nonce2.Length);
 
             var cipherResult =
@@ -451,36 +594,27 @@ public static class Crypto
             Buffer.BlockCopy(cipherText, nonce.Length + nonce2.Length, cipherResult, 0,
                 cipherResult.Length);
 
+            // Decrypt using AES with the second key
             var resultL2 = await DecryptAsync(cipherResult, key2, hMacKey);
+
+            // Decrypt the AES ciphertext using XChaCha20-Poly1305 with the first key
             var resultL0 = SecretAeadXChaCha20Poly1305.Decrypt(resultL2, nonce, key);
 
-
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(key2, 0, key2.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
+            // Clear sensitive information
+            ClearSensitiveData(key, key2, hMacKey);
 
             return resultL0;
         }
-        catch (CryptographicException ex)
+        catch (Exception)
         {
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(key2, 0, key2.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
-        catch (Exception ex)
-        {
-            Array.Clear(key, 0, key.Length);
-            Array.Clear(key2, 0, key2.Length);
-            Array.Clear(hMacKey, 0, hMacKey.Length);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
+            // Clear sensitive information
+            ClearSensitiveData(key, key2, hMacKey);
+            throw;
         }
     }
 
     public static async Task<byte[]> EncryptAsyncV3Debug(byte[] plaintext,
-      byte[] nonce, byte[] nonce2, byte[] key, byte[] key2, byte[] hMacKey)
+        byte[] nonce, byte[] nonce2, byte[] key, byte[] key2, byte[] hMacKey)
     {
         // Debug method allows us to set our own nonce
         try
@@ -535,18 +669,18 @@ public static class Crypto
                 throw new ArgumentException(@"Value was empty or null.", nameof(nonce));
 
             var cipherText = new byte[plainText.Length];
-            var tag = new byte[TagLen];
+            var tag = new byte[CryptoConstants.TagLen];
 
             using (var argon2 = new Argon2id(password))
             {
                 argon2.Salt = salt;
                 argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
-                argon2.Iterations = Iterations;
-                argon2.MemorySize = (int)MemorySize;
+                argon2.Iterations = CryptoConstants.Iterations;
+                argon2.MemorySize = CryptoConstants.MemorySize;
 
-                var key = await argon2.GetBytesAsync(KeySize);
+                var key = await argon2.GetBytesAsync(CryptoConstants.KeySize);
 
-                using var aesGcm = new AesGcm(key, TagLen);
+                using var aesGcm = new AesGcm(key, CryptoConstants.TagLen);
                 aesGcm.Encrypt(nonce, plainText, cipherText, tag);
                 Array.Clear(key, 0, key.Length);
             }
@@ -588,13 +722,13 @@ public static class Crypto
             using var argon2 = new Argon2id(password);
             argon2.Salt = salt;
             argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
-            argon2.Iterations = Iterations;
-            argon2.MemorySize = (int)MemorySize;
+            argon2.Iterations = CryptoConstants.Iterations;
+            argon2.MemorySize = CryptoConstants.MemorySize;
 
-            var key = await argon2.GetBytesAsync(KeySize);
-            using var aesGcm = new AesGcm(key, TagLen);
-            var tag = new byte[TagLen];
-            var nonce = new byte[GcmNonceSize];
+            var key = await argon2.GetBytesAsync(CryptoConstants.KeySize);
+            using var aesGcm = new AesGcm(key, CryptoConstants.TagLen);
+            var tag = new byte[CryptoConstants.TagLen];
+            var nonce = new byte[CryptoConstants.GcmNonceSize];
             var cipherResult = new byte[cipherText.Length - nonce.Length - tag.Length];
 
             Buffer.BlockCopy(cipherText, 0, tag, 0, tag.Length);

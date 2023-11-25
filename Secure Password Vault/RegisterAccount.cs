@@ -11,60 +11,94 @@ public partial class RegisterAccount : Form
         InitializeComponent();
     }
 
+    /// <summary>
+    /// Checks the validity of a password based on specified criteria.
+    /// </summary>
+    /// <param name="password">The first password to be checked, as an IReadOnlyCollection of characters.</param>
+    /// <param name="password2">The second password to be checked, as an array of characters.</param>
+    /// <returns>
+    /// True if the passwords meet the validity criteria, otherwise false.
+    /// </returns>
     private static bool CheckPasswordValidity(IReadOnlyCollection<char> password, char[] password2)
     {
+        // Check password length: must be between 16 and 64 characters (inclusive).
         if (password.Count is < 16 or > 64)
             return false;
 
+        // Check for at least one uppercase letter, one lowercase letter, and one digit.
         if (!password.Any(char.IsUpper) || !password.Any(char.IsLower) || !password.Any(char.IsDigit))
             return false;
 
+        // Check for the absence of whitespaces in both passwords and if they are equal.
         if (password.Any(char.IsWhiteSpace) || password2.Any(char.IsWhiteSpace) || !password.SequenceEqual(password2))
             return false;
 
+        // Check for at least one symbol or punctuation character.
         return password.Any(char.IsSymbol) || password.Any(char.IsPunctuation);
     }
 
+    /// <summary>
+    /// Asynchronously creates a user account with specified username and password.
+    /// </summary>
     private async Task CreateAccountAsync()
     {
+        // Uncheck the showPasswordCheckBox if it is checked.
         if (showPasswordCheckBox.Checked)
             showPasswordCheckBox.Checked = false;
 
+        // Retrieve the username from the userTxt TextBox.
         var userName = userTxt.Text;
+
+        // Generate an array of characters for the user's password.
         var passArray = SetArray();
 
+        // Generate an array of characters for confirming the user's password.
         var confirmPassArray = SetConfirmationArray();
 
+        // Create or retrieve the user's directory.
         var userDirectory = CreateDirectoryIfNotExists(Path.Combine("Password Vault", "Users", userName));
+
+        // Construct paths for the user's data files.
         var userFile = Path.Combine(userDirectory, $"{userName}.user");
         var userSalt = Path.Combine(userDirectory, $"{userName}.salt");
-        var userSalt2 = Path.Combine(userDirectory, $"{userName}-Salt2.salt");
-        var userSalt3 = Path.Combine(userDirectory, $"{userName}-Salt3.salt");
-        var userSalt4 = Path.Combine(userDirectory, $"{userName}-Salt4.salt");
+
+        // Check if the user already exists.
         var userExists = Authentication.UserExists(userName);
 
         try
         {
             if (!userExists)
             {
+                // Disable the UI during the registration process.
                 DisableUi();
-                await RegisterAsync(userName, passArray, confirmPassArray, userFile, userSalt, userSalt2, userSalt3, userSalt4);
+
+                // Perform asynchronous user registration.
+                await RegisterAsync(userName, passArray, confirmPassArray, userFile, userSalt);
             }
             else
             {
-                throw new ArgumentException(@"Username already exists", userTxt.Text);
+                // Throw an exception if the username already exists.
+                throw new ArgumentException("Username already exists", userTxt.Text);
             }
         }
         catch (Exception ex)
         {
+            // Enable the UI after an exception occurs.
             EnableUi();
+
+            // Update UI elements and log the error.
             outputLbl.ForeColor = Color.WhiteSmoke;
-            outputLbl.Text = @"Idle...";
             _isAnimating = false;
             ErrorLogging.ErrorLog(ex);
-            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+            // Show an error message to the user.
+            MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+            // Update the output label text.
+            outputLbl.Text = "Idle...";
         }
     }
+
     private void DisableUi()
     {
         showPasswordCheckBox.Enabled = false;
@@ -85,12 +119,24 @@ public partial class RegisterAccount : Form
         confirmPassTxt.Enabled = true;
     }
 
+    /// <summary>
+    /// Converts the password input from the passTxt TextBox to a character array.
+    /// </summary>
+    /// <returns>
+    /// A character array representing the password.
+    /// </returns>
     private char[] SetArray()
     {
+        // Get the length of the password from the passTxt TextBox.
         var buffer = passTxt.Text.Length;
+
+        // Create a character array with the same length as the password.
         var passArray = new char[buffer];
+
+        // Copy the characters from passTxt to the passArray.
         passTxt.Text.CopyTo(0, passArray, 0, buffer);
 
+        // Return the character array representing the password.
         return passArray;
     }
 
@@ -102,107 +148,124 @@ public partial class RegisterAccount : Form
         return confirmPassArray;
     }
 
+    /// <summary>
+    /// Asynchronously registers a user with the specified username and password,
+    /// encrypts user data, and displays relevant messages to the user.
+    /// </summary>
+    /// <param name="username">The username of the user to be registered.</param>
+    /// <param name="password">The password of the user to be registered.</param>
+    /// <param name="confirmPassword">The confirmation of the user's password.</param>
+    /// <param name="userFile">The path to the user data file.</param>
+    /// <param name="userSalt">The path to the user's salt file.</param>
     private async Task RegisterAsync(string username, char[] password, char[] confirmPassword, string userFile,
-        string userSalt, string userSalt2, string userSalt3, string userSalt4)
+        string userSalt)
     {
-        try
-        {
-            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.AboveNormal;
+        // Set the priority class of the current process to AboveNormal.
+        Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.AboveNormal;
 
-            StartAnimation();
+        // Start an animation (assuming there's a method named StartAnimation).
+        StartAnimation();
 
-            ValidateUsernameAndPassword(username, password, confirmPassword);
+        // Validate the username and password.
+        ValidateUsernameAndPassword(username, password, confirmPassword);
 
-            var salt = Crypto.RndByteSized(Crypto.SaltSize);
-            var salt2 = Crypto.RndByteSized(Crypto.SaltSize);
-            var salt3 = Crypto.RndByteSized(Crypto.SaltSize);
-            var salt4 = Crypto.RndByteSized(Crypto.SaltSize);
-            var hashedPassword = await Crypto.Argon2Id(password, salt, 24);
+        // Generate a random salt and hash the password using Argon2id.
+        var salt = Crypto.RndByteSized(Crypto.CryptoConstants.SaltSize);
+        var hashedPassword = await Crypto.Argon2Id(password, salt, 24);
 
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-            if (hashedPassword == null)
-                throw new ArgumentException(@"Value was null or empty.", nameof(hashedPassword));
+        // Perform aggressive garbage collection.
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
-            var saltString = DataConversionHelpers.ByteArrayToBase64String(salt);
-            var saltString2 = DataConversionHelpers.ByteArrayToBase64String(salt2);
-            var saltstring3 = DataConversionHelpers.ByteArrayToBase64String(salt3);
-            var saltString4 = DataConversionHelpers.ByteArrayToBase64String(salt4);
+        // Throw an exception if the hashed password is null.
+        if (hashedPassword == null)
+            throw new ArgumentException("Value was null or empty.", nameof(hashedPassword));
 
-            Crypto.Hash = hashedPassword;
-            await File.WriteAllTextAsync(userFile,
-                $"User:\n{username}\nHash:\n{DataConversionHelpers.ByteArrayToHexString(hashedPassword)}");
+        // Convert the salt to a base64-encoded string.
+        var saltString = DataConversionHelpers.ByteArrayToBase64String(salt);
 
-            await File.WriteAllTextAsync(userSalt,
-                saltString);
-            await File.WriteAllTextAsync(userSalt2, saltString2);
-            await File.WriteAllTextAsync(userSalt3, saltstring3);
-            await File.WriteAllTextAsync(userSalt4, saltString4);
+        // Set the global hash value to the hashed password.
+        Crypto.CryptoConstants.Hash = hashedPassword;
 
-            var encrypted = await Crypto.EncryptFile(username, password, Authentication.GetUserFilePath(username));
-            if (encrypted == Array.Empty<byte>())
-                throw new ArgumentException(@"Value returned null or empty.", nameof(encrypted));
+        // Write user information to the user data file.
+        await File.WriteAllTextAsync(userFile,
+            $"User:\n{username}\nHash:\n{DataConversionHelpers.ByteArrayToHexString(hashedPassword)}");
 
-            await File.WriteAllTextAsync(userFile, DataConversionHelpers.ByteArrayToBase64String(encrypted));
+        // Write the salt to the user's salt file.
+        await File.WriteAllTextAsync(userSalt, saltString);
 
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+        // Encrypt user data and write it to the user data file.
+        var encrypted = await Crypto.EncryptFile(username, password, Authentication.GetUserFilePath(username));
 
-            Array.Clear(hashedPassword, 0, hashedPassword.Length);
-            Array.Clear(password);
-            Array.Clear(confirmPassword);
-            outputLbl.Text = @"Account created";
-            outputLbl.ForeColor = Color.LimeGreen;
-            _isAnimating = false;
-            MessageBox.Show(
-                @"Registration successful! Make sure you do NOT forget your password or you will lose access " +
-                @"to all of your files.", @"Registration Complete", MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-            Hide();
-            using Login form = new();
-            form.ShowDialog();
-            Close();
-        }
-        catch (ArgumentException ex)
-        {
-            EnableUi();
-            outputLbl.ForeColor = Color.WhiteSmoke;
-            outputLbl.Text = @"Idle...";
-            _isAnimating = false;
-            ErrorLogging.ErrorLog(ex);
-            MessageBox.Show(@"There was an error while creating a new account.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-        catch (Exception ex)
-        {
-            EnableUi();
-            outputLbl.ForeColor = Color.WhiteSmoke;
-            outputLbl.Text = @"Idle...";
-            _isAnimating = false;
-            ErrorLogging.ErrorLog(ex);
-            MessageBox.Show(@"There was an error while creating a new account.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
+        // Throw an exception if the encrypted value is null or empty.
+        if (encrypted == Array.Empty<byte>())
+            throw new ArgumentException("Value returned null or empty.", nameof(encrypted));
+
+        await File.WriteAllTextAsync(userFile, DataConversionHelpers.ByteArrayToBase64String(encrypted));
+
+        // Perform aggressive garbage collection.
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+
+        // Clear sensitive data from memory.
+        Array.Clear(hashedPassword, 0, hashedPassword.Length);
+        Array.Clear(password);
+        Array.Clear(confirmPassword);
+
+        // Update UI elements and display success message to the user.
+        outputLbl.Text = "Account created";
+        outputLbl.ForeColor = Color.LimeGreen;
+        _isAnimating = false;
+
+        // Show a success message to the user.
+        MessageBox.Show("Registration successful! Make sure you do NOT forget your password or you will lose access " +
+                        "to all of your files.", "Registration Complete", MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+
+        // Hide the current form, show the login form, and close the current form.
+        Hide();
+        using Login form = new();
+        form.ShowDialog();
+        Close();
     }
 
+
+    /// <summary>
+    /// Validates the provided username and password for registration.
+    /// </summary>
+    /// <param name="userName">The username to be validated.</param>
+    /// <param name="password">The password to be validated.</param>
+    /// <param name="password2">The confirmation password to be validated.</param>
+    /// <exception cref="ArgumentException">
+    /// Thrown if the username or password does not meet the specified criteria.
+    /// </exception>
     private static void ValidateUsernameAndPassword(string userName, char[] password, char[] password2)
     {
+        // Validate the username for legal characters.
         if (!userName.All(c => char.IsLetterOrDigit(c) || c == '_' || c == ' '))
             throw new ArgumentException(
-                @"Value contains illegal characters. Valid characters are letters, digits, underscores, and spaces.",
+                "Value contains illegal characters. Valid characters are letters, digits, underscores, and spaces.",
                 nameof(userName));
 
+        // Validate the length of the username.
         if (string.IsNullOrEmpty(userName) || userName.Length > 20)
-            throw new ArgumentException(@"Invalid username.", nameof(userName));
+            throw new ArgumentException("Invalid username.", nameof(userName));
 
+        // Validate that the password is not empty.
         if (password == Array.Empty<char>())
-            throw new ArgumentException(@"Invalid password.", nameof(password));
+            throw new ArgumentException("Invalid password.", nameof(password));
 
+        // Validate the password using the CheckPasswordValidity method.
         if (!CheckPasswordValidity(password, password2))
-            throw new ArgumentException(@"Password must contain between 16 and 64 characters." +
-                                        @"It also must include: 1.) At least one uppercase letter." +
-                                        @"2.) At least one lowercase letter." +
-                                        @"3.) At least one number. " +
-                                        @"4.) At least one special character." +
-                                        @"5.) Must not contain any spaces.\n" +
-                                        @"6.) Both passwords must match.", nameof(passTxt));
+            throw new ArgumentException(
+                "Password must contain between 16 and 64 characters. It also must include:" +
+                " 1.) At least one uppercase letter." +
+                " 2.) At least one lowercase letter." +
+                " 3.) At least one number." +
+                " 4.) At least one special character." +
+                " 5.) Must not contain any spaces." +
+                " 6.) Both passwords must match.",
+                nameof(passTxt));
     }
+
 
     private static string CreateDirectoryIfNotExists(string directoryPath)
     {

@@ -45,9 +45,11 @@
             deleteRowBtn = new Button();
             saveVaultBtn = new Button();
             vaultBox = new GroupBox();
+            pictureBox4 = new PictureBox();
             outputLbl = new Label();
             statusLbl = new Label();
             FileEncryptDecryptBox = new GroupBox();
+            pictureBox3 = new PictureBox();
             FileSizeNumLbl = new Label();
             FileSizeLbl = new Label();
             FileOutputLbl = new Label();
@@ -58,21 +60,19 @@
             ImportFileBtn = new Button();
             UserWelcomeLbl = new Label();
             hashbox = new GroupBox();
+            pictureBox2 = new PictureBox();
             filenamelbl = new Label();
             calculatehashbtn = new Button();
             hashoutputlbl = new Label();
             hashoutputtxt = new TextBox();
             hashimportfile = new Button();
-            pictureBox2 = new PictureBox();
-            pictureBox3 = new PictureBox();
-            pictureBox4 = new PictureBox();
             ((System.ComponentModel.ISupportInitialize)PassVault).BeginInit();
             vaultBox.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox4).BeginInit();
             FileEncryptDecryptBox.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox3).BeginInit();
             hashbox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox3).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox4).BeginInit();
             SuspendLayout();
             // 
             // PassVault
@@ -188,6 +188,7 @@
             addRowBtn.Text = "&Add New Row";
             addRowBtn.UseVisualStyleBackColor = false;
             addRowBtn.Click += addRowBtn_Click;
+            addRowBtn.MouseLeave += addRowBtn_MouseLeave;
             addRowBtn.MouseHover += addRowBtn_MouseHover;
             // 
             // deleteRowBtn
@@ -205,6 +206,7 @@
             deleteRowBtn.Text = "&Delete Row";
             deleteRowBtn.UseVisualStyleBackColor = false;
             deleteRowBtn.Click += deleteRowBtn_Click;
+            deleteRowBtn.MouseLeave += deleteRowBtn_MouseLeave;
             deleteRowBtn.MouseHover += deleteRowBtn_MouseHover;
             // 
             // saveVaultBtn
@@ -222,6 +224,7 @@
             saveVaultBtn.Text = "&Save Vault";
             saveVaultBtn.UseVisualStyleBackColor = false;
             saveVaultBtn.Click += saveVaultBtn_Click;
+            saveVaultBtn.MouseLeave += saveVaultBtn_MouseLeave;
             saveVaultBtn.MouseHover += saveVaultBtn_MouseHover;
             // 
             // vaultBox
@@ -241,6 +244,15 @@
             vaultBox.TabIndex = 8;
             vaultBox.TabStop = false;
             vaultBox.Text = "Vault";
+            // 
+            // pictureBox4
+            // 
+            pictureBox4.Image = Properties.Resources.safe_box;
+            pictureBox4.Location = new Point(862, 398);
+            pictureBox4.Name = "pictureBox4";
+            pictureBox4.Size = new Size(62, 69);
+            pictureBox4.TabIndex = 13;
+            pictureBox4.TabStop = false;
             // 
             // outputLbl
             // 
@@ -281,6 +293,15 @@
             FileEncryptDecryptBox.TabIndex = 10;
             FileEncryptDecryptBox.TabStop = false;
             FileEncryptDecryptBox.Text = "File Encryptor / Decryptor";
+            // 
+            // pictureBox3
+            // 
+            pictureBox3.Image = Properties.Resources.cyber;
+            pictureBox3.Location = new Point(854, 168);
+            pictureBox3.Name = "pictureBox3";
+            pictureBox3.Size = new Size(67, 75);
+            pictureBox3.TabIndex = 17;
+            pictureBox3.TabStop = false;
             // 
             // FileSizeNumLbl
             // 
@@ -337,6 +358,7 @@
             DecryptBtn.Text = "&Decrypt";
             DecryptBtn.UseVisualStyleBackColor = false;
             DecryptBtn.Click += DecryptBtn_Click;
+            DecryptBtn.MouseLeave += DecryptBtn_MouseLeave;
             DecryptBtn.MouseHover += DecryptBtn_MouseHover;
             // 
             // EncryptBtn
@@ -354,6 +376,7 @@
             EncryptBtn.Text = "&Encrypt";
             EncryptBtn.UseVisualStyleBackColor = false;
             EncryptBtn.Click += EncryptBtn_Click;
+            EncryptBtn.MouseLeave += EncryptBtn_MouseLeave;
             EncryptBtn.MouseHover += EncryptBtn_MouseHover;
             // 
             // ExportFileBtn
@@ -371,6 +394,7 @@
             ExportFileBtn.Text = "&Export File";
             ExportFileBtn.UseVisualStyleBackColor = false;
             ExportFileBtn.Click += ExportFileBtn_Click;
+            ExportFileBtn.MouseLeave += ExportFileBtn_MouseLeave;
             ExportFileBtn.MouseHover += ExportFileBtn_MouseHover;
             // 
             // ImportFileBtn
@@ -388,6 +412,7 @@
             ImportFileBtn.Text = "&Import File";
             ImportFileBtn.UseVisualStyleBackColor = false;
             ImportFileBtn.Click += ImportFileBtn_Click;
+            ImportFileBtn.MouseLeave += ImportFileBtn_MouseLeave;
             ImportFileBtn.MouseHover += ImportFileBtn_MouseHover;
             // 
             // UserWelcomeLbl
@@ -418,6 +443,15 @@
             hashbox.TabStop = false;
             hashbox.Text = "File Hash Calculator";
             // 
+            // pictureBox2
+            // 
+            pictureBox2.Image = Properties.Resources.cryptography;
+            pictureBox2.Location = new Point(855, 211);
+            pictureBox2.Name = "pictureBox2";
+            pictureBox2.Size = new Size(69, 65);
+            pictureBox2.TabIndex = 21;
+            pictureBox2.TabStop = false;
+            // 
             // filenamelbl
             // 
             filenamelbl.AutoSize = true;
@@ -444,6 +478,7 @@
             calculatehashbtn.Text = "&Calculate Hash";
             calculatehashbtn.UseVisualStyleBackColor = false;
             calculatehashbtn.Click += calculatehashbtn_Click;
+            calculatehashbtn.MouseLeave += calculatehashbtn_MouseLeave;
             calculatehashbtn.MouseHover += calculatehashbtn_MouseHover;
             // 
             // hashoutputlbl
@@ -481,34 +516,8 @@
             hashimportfile.Text = "&Import File";
             hashimportfile.UseVisualStyleBackColor = false;
             hashimportfile.Click += hashimportfile_Click;
+            hashimportfile.MouseLeave += hashimportfile_MouseLeave;
             hashimportfile.MouseHover += hashimportfile_MouseHover;
-            // 
-            // pictureBox2
-            // 
-            pictureBox2.Image = Properties.Resources.cryptography;
-            pictureBox2.Location = new Point(855, 211);
-            pictureBox2.Name = "pictureBox2";
-            pictureBox2.Size = new Size(69, 65);
-            pictureBox2.TabIndex = 21;
-            pictureBox2.TabStop = false;
-            // 
-            // pictureBox3
-            // 
-            pictureBox3.Image = Properties.Resources.cyber;
-            pictureBox3.Location = new Point(854, 168);
-            pictureBox3.Name = "pictureBox3";
-            pictureBox3.Size = new Size(67, 75);
-            pictureBox3.TabIndex = 17;
-            pictureBox3.TabStop = false;
-            // 
-            // pictureBox4
-            // 
-            pictureBox4.Image = Properties.Resources.safe_box;
-            pictureBox4.Location = new Point(862, 398);
-            pictureBox4.Name = "pictureBox4";
-            pictureBox4.Size = new Size(62, 69);
-            pictureBox4.TabIndex = 13;
-            pictureBox4.TabStop = false;
             // 
             // Vault
             // 
@@ -529,13 +538,13 @@
             ((System.ComponentModel.ISupportInitialize)PassVault).EndInit();
             vaultBox.ResumeLayout(false);
             vaultBox.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox4).EndInit();
             FileEncryptDecryptBox.ResumeLayout(false);
             FileEncryptDecryptBox.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox3).EndInit();
             hashbox.ResumeLayout(false);
             hashbox.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).EndInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox3).EndInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox4).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
