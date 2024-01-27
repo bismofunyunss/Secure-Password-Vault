@@ -31,8 +31,8 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Login));
             userNameTxt = new TextBox();
             passTxt = new TextBox();
-            logInBtn = new Button();
-            createNewAccountBtn = new Button();
+            LogInBtn = new Button();
+            CreateNewAccountBtn = new Button();
             loginBox = new GroupBox();
             pictureBox3 = new PictureBox();
             pictureBox2 = new PictureBox();
@@ -72,37 +72,37 @@
             passTxt.TabIndex = 3;
             passTxt.UseSystemPasswordChar = true;
             // 
-            // logInBtn
+            // LogInBtn
             // 
-            logInBtn.BackColor = SystemColors.ControlDarkDark;
-            logInBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
-            logInBtn.FlatAppearance.BorderSize = 3;
-            logInBtn.FlatStyle = FlatStyle.Flat;
-            logInBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            logInBtn.ForeColor = Color.WhiteSmoke;
-            logInBtn.Location = new Point(6, 216);
-            logInBtn.Name = "logInBtn";
-            logInBtn.Size = new Size(519, 44);
-            logInBtn.TabIndex = 4;
-            logInBtn.Text = "&Login";
-            logInBtn.UseVisualStyleBackColor = false;
-            logInBtn.Click += logInBtn_Click;
+            LogInBtn.BackColor = SystemColors.ControlDarkDark;
+            LogInBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            LogInBtn.FlatAppearance.BorderSize = 3;
+            LogInBtn.FlatStyle = FlatStyle.Flat;
+            LogInBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            LogInBtn.ForeColor = Color.WhiteSmoke;
+            LogInBtn.Location = new Point(6, 216);
+            LogInBtn.Name = "LogInBtn";
+            LogInBtn.Size = new Size(519, 44);
+            LogInBtn.TabIndex = 4;
+            LogInBtn.Text = "&Login";
+            LogInBtn.UseVisualStyleBackColor = false;
+            LogInBtn.Click += LogInBtn_Click;
             // 
-            // createNewAccountBtn
+            // CreateNewAccountBtn
             // 
-            createNewAccountBtn.BackColor = SystemColors.ControlDarkDark;
-            createNewAccountBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
-            createNewAccountBtn.FlatAppearance.BorderSize = 3;
-            createNewAccountBtn.FlatStyle = FlatStyle.Flat;
-            createNewAccountBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            createNewAccountBtn.ForeColor = Color.WhiteSmoke;
-            createNewAccountBtn.Location = new Point(6, 266);
-            createNewAccountBtn.Name = "createNewAccountBtn";
-            createNewAccountBtn.Size = new Size(519, 44);
-            createNewAccountBtn.TabIndex = 5;
-            createNewAccountBtn.Text = "&Create New Account";
-            createNewAccountBtn.UseVisualStyleBackColor = false;
-            createNewAccountBtn.Click += createNewAccountBtn_Click;
+            CreateNewAccountBtn.BackColor = SystemColors.ControlDarkDark;
+            CreateNewAccountBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            CreateNewAccountBtn.FlatAppearance.BorderSize = 3;
+            CreateNewAccountBtn.FlatStyle = FlatStyle.Flat;
+            CreateNewAccountBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            CreateNewAccountBtn.ForeColor = Color.WhiteSmoke;
+            CreateNewAccountBtn.Location = new Point(6, 266);
+            CreateNewAccountBtn.Name = "CreateNewAccountBtn";
+            CreateNewAccountBtn.Size = new Size(519, 44);
+            CreateNewAccountBtn.TabIndex = 5;
+            CreateNewAccountBtn.Text = "&Create New Account";
+            CreateNewAccountBtn.UseVisualStyleBackColor = false;
+            CreateNewAccountBtn.Click += CreateNewAccountBtn_Click;
             // 
             // loginBox
             // 
@@ -119,8 +119,8 @@
             loginBox.Controls.Add(outputLbl);
             loginBox.Controls.Add(userNameTxt);
             loginBox.Controls.Add(statusLbl);
-            loginBox.Controls.Add(createNewAccountBtn);
-            loginBox.Controls.Add(logInBtn);
+            loginBox.Controls.Add(CreateNewAccountBtn);
+            loginBox.Controls.Add(LogInBtn);
             loginBox.Controls.Add(passTxt);
             loginBox.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             loginBox.ForeColor = Color.WhiteSmoke;
@@ -235,7 +235,7 @@
             // 
             // Login
             // 
-            AcceptButton = logInBtn;
+            AcceptButton = LogInBtn;
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlDarkDark;
@@ -260,8 +260,8 @@
         #endregion
         private TextBox userNameTxt;
         private TextBox passTxt;
-        private Button logInBtn;
-        private Button createNewAccountBtn;
+        private Button LogInBtn;
+        private Button CreateNewAccountBtn;
         private GroupBox loginBox;
         private Label statusLbl;
         private Label outputLbl;

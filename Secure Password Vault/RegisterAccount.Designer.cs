@@ -35,13 +35,13 @@
             passTxt = new TextBox();
             confirmPassLbl = new Label();
             confirmPassTxt = new TextBox();
-            createAccountBtn = new Button();
+            CreateAccountBtn = new Button();
             statusLbl = new Label();
             outputLbl = new Label();
-            cancelBtn = new Button();
+            CancelBtn = new Button();
             showPasswordCheckBox = new CheckBox();
-            groupBox1 = new GroupBox();
-            groupBox1.SuspendLayout();
+            RegisterBox = new GroupBox();
+            RegisterBox.SuspendLayout();
             SuspendLayout();
             // 
             // userLbl
@@ -103,21 +103,21 @@
             confirmPassTxt.TabIndex = 5;
             confirmPassTxt.UseSystemPasswordChar = true;
             // 
-            // createAccountBtn
+            // CreateAccountBtn
             // 
-            createAccountBtn.BackColor = SystemColors.ControlDarkDark;
-            createAccountBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
-            createAccountBtn.FlatAppearance.BorderSize = 3;
-            createAccountBtn.FlatStyle = FlatStyle.Flat;
-            createAccountBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            createAccountBtn.ForeColor = Color.WhiteSmoke;
-            createAccountBtn.Location = new Point(6, 239);
-            createAccountBtn.Name = "createAccountBtn";
-            createAccountBtn.Size = new Size(438, 44);
-            createAccountBtn.TabIndex = 6;
-            createAccountBtn.Text = "&Create Account";
-            createAccountBtn.UseVisualStyleBackColor = false;
-            createAccountBtn.Click += createAccountBtn_Click;
+            CreateAccountBtn.BackColor = SystemColors.ControlDarkDark;
+            CreateAccountBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            CreateAccountBtn.FlatAppearance.BorderSize = 3;
+            CreateAccountBtn.FlatStyle = FlatStyle.Flat;
+            CreateAccountBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            CreateAccountBtn.ForeColor = Color.WhiteSmoke;
+            CreateAccountBtn.Location = new Point(6, 239);
+            CreateAccountBtn.Name = "CreateAccountBtn";
+            CreateAccountBtn.Size = new Size(438, 44);
+            CreateAccountBtn.TabIndex = 6;
+            CreateAccountBtn.Text = "&Create Account";
+            CreateAccountBtn.UseVisualStyleBackColor = false;
+            CreateAccountBtn.Click += CreateAccountBtn_Click;
             // 
             // statusLbl
             // 
@@ -137,21 +137,21 @@
             outputLbl.TabIndex = 9;
             outputLbl.Text = "Idle...";
             // 
-            // cancelBtn
+            // CancelBtn
             // 
-            cancelBtn.BackColor = SystemColors.ControlDarkDark;
-            cancelBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
-            cancelBtn.FlatAppearance.BorderSize = 3;
-            cancelBtn.FlatStyle = FlatStyle.Flat;
-            cancelBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            cancelBtn.ForeColor = Color.WhiteSmoke;
-            cancelBtn.Location = new Point(6, 289);
-            cancelBtn.Name = "cancelBtn";
-            cancelBtn.Size = new Size(438, 44);
-            cancelBtn.TabIndex = 10;
-            cancelBtn.Text = "&Cancel";
-            cancelBtn.UseVisualStyleBackColor = false;
-            cancelBtn.Click += cancelBtn_Click;
+            CancelBtn.BackColor = SystemColors.ControlDarkDark;
+            CancelBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            CancelBtn.FlatAppearance.BorderSize = 3;
+            CancelBtn.FlatStyle = FlatStyle.Flat;
+            CancelBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            CancelBtn.ForeColor = Color.WhiteSmoke;
+            CancelBtn.Location = new Point(6, 289);
+            CancelBtn.Name = "CancelBtn";
+            CancelBtn.Size = new Size(438, 44);
+            CancelBtn.TabIndex = 10;
+            CancelBtn.Text = "&Cancel";
+            CancelBtn.UseVisualStyleBackColor = false;
+            CancelBtn.Click += CancelBtn_Click;
             // 
             // showPasswordCheckBox
             // 
@@ -162,46 +162,46 @@
             showPasswordCheckBox.TabIndex = 11;
             showPasswordCheckBox.Text = "Show Password";
             showPasswordCheckBox.UseVisualStyleBackColor = true;
-            showPasswordCheckBox.CheckedChanged += showPasswordCheckBox_CheckedChanged;
+            showPasswordCheckBox.CheckedChanged += ShowPasswordCheckBox_CheckedChanged;
             // 
-            // groupBox1
+            // RegisterBox
             // 
-            groupBox1.BackColor = SystemColors.ControlDarkDark;
-            groupBox1.Controls.Add(showPasswordCheckBox);
-            groupBox1.Controls.Add(cancelBtn);
-            groupBox1.Controls.Add(outputLbl);
-            groupBox1.Controls.Add(statusLbl);
-            groupBox1.Controls.Add(createAccountBtn);
-            groupBox1.Controls.Add(confirmPassTxt);
-            groupBox1.Controls.Add(confirmPassLbl);
-            groupBox1.Controls.Add(passTxt);
-            groupBox1.Controls.Add(passLbl);
-            groupBox1.Controls.Add(userTxt);
-            groupBox1.Controls.Add(userLbl);
-            groupBox1.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            groupBox1.ForeColor = Color.WhiteSmoke;
-            groupBox1.Location = new Point(12, 12);
-            groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(450, 434);
-            groupBox1.TabIndex = 0;
-            groupBox1.TabStop = false;
-            groupBox1.Text = "Register Account";
+            RegisterBox.BackColor = SystemColors.ControlDarkDark;
+            RegisterBox.Controls.Add(showPasswordCheckBox);
+            RegisterBox.Controls.Add(CancelBtn);
+            RegisterBox.Controls.Add(outputLbl);
+            RegisterBox.Controls.Add(statusLbl);
+            RegisterBox.Controls.Add(CreateAccountBtn);
+            RegisterBox.Controls.Add(confirmPassTxt);
+            RegisterBox.Controls.Add(confirmPassLbl);
+            RegisterBox.Controls.Add(passTxt);
+            RegisterBox.Controls.Add(passLbl);
+            RegisterBox.Controls.Add(userTxt);
+            RegisterBox.Controls.Add(userLbl);
+            RegisterBox.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            RegisterBox.ForeColor = Color.WhiteSmoke;
+            RegisterBox.Location = new Point(12, 12);
+            RegisterBox.Name = "RegisterBox";
+            RegisterBox.Size = new Size(450, 434);
+            RegisterBox.TabIndex = 0;
+            RegisterBox.TabStop = false;
+            RegisterBox.Text = "Register Account";
             // 
             // RegisterAccount
             // 
-            AcceptButton = createAccountBtn;
+            AcceptButton = CreateAccountBtn;
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlDarkDark;
             ClientSize = new Size(474, 458);
-            Controls.Add(groupBox1);
+            Controls.Add(RegisterBox);
             FormBorderStyle = FormBorderStyle.Fixed3D;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             Name = "RegisterAccount";
             Text = "Register Account";
-            groupBox1.ResumeLayout(false);
-            groupBox1.PerformLayout();
+            RegisterBox.ResumeLayout(false);
+            RegisterBox.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -213,11 +213,11 @@
         private TextBox passTxt;
         private Label confirmPassLbl;
         private TextBox confirmPassTxt;
-        private Button createAccountBtn;
+        private Button CreateAccountBtn;
         private Label statusLbl;
         private Label outputLbl;
-        private Button cancelBtn;
+        private Button CancelBtn;
         private CheckBox showPasswordCheckBox;
-        private GroupBox groupBox1;
+        private GroupBox RegisterBox;
     }
 }

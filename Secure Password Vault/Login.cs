@@ -15,7 +15,7 @@ public partial class Login : Form
         InitializeComponent();
     }
 
-    private void createNewAccountBtn_Click(object sender, EventArgs e)
+    private void CreateNewAccountBtn_Click(object sender, EventArgs e)
     {
         Hide();
         using RegisterAccount form = new();
@@ -24,11 +24,11 @@ public partial class Login : Form
     }
 
     /// <summary>
-    /// Handles the click event for the logInBtn, attempts user login, and performs necessary UI updates.
+    ///     Handles the click event for the logInBtn, attempts user login, and performs necessary UI updates.
     /// </summary>
     /// <param name="sender">The object that raised the event.</param>
     /// <param name="e">The event arguments.</param>
-    private async void logInBtn_Click(object sender, EventArgs e)
+    private async void LogInBtn_Click(object sender, EventArgs e)
     {
         // Set the priority class of the current process to AboveNormal.
         Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.AboveNormal;
@@ -47,35 +47,39 @@ public partial class Login : Form
         }
 
         // Parse the attempts remaining from the AttemptsNumber TextBox.
-        _attemptsRemaining = int.Parse(AttemptsNumber.Text);
+        var canParse = int.TryParse(AttemptsNumber.Text, out _attemptsRemaining);
 
-        // Check if the attempts remaining is zero and throw an exception if true.
-        if (_attemptsRemaining == 0)
-            throw new Exception("Input was not in the correct format.");
-
-        // Display an error message if no attempts remaining and return.
-        if (_attemptsRemaining == 0)
+        if (canParse)
         {
-            MessageBox.Show("No attempts remaining. Please restart the program and try again.", "Error",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
-            return;
+            // Display an error message if no attempts remaining and return.
+            if (_attemptsRemaining == 0)
+            {
+                MessageBox.Show("No attempts remaining. Please restart the program and try again.", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+        }
+        else
+        {
+            throw new Exception("Unable to parse attempts remaining value.");
         }
 
         try
         {
-            // Throw an exception if the username is null or empty.
+            // Throw an exception if the username is null or empty.    
             if (userNameTxt.Text == string.Empty)
-                throw new ArgumentException("Value was null or empty.", nameof(userNameTxt));
+                throw new ArgumentException("Value was empty.", nameof(userNameTxt));
 
             // Set the passwordArray using the SetArray method.
-            _passwordArray = SetArray();
+            _passwordArray = CreateArray();
 
             // Throw an exception if the passwordArray is null or empty.
             if (_passwordArray.Length == 0)
-                throw new ArgumentException("Value was null or empty.", nameof(_passwordArray));
+                throw new ArgumentException("Value was empty.", nameof(_passwordArray));
 
             // Display an information message to the user.
-            MessageBox.Show("Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.",
+            MessageBox.Show(
+                "Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.",
                 "Info", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 
             // Disable the UI during login processing.
@@ -99,11 +103,12 @@ public partial class Login : Form
             _isAnimating = false;
             outputLbl.Text = "Login failed.";
             outputLbl.ForeColor = Color.Red;
-            MessageBox.Show("Please recheck your credentials and try again.", "Error", MessageBoxButtons.OK,
+            MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
 
             // Decrement the attempts remaining count and reset UI elements.
             _attemptsRemaining--;
+            AttemptsNumber.Text = _attemptsRemaining.ToString();
             outputLbl.ForeColor = Color.WhiteSmoke;
             outputLbl.Text = "Idle...";
             EnableUi();
@@ -113,18 +118,18 @@ public partial class Login : Form
 
     private void DisableUi()
     {
-        createNewAccountBtn.Enabled = false;
+        CreateNewAccountBtn.Enabled = false;
         passTxt.Enabled = false;
         userNameTxt.Enabled = false;
-        logInBtn.Enabled = false;
+        LogInBtn.Enabled = false;
         rememberMeCheckBox.Enabled = false;
         showPasswordCheckBox.Enabled = false;
     }
 
     private void EnableUi()
     {
-        logInBtn.Enabled = true;
-        createNewAccountBtn.Enabled = true;
+        LogInBtn.Enabled = true;
+        CreateNewAccountBtn.Enabled = true;
         passTxt.Enabled = true;
         userNameTxt.Enabled = true;
         rememberMeCheckBox.Enabled = true;
@@ -145,17 +150,16 @@ public partial class Login : Form
             // Make sure the SecureString is read-only to enhance security.
             secureString.MakeReadOnly();
         }
-        catch (Exception ex)
+        catch
         {
             secureString.Dispose(); // Dispose if there is an exception to avoid memory leaks.
-            ErrorLogging.ErrorLog(ex);
             throw;
         }
 
         return secureString;
     }
 
-    private char[] SetArray()
+    private char[] CreateArray()
     {
         var buffer = passTxt.Text.Length;
         _passwordArray = new char[buffer];
@@ -178,8 +182,8 @@ public partial class Login : Form
     }
 
     /// <summary>
-    /// Asynchronously initiates the login process by performing decryption, password hashing,
-    /// and handling login success or failure accordingly.
+    ///     Asynchronously initiates the login process by performing decryption, password hashing,
+    ///     and handling login success or failure accordingly.
     /// </summary>
     private async Task StartLoginProcessAsync()
     {
@@ -191,7 +195,7 @@ public partial class Login : Form
             showPasswordCheckBox.Checked = false;
 
         // Set the passwordArray using the SetArray method.
-        _passwordArray = SetArray();
+        _passwordArray = CreateArray();
 
         // Decrypt user data using the provided username and password.
         var decryptedBytes = await Crypto.DecryptFile(userNameTxt.Text, _passwordArray,
@@ -199,7 +203,7 @@ public partial class Login : Form
 
         // Throw an exception if the decryptedBytes is empty or null.
         if (decryptedBytes == Array.Empty<byte>())
-            throw new Exception("Value returned empty or null.");
+            throw new ArgumentException("Value was empty.", nameof(decryptedBytes));
 
         // Perform aggressive garbage collection.
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
@@ -212,7 +216,7 @@ public partial class Login : Form
         var salt = await Authentication.GetUserSaltAsync(userNameTxt.Text);
 
         // Set the passwordArray using the SetArray method.
-        _passwordArray = SetArray();
+        _passwordArray = CreateArray();
 
         // Retrieve user information.
         await Authentication.GetUserInfo(userNameTxt.Text);
@@ -223,9 +227,9 @@ public partial class Login : Form
         // Perform aggressive garbage collection.
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
-        // Throw an exception if the hashedInput is null.
-        if (hashedInput == null)
-            throw new ArgumentException("Hash value returned null.", nameof(hashedInput));
+        // Throw an exception if the hashedInput is empty.
+        if (hashedInput == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(hashedInput));
 
         // Retrieve user information again.
         await Authentication.GetUserInfo(userNameTxt.Text);
@@ -260,13 +264,12 @@ public partial class Login : Form
         Array.Clear(_passwordArray, 0, _passwordArray.Length);
         _isAnimating = false;
         outputLbl.ForeColor = Color.WhiteSmoke;
-        MessageBox.Show(@"Username does not exist.", @"Error", MessageBoxButtons.OK,
-            MessageBoxIcon.Error);
         outputLbl.Text = @"Idle...";
+        throw new ArgumentException("Username does not exist.", nameof(userNameTxt));
     }
 
     /// <summary>
-    /// Handles actions and processes for a successful login.
+    ///     Handles actions and processes for a successful login.
     /// </summary>
     private async void HandleLogin()
     {
@@ -278,7 +281,7 @@ public partial class Login : Form
         Authentication.CurrentLoggedInUser = userNameTxt.Text;
 
         // Set the passwordArray using the SetArray method.
-        _passwordArray = SetArray();
+        _passwordArray = CreateArray();
 
         // Encrypt user information and write it back to the user data file.
         var encryptedUserInfo = await Crypto.EncryptFile(userNameTxt.Text, _passwordArray,
@@ -303,7 +306,7 @@ public partial class Login : Form
         if (File.Exists(Authentication.GetUserVault(userNameTxt.Text)))
         {
             // Set the passwordArray using the SetArray method.
-            _passwordArray = SetArray();
+            _passwordArray = CreateArray();
 
             // Decrypt the user vault.
             var decryptedVault = await Crypto.DecryptFile(userNameTxt.Text,
@@ -325,7 +328,7 @@ public partial class Login : Form
             userVault.LoadVault();
 
             // Set the passwordArray using the SetArray method.
-            _passwordArray = SetArray();
+            _passwordArray = CreateArray();
 
             // Encrypt the user vault and write it back to the user vault file.
             var encryptedBytes = await Crypto.EncryptFile(userNameTxt.Text, _passwordArray,
@@ -353,7 +356,7 @@ public partial class Login : Form
             UserLog.LogUser(Authentication.CurrentLoggedInUser);
 
             // Set the secure password and clear sensitive data from memory.
-            _passwordArray = SetArray();
+            _passwordArray = CreateArray();
             SecurePassword = ConvertCharArrayToSecureString(_passwordArray);
             Array.Clear(_passwordArray, 0, _passwordArray.Length);
 
@@ -367,7 +370,7 @@ public partial class Login : Form
         }
 
         // Set the passwordArray using the SetArray method.
-        _passwordArray = SetArray();
+        _passwordArray = CreateArray();
 
         // Set the secure password and throw an exception if it is null.
         SecurePassword = ConvertCharArrayToSecureString(_passwordArray);
@@ -441,6 +444,8 @@ public partial class Login : Form
             rememberMeCheckBox.Checked = false;
             return;
         }
+        using (var p = Process.GetCurrentProcess())
+            p.PriorityClass = ProcessPriorityClass.AboveNormal;
 
         userNameTxt.Text = Settings.Default.userName;
         rememberMeCheckBox.Checked = true;

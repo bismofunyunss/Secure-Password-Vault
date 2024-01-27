@@ -12,17 +12,17 @@ public partial class RegisterAccount : Form
     }
 
     /// <summary>
-    /// Checks the validity of a password based on specified criteria.
+    ///     Checks the validity of a password based on specified criteria.
     /// </summary>
     /// <param name="password">The first password to be checked, as an IReadOnlyCollection of characters.</param>
     /// <param name="password2">The second password to be checked, as an array of characters.</param>
     /// <returns>
-    /// True if the passwords meet the validity criteria, otherwise false.
+    ///     True if the passwords meet the validity criteria, otherwise false.
     /// </returns>
     private static bool CheckPasswordValidity(IReadOnlyCollection<char> password, char[] password2)
     {
         // Check password length: must be between 16 and 64 characters (inclusive).
-        if (password.Count is < 16 or > 64)
+        if (password.Count is < 24 or > 120)
             return false;
 
         // Check for at least one uppercase letter, one lowercase letter, and one digit.
@@ -38,7 +38,7 @@ public partial class RegisterAccount : Form
     }
 
     /// <summary>
-    /// Asynchronously creates a user account with specified username and password.
+    ///     Asynchronously creates a user account with specified username and password.
     /// </summary>
     private async Task CreateAccountAsync()
     {
@@ -65,65 +65,42 @@ public partial class RegisterAccount : Form
         // Check if the user already exists.
         var userExists = Authentication.UserExists(userName);
 
-        try
+        if (!userExists)
         {
-            if (!userExists)
-            {
-                // Disable the UI during the registration process.
-                DisableUi();
+            // Disable the UI during the registration process.
+            DisableUi();
 
-                // Perform asynchronous user registration.
-                await RegisterAsync(userName, passArray, confirmPassArray, userFile, userSalt);
-            }
-            else
-            {
-                // Throw an exception if the username already exists.
-                throw new ArgumentException("Username already exists", userTxt.Text);
-            }
+            // Perform asynchronous user registration.
+            await RegisterAsync(userName, passArray, confirmPassArray, userFile, userSalt);
         }
-        catch (Exception ex)
+        else
         {
-            // Enable the UI after an exception occurs.
-            EnableUi();
-
-            // Update UI elements and log the error.
-            outputLbl.ForeColor = Color.WhiteSmoke;
-            _isAnimating = false;
-            ErrorLogging.ErrorLog(ex);
-
-            // Show an error message to the user.
-            MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-            // Update the output label text.
-            outputLbl.Text = "Idle...";
+            // Throw an exception if the username already exists.
+            throw new ArgumentException("Username already exists.", nameof(userName));
         }
     }
 
     private void DisableUi()
     {
-        showPasswordCheckBox.Enabled = false;
-        passTxt.Enabled = false;
-        confirmPassTxt.Enabled = false;
-        userTxt.Enabled = false;
-        createAccountBtn.Enabled = false;
-        cancelBtn.Enabled = false;
+        foreach (Control c in RegisterBox.Controls)
+        {
+            if (c == userLbl || c == passLbl || c == confirmPassLbl || c == statusLbl || c == outputLbl)
+                continue;
+            c.Enabled = false;
+        }
     }
 
     private void EnableUi()
     {
-        showPasswordCheckBox.Enabled = true;
-        userTxt.Enabled = true;
-        createAccountBtn.Enabled = true;
-        cancelBtn.Enabled = true;
-        passTxt.Enabled = true;
-        confirmPassTxt.Enabled = true;
+        foreach (Control c in RegisterBox.Controls)
+            c.Enabled = true;
     }
 
     /// <summary>
-    /// Converts the password input from the passTxt TextBox to a character array.
+    ///     Converts the password input from the passTxt TextBox to a character array.
     /// </summary>
     /// <returns>
-    /// A character array representing the password.
+    ///     A character array representing the password.
     /// </returns>
     private char[] SetArray()
     {
@@ -149,8 +126,8 @@ public partial class RegisterAccount : Form
     }
 
     /// <summary>
-    /// Asynchronously registers a user with the specified username and password,
-    /// encrypts user data, and displays relevant messages to the user.
+    ///     Asynchronously registers a user with the specified username and password,
+    ///     encrypts user data, and displays relevant messages to the user.
     /// </summary>
     /// <param name="username">The username of the user to be registered.</param>
     /// <param name="password">The password of the user to be registered.</param>
@@ -198,7 +175,7 @@ public partial class RegisterAccount : Form
 
         // Throw an exception if the encrypted value is null or empty.
         if (encrypted == Array.Empty<byte>())
-            throw new ArgumentException("Value returned null or empty.", nameof(encrypted));
+            throw new InvalidOperationException("Value returned null or empty.");
 
         await File.WriteAllTextAsync(userFile, DataConversionHelpers.ByteArrayToBase64String(encrypted));
 
@@ -218,7 +195,7 @@ public partial class RegisterAccount : Form
         // Show a success message to the user.
         MessageBox.Show("Registration successful! Make sure you do NOT forget your password or you will lose access " +
                         "to all of your files.", "Registration Complete", MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+            MessageBoxIcon.Information);
 
         // Hide the current form, show the login form, and close the current form.
         Hide();
@@ -229,13 +206,13 @@ public partial class RegisterAccount : Form
 
 
     /// <summary>
-    /// Validates the provided username and password for registration.
+    ///     Validates the provided username and password for registration.
     /// </summary>
     /// <param name="userName">The username to be validated.</param>
     /// <param name="password">The password to be validated.</param>
     /// <param name="password2">The confirmation password to be validated.</param>
     /// <exception cref="ArgumentException">
-    /// Thrown if the username or password does not meet the specified criteria.
+    ///     Thrown if the username or password does not meet the specified criteria.
     /// </exception>
     private static void ValidateUsernameAndPassword(string userName, char[] password, char[] password2)
     {
@@ -256,7 +233,7 @@ public partial class RegisterAccount : Form
         // Validate the password using the CheckPasswordValidity method.
         if (!CheckPasswordValidity(password, password2))
             throw new ArgumentException(
-                "Password must contain between 16 and 64 characters. It also must include:" +
+                "Password must contain between 24 and 120 characters. It also must include:" +
                 " 1.) At least one uppercase letter." +
                 " 2.) At least one lowercase letter." +
                 " 3.) At least one number." +
@@ -277,12 +254,31 @@ public partial class RegisterAccount : Form
         return fullPath;
     }
 
-    private async void createAccountBtn_Click(object sender, EventArgs e)
+    private async void CreateAccountBtn_Click(object sender, EventArgs e)
     {
         MessageBox.Show(
             @"Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.", @"Info",
             MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-        await CreateAccountAsync();
+        try
+        {
+            await CreateAccountAsync();
+        }
+        catch (Exception ex)
+        {
+            // Enable the UI after an exception occurs.
+            EnableUi();
+
+            // Update UI elements and log the error.
+            outputLbl.ForeColor = Color.WhiteSmoke;
+            _isAnimating = false;
+            ErrorLogging.ErrorLog(ex);
+
+            // Show an error message to the user.
+            MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+            // Update the output label text.
+            outputLbl.Text = "Idle...";
+        }
     }
 
     private async void StartAnimation()
@@ -306,7 +302,7 @@ public partial class RegisterAccount : Form
         }
     }
 
-    private void cancelBtn_Click(object sender, EventArgs e)
+    private void CancelBtn_Click(object sender, EventArgs e)
     {
         Hide();
         using Login form = new();
@@ -314,7 +310,7 @@ public partial class RegisterAccount : Form
         Close();
     }
 
-    private void showPasswordCheckBox_CheckedChanged(object sender, EventArgs e)
+    private void ShowPasswordCheckBox_CheckedChanged(object sender, EventArgs e)
     {
         passTxt.UseSystemPasswordChar = !showPasswordCheckBox.Checked;
         confirmPassTxt.UseSystemPasswordChar = !showPasswordCheckBox.Checked;

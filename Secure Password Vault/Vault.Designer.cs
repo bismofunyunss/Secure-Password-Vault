@@ -41,9 +41,9 @@
             Email = new DataGridViewTextBoxColumn();
             Username = new DataGridViewTextBoxColumn();
             Password = new DataGridViewTextBoxColumn();
-            addRowBtn = new Button();
-            deleteRowBtn = new Button();
-            saveVaultBtn = new Button();
+            AddRowBtn = new Button();
+            DeleteRowBtn = new Button();
+            SaveVaultBtn = new Button();
             vaultBox = new GroupBox();
             pictureBox4 = new PictureBox();
             outputLbl = new Label();
@@ -62,10 +62,10 @@
             hashbox = new GroupBox();
             pictureBox2 = new PictureBox();
             filenamelbl = new Label();
-            calculatehashbtn = new Button();
+            CalculateHashBtn = new Button();
             hashoutputlbl = new Label();
             hashoutputtxt = new TextBox();
-            hashimportfile = new Button();
+            Hashimportfile = new Button();
             ((System.ComponentModel.ISupportInitialize)PassVault).BeginInit();
             vaultBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox4).BeginInit();
@@ -173,59 +173,59 @@
             Password.MinimumWidth = 8;
             Password.Name = "Password";
             // 
-            // addRowBtn
+            // AddRowBtn
             // 
-            addRowBtn.BackColor = SystemColors.ControlDarkDark;
-            addRowBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
-            addRowBtn.FlatAppearance.BorderSize = 3;
-            addRowBtn.FlatStyle = FlatStyle.Flat;
-            addRowBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            addRowBtn.ForeColor = Color.WhiteSmoke;
-            addRowBtn.Location = new Point(6, 256);
-            addRowBtn.Name = "addRowBtn";
-            addRowBtn.Size = new Size(918, 44);
-            addRowBtn.TabIndex = 5;
-            addRowBtn.Text = "&Add New Row";
-            addRowBtn.UseVisualStyleBackColor = false;
-            addRowBtn.Click += addRowBtn_Click;
-            addRowBtn.MouseLeave += addRowBtn_MouseLeave;
-            addRowBtn.MouseHover += addRowBtn_MouseHover;
+            AddRowBtn.BackColor = SystemColors.ControlDarkDark;
+            AddRowBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            AddRowBtn.FlatAppearance.BorderSize = 3;
+            AddRowBtn.FlatStyle = FlatStyle.Flat;
+            AddRowBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            AddRowBtn.ForeColor = Color.WhiteSmoke;
+            AddRowBtn.Location = new Point(6, 256);
+            AddRowBtn.Name = "AddRowBtn";
+            AddRowBtn.Size = new Size(918, 44);
+            AddRowBtn.TabIndex = 5;
+            AddRowBtn.Text = "&Add New Row";
+            AddRowBtn.UseVisualStyleBackColor = false;
+            AddRowBtn.Click += addRowBtn_Click;
+            AddRowBtn.MouseLeave += AddRowBtn_MouseLeave;
+            AddRowBtn.MouseHover += addRowBtn_MouseHover;
             // 
-            // deleteRowBtn
+            // DeleteRowBtn
             // 
-            deleteRowBtn.BackColor = SystemColors.ControlDarkDark;
-            deleteRowBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
-            deleteRowBtn.FlatAppearance.BorderSize = 3;
-            deleteRowBtn.FlatStyle = FlatStyle.Flat;
-            deleteRowBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            deleteRowBtn.ForeColor = Color.WhiteSmoke;
-            deleteRowBtn.Location = new Point(6, 306);
-            deleteRowBtn.Name = "deleteRowBtn";
-            deleteRowBtn.Size = new Size(918, 44);
-            deleteRowBtn.TabIndex = 6;
-            deleteRowBtn.Text = "&Delete Row";
-            deleteRowBtn.UseVisualStyleBackColor = false;
-            deleteRowBtn.Click += deleteRowBtn_Click;
-            deleteRowBtn.MouseLeave += deleteRowBtn_MouseLeave;
-            deleteRowBtn.MouseHover += deleteRowBtn_MouseHover;
+            DeleteRowBtn.BackColor = SystemColors.ControlDarkDark;
+            DeleteRowBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            DeleteRowBtn.FlatAppearance.BorderSize = 3;
+            DeleteRowBtn.FlatStyle = FlatStyle.Flat;
+            DeleteRowBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            DeleteRowBtn.ForeColor = Color.WhiteSmoke;
+            DeleteRowBtn.Location = new Point(6, 302);
+            DeleteRowBtn.Name = "DeleteRowBtn";
+            DeleteRowBtn.Size = new Size(918, 44);
+            DeleteRowBtn.TabIndex = 6;
+            DeleteRowBtn.Text = "&Delete Row";
+            DeleteRowBtn.UseVisualStyleBackColor = false;
+            DeleteRowBtn.Click += deleteRowBtn_Click;
+            DeleteRowBtn.MouseLeave += DeleteRowBtn_MouseLeave;
+            DeleteRowBtn.MouseHover += deleteRowBtn_MouseHover;
             // 
-            // saveVaultBtn
+            // SaveVaultBtn
             // 
-            saveVaultBtn.BackColor = SystemColors.ControlDarkDark;
-            saveVaultBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
-            saveVaultBtn.FlatAppearance.BorderSize = 3;
-            saveVaultBtn.FlatStyle = FlatStyle.Flat;
-            saveVaultBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            saveVaultBtn.ForeColor = Color.WhiteSmoke;
-            saveVaultBtn.Location = new Point(6, 352);
-            saveVaultBtn.Name = "saveVaultBtn";
-            saveVaultBtn.Size = new Size(918, 44);
-            saveVaultBtn.TabIndex = 7;
-            saveVaultBtn.Text = "&Save Vault";
-            saveVaultBtn.UseVisualStyleBackColor = false;
-            saveVaultBtn.Click += saveVaultBtn_Click;
-            saveVaultBtn.MouseLeave += saveVaultBtn_MouseLeave;
-            saveVaultBtn.MouseHover += saveVaultBtn_MouseHover;
+            SaveVaultBtn.BackColor = SystemColors.ControlDarkDark;
+            SaveVaultBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            SaveVaultBtn.FlatAppearance.BorderSize = 3;
+            SaveVaultBtn.FlatStyle = FlatStyle.Flat;
+            SaveVaultBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            SaveVaultBtn.ForeColor = Color.WhiteSmoke;
+            SaveVaultBtn.Location = new Point(6, 348);
+            SaveVaultBtn.Name = "SaveVaultBtn";
+            SaveVaultBtn.Size = new Size(918, 44);
+            SaveVaultBtn.TabIndex = 7;
+            SaveVaultBtn.Text = "&Save Vault";
+            SaveVaultBtn.UseVisualStyleBackColor = false;
+            SaveVaultBtn.Click += saveVaultBtn_Click;
+            SaveVaultBtn.MouseLeave += SaveVaultBtn_MouseLeave;
+            SaveVaultBtn.MouseHover += saveVaultBtn_MouseHover;
             // 
             // vaultBox
             // 
@@ -233,9 +233,9 @@
             vaultBox.Controls.Add(outputLbl);
             vaultBox.Controls.Add(statusLbl);
             vaultBox.Controls.Add(PassVault);
-            vaultBox.Controls.Add(saveVaultBtn);
-            vaultBox.Controls.Add(addRowBtn);
-            vaultBox.Controls.Add(deleteRowBtn);
+            vaultBox.Controls.Add(SaveVaultBtn);
+            vaultBox.Controls.Add(AddRowBtn);
+            vaultBox.Controls.Add(DeleteRowBtn);
             vaultBox.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             vaultBox.ForeColor = Color.WhiteSmoke;
             vaultBox.Location = new Point(12, 12);
@@ -289,7 +289,7 @@
             FileEncryptDecryptBox.ForeColor = Color.WhiteSmoke;
             FileEncryptDecryptBox.Location = new Point(12, 491);
             FileEncryptDecryptBox.Name = "FileEncryptDecryptBox";
-            FileEncryptDecryptBox.Size = new Size(930, 249);
+            FileEncryptDecryptBox.Size = new Size(930, 213);
             FileEncryptDecryptBox.TabIndex = 10;
             FileEncryptDecryptBox.TabStop = false;
             FileEncryptDecryptBox.Text = "File Encryptor / Decryptor";
@@ -297,7 +297,7 @@
             // pictureBox3
             // 
             pictureBox3.Image = Properties.Resources.cyber;
-            pictureBox3.Location = new Point(854, 168);
+            pictureBox3.Location = new Point(854, 132);
             pictureBox3.Name = "pictureBox3";
             pictureBox3.Size = new Size(67, 75);
             pictureBox3.TabIndex = 17;
@@ -307,7 +307,7 @@
             // 
             FileSizeNumLbl.AutoSize = true;
             FileSizeNumLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            FileSizeNumLbl.Location = new Point(124, 204);
+            FileSizeNumLbl.Location = new Point(124, 178);
             FileSizeNumLbl.Name = "FileSizeNumLbl";
             FileSizeNumLbl.Size = new Size(23, 25);
             FileSizeNumLbl.TabIndex = 16;
@@ -317,7 +317,7 @@
             // 
             FileSizeLbl.AutoSize = true;
             FileSizeLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            FileSizeLbl.Location = new Point(7, 204);
+            FileSizeLbl.Location = new Point(7, 178);
             FileSizeLbl.Name = "FileSizeLbl";
             FileSizeLbl.Size = new Size(111, 25);
             FileSizeLbl.TabIndex = 15;
@@ -327,7 +327,7 @@
             // 
             FileOutputLbl.AutoSize = true;
             FileOutputLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            FileOutputLbl.Location = new Point(103, 179);
+            FileOutputLbl.Location = new Point(102, 153);
             FileOutputLbl.Name = "FileOutputLbl";
             FileOutputLbl.Size = new Size(67, 25);
             FileOutputLbl.TabIndex = 14;
@@ -337,7 +337,7 @@
             // 
             FileStatusLbl.AutoSize = true;
             FileStatusLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            FileStatusLbl.Location = new Point(7, 179);
+            FileStatusLbl.Location = new Point(6, 153);
             FileStatusLbl.Name = "FileStatusLbl";
             FileStatusLbl.Size = new Size(90, 25);
             FileStatusLbl.TabIndex = 13;
@@ -420,7 +420,7 @@
             UserWelcomeLbl.AutoSize = true;
             UserWelcomeLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             UserWelcomeLbl.ForeColor = Color.WhiteSmoke;
-            UserWelcomeLbl.Location = new Point(12, 1056);
+            UserWelcomeLbl.Location = new Point(12, 995);
             UserWelcomeLbl.Name = "UserWelcomeLbl";
             UserWelcomeLbl.Size = new Size(146, 25);
             UserWelcomeLbl.TabIndex = 17;
@@ -430,13 +430,13 @@
             // 
             hashbox.Controls.Add(pictureBox2);
             hashbox.Controls.Add(filenamelbl);
-            hashbox.Controls.Add(calculatehashbtn);
+            hashbox.Controls.Add(CalculateHashBtn);
             hashbox.Controls.Add(hashoutputlbl);
             hashbox.Controls.Add(hashoutputtxt);
-            hashbox.Controls.Add(hashimportfile);
+            hashbox.Controls.Add(Hashimportfile);
             hashbox.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             hashbox.ForeColor = Color.WhiteSmoke;
-            hashbox.Location = new Point(12, 746);
+            hashbox.Location = new Point(12, 710);
             hashbox.Name = "hashbox";
             hashbox.Size = new Size(930, 282);
             hashbox.TabIndex = 11;
@@ -463,23 +463,23 @@
             filenamelbl.TabIndex = 20;
             filenamelbl.Text = "File Name: N/A";
             // 
-            // calculatehashbtn
+            // CalculateHashBtn
             // 
-            calculatehashbtn.BackColor = SystemColors.ControlDarkDark;
-            calculatehashbtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
-            calculatehashbtn.FlatAppearance.BorderSize = 3;
-            calculatehashbtn.FlatStyle = FlatStyle.Flat;
-            calculatehashbtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            calculatehashbtn.ForeColor = Color.WhiteSmoke;
-            calculatehashbtn.Location = new Point(7, 116);
-            calculatehashbtn.Name = "calculatehashbtn";
-            calculatehashbtn.Size = new Size(917, 44);
-            calculatehashbtn.TabIndex = 19;
-            calculatehashbtn.Text = "&Calculate Hash";
-            calculatehashbtn.UseVisualStyleBackColor = false;
-            calculatehashbtn.Click += calculatehashbtn_Click;
-            calculatehashbtn.MouseLeave += calculatehashbtn_MouseLeave;
-            calculatehashbtn.MouseHover += calculatehashbtn_MouseHover;
+            CalculateHashBtn.BackColor = SystemColors.ControlDarkDark;
+            CalculateHashBtn.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            CalculateHashBtn.FlatAppearance.BorderSize = 3;
+            CalculateHashBtn.FlatStyle = FlatStyle.Flat;
+            CalculateHashBtn.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            CalculateHashBtn.ForeColor = Color.WhiteSmoke;
+            CalculateHashBtn.Location = new Point(7, 116);
+            CalculateHashBtn.Name = "CalculateHashBtn";
+            CalculateHashBtn.Size = new Size(917, 44);
+            CalculateHashBtn.TabIndex = 19;
+            CalculateHashBtn.Text = "&Calculate Hash";
+            CalculateHashBtn.UseVisualStyleBackColor = false;
+            CalculateHashBtn.Click += calculatehashbtn_Click;
+            CalculateHashBtn.MouseLeave += Calculatehashbtn_MouseLeave;
+            CalculateHashBtn.MouseHover += calculatehashbtn_MouseHover;
             // 
             // hashoutputlbl
             // 
@@ -501,30 +501,30 @@
             hashoutputtxt.Size = new Size(914, 33);
             hashoutputtxt.TabIndex = 6;
             // 
-            // hashimportfile
+            // Hashimportfile
             // 
-            hashimportfile.BackColor = SystemColors.ControlDarkDark;
-            hashimportfile.FlatAppearance.BorderColor = Color.WhiteSmoke;
-            hashimportfile.FlatAppearance.BorderSize = 3;
-            hashimportfile.FlatStyle = FlatStyle.Flat;
-            hashimportfile.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            hashimportfile.ForeColor = Color.WhiteSmoke;
-            hashimportfile.Location = new Point(6, 165);
-            hashimportfile.Name = "hashimportfile";
-            hashimportfile.Size = new Size(918, 44);
-            hashimportfile.TabIndex = 5;
-            hashimportfile.Text = "&Import File";
-            hashimportfile.UseVisualStyleBackColor = false;
-            hashimportfile.Click += hashimportfile_Click;
-            hashimportfile.MouseLeave += hashimportfile_MouseLeave;
-            hashimportfile.MouseHover += hashimportfile_MouseHover;
+            Hashimportfile.BackColor = SystemColors.ControlDarkDark;
+            Hashimportfile.FlatAppearance.BorderColor = Color.WhiteSmoke;
+            Hashimportfile.FlatAppearance.BorderSize = 3;
+            Hashimportfile.FlatStyle = FlatStyle.Flat;
+            Hashimportfile.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            Hashimportfile.ForeColor = Color.WhiteSmoke;
+            Hashimportfile.Location = new Point(6, 165);
+            Hashimportfile.Name = "Hashimportfile";
+            Hashimportfile.Size = new Size(918, 44);
+            Hashimportfile.TabIndex = 5;
+            Hashimportfile.Text = "&Import File";
+            Hashimportfile.UseVisualStyleBackColor = false;
+            Hashimportfile.Click += hashimportfile_Click;
+            Hashimportfile.MouseLeave += Hashimportfile_MouseLeave;
+            Hashimportfile.MouseHover += Hashimportfile_MouseHover;
             // 
             // Vault
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlDarkDark;
-            ClientSize = new Size(954, 1097);
+            ClientSize = new Size(954, 1028);
             Controls.Add(UserWelcomeLbl);
             Controls.Add(hashbox);
             Controls.Add(FileEncryptDecryptBox);
@@ -552,9 +552,9 @@
         #endregion
 
         private DataGridView PassVault;
-        private Button addRowBtn;
-        private Button deleteRowBtn;
-        private Button saveVaultBtn;
+        private Button AddRowBtn;
+        private Button DeleteRowBtn;
+        private Button SaveVaultBtn;
         private GroupBox vaultBox;
         private Label outputLbl;
         private Label statusLbl;
@@ -573,11 +573,11 @@
         private Label FileSizeLbl;
         private Label UserWelcomeLbl;
         private GroupBox hashbox;
-        private Button hashimportfile;
+        private Button Hashimportfile;
         private Label hashoutputlbl;
         private TextBox hashoutputtxt;
         private Label filenamelbl;
-        private Button calculatehashbtn;
+        private Button CalculateHashBtn;
         private PictureBox pictureBox2;
         private PictureBox pictureBox4;
         private PictureBox pictureBox3;

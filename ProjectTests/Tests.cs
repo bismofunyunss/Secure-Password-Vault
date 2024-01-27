@@ -1,4 +1,5 @@
 using System.Text;
+using System.Windows.Forms;
 
 namespace ProjectTests;
 
@@ -15,32 +16,35 @@ public class Tests
         public static readonly string plainText = "Here's some text to encrypt.";
 
         // Salt for key derivation
-        public static readonly byte[] Salt = {
+        public static readonly byte[] Salt =
+        [
             0x01, 0x23, 0x45, 0x67,
             0x89, 0xAB, 0xCD, 0xEF,
             0xFE, 0xDC, 0xBA, 0x98,
             0x76, 0x54, 0x32, 0x10,
             0x25, 0x36, 0x47, 0x58,
             0x69, 0x7A, 0x8B, 0x9C
-        };
+        ];
 
         // Nonce for xChacha
-        public static readonly byte[] Nonce = {
+        public static readonly byte[] Nonce =
+        [
             0x12, 0x34, 0x56, 0x78,
             0x9A, 0xBC, 0xDE, 0xF0,
             0x11, 0x22, 0x33, 0x44,
             0x55, 0x66, 0x77, 0x88,
             0x99, 0xAA, 0xBB, 0xCC,
             0xDD, 0xEE, 0xFF, 0x97
-        };
+        ];
 
         // Another nonce for AES IV
-        public static readonly byte[] Nonce2 = {
+        public static readonly byte[] Nonce2 =
+        [
             0x1C, 0x8F, 0x5A, 0x63,
             0x2E, 0xD7, 0x49, 0x0B,
             0xC2, 0x7F, 0x38, 0x96,
             0xE1, 0xA4, 0x72, 0x9D
-        };
+        ];
 
         // The expected result after encryption
         public const string ExpectedResult =
@@ -67,17 +71,21 @@ public class Tests
         try
         {
             // Derive keys using Argon2Id
-            var bytes = await Crypto.Argon2Id(EncryptionExample.passString.ToCharArray(), EncryptionExample.Salt, 128);
+            var bytes = await Crypto.Argon2Id(EncryptionExample.passString.ToCharArray(), EncryptionExample.Salt, 320);
 
             // Initialize key arrays
             var key = new byte[32];
             var key2 = new byte[32];
+            var key3 = new byte[128];
             var hMacKey = new byte[64];
+            var hMacKey2 = new byte[64];
 
             // Copy bytes to key arrays
             Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
             Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
             Buffer.BlockCopy(bytes, key.Length + key2.Length, hMacKey, 0, hMacKey.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length + hMacKey.Length, key3, 0, key3.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + hMacKey.Length, hMacKey2, 0, hMacKey2.Length);
 
             // Encrypt test data using EncryptAsyncV3Debug
             byte[] encryptedTest = await Crypto.EncryptAsyncV3Debug(
@@ -92,13 +100,15 @@ public class Tests
             Assert.AreEqual(EncryptionExample.ExpectedResult, encryptResult);
 
             // Derive keys again for decryption
-            bytes = await Crypto.Argon2Id(EncryptionExample.passString.ToCharArray(), EncryptionExample.Salt, 128);
+            bytes = await Crypto.Argon2Id(EncryptionExample.passString.ToCharArray(), EncryptionExample.Salt, 320);
 
             // Reset key arrays
             key = new byte[32];
             key2 = new byte[32];
+            key3 = new byte[128];
             hMacKey = new byte[64];
-
+            hMacKey2 = new byte[64];
+            
             // Copy bytes to key arrays
             Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
             Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
@@ -106,7 +116,7 @@ public class Tests
 
             // Decrypt the test data
             byte[] decryptedTest = await Crypto.DecryptAsyncV3(
-                DataConversionHelpers.Base64StringToByteArray(encryptResult), key, key2, hMacKey);
+                DataConversionHelpers.Base64StringToByteArray(encryptResult), key, key2, key3, hMacKey, hMacKey2);
 
             // Convert decrypted result to string
             string decryptResult = DataConversionHelpers.ByteArrayToString(decryptedTest);

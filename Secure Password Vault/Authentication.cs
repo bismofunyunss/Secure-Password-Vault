@@ -51,7 +51,6 @@ public static class Authentication
         catch (Exception ex)
         {
             // Handle other unexpected exceptions
-            MessageBox.Show("An error occurred while attempting to retrieve salt value.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             ErrorLogging.ErrorLog(ex);
             throw;
         }
