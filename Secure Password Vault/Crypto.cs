@@ -15,6 +15,80 @@ namespace Secure_Password_Vault;
 public static class Crypto
 {
     /// <summary>
+    ///     Utility class for cryptographic settings and initialization.
+    /// </summary>
+    public static class CryptoConstants
+    {
+        /// <summary>
+        ///     Number of iterations for key derivation.
+        /// </summary>
+        public const int Iterations = 32;
+
+        /// <summary>
+        ///     Memory size for key derivation in KiB.
+        /// </summary>
+        public const int MemorySize = 1024 * 1024 * 5;
+
+        /// <summary>
+        ///     Size of the salt used in cryptographic operations.
+        /// </summary>
+        public const int SaltSize = 128;
+
+        /// <summary>
+        ///     Length of the authentication tag used in authenticated encryption.
+        /// </summary>
+        public const int TagLen = 16;
+
+        /// <summary>
+        ///     Length of the HMAC (Hash-based Message Authentication Code).
+        /// </summary>
+        public const int HmacLength = 64;
+
+        /// <summary>
+        ///     Size of the nonce used in ChaCha20-Poly1305 authenticated encryption.
+        /// </summary>
+        public const int ChaChaNonceSize = 24;
+
+        /// <summary>
+        ///     Constant representing the size of the nonce used in GCM encryption.
+        /// </summary>
+        public const int GcmNonceSize = 12;
+
+        /// <summary>
+        ///     Size of the derived key in bytes.
+        /// </summary>
+        public const int KeySize = 32;
+
+        /// <summary>
+        ///     Size of the initialization vector (IV) in bytes.
+        /// </summary>
+        public const int Iv = 16;
+
+        /// <summary>
+        ///     Size of the ThreeFish initialization vector (IV) and key in bytes.
+        /// </summary>
+        public const int ThreeFish = 128;
+
+        /// <summary>
+        ///     Size of the ThreeFish initialization vector (IV) and key in bytes.
+        /// </summary>
+        public const int ShuffleKey = 128;
+
+        /// <summary>
+        ///     Random number generator for cryptographic operations.
+        /// </summary>
+        public static readonly RandomNumberGenerator RndNum = RandomNumberGenerator.Create();
+
+        /// <summary>
+        ///     Hash value used for various cryptographic purposes.
+        /// </summary>
+        /// <remarks>
+        ///     Initialized as an empty byte array.
+        /// </remarks>
+        public static byte[] Hash = Array.Empty<byte>();
+    }
+
+    /// <summary>
     ///     Hashes a password inside of a char array or derives a key from a password.
     /// </summary>
     /// <param name="passWord">The char array to hash.</param>
@@ -406,79 +480,6 @@ public static class Crypto
         return result;
     }
 
-    /// <summary>
-    ///     Utility class for cryptographic settings and initialization.
-    /// </summary>
-    public static class CryptoConstants
-    {
-        /// <summary>
-        ///     Number of iterations for key derivation.
-        /// </summary>
-        public const int Iterations = 32;
-
-        /// <summary>
-        ///     Memory size for key derivation in KiB.
-        /// </summary>
-        public const int MemorySize = 1024 * 1024 * 5;
-
-        /// <summary>
-        ///     Size of the salt used in cryptographic operations.
-        /// </summary>
-        public const int SaltSize = 128;
-
-        /// <summary>
-        ///     Length of the authentication tag used in authenticated encryption.
-        /// </summary>
-        public const int TagLen = 16;
-
-        /// <summary>
-        ///     Length of the HMAC (Hash-based Message Authentication Code).
-        /// </summary>
-        public const int HmacLength = 64;
-
-        /// <summary>
-        ///     Size of the nonce used in ChaCha20-Poly1305 authenticated encryption.
-        /// </summary>
-        public const int ChaChaNonceSize = 24;
-
-        /// <summary>
-        ///     Constant representing the size of the nonce used in GCM encryption.
-        /// </summary>
-        public const int GcmNonceSize = 12;
-
-        /// <summary>
-        ///     Size of the derived key in bytes.
-        /// </summary>
-        public const int KeySize = 32;
-
-        /// <summary>
-        ///     Size of the initialization vector (IV) in bytes.
-        /// </summary>
-        public const int Iv = 16;
-
-        /// <summary>
-        ///     Size of the ThreeFish initialization vector (IV) and key in bytes.
-        /// </summary>
-        public const int ThreeFish = 128;
-
-        /// <summary>
-        ///     Size of the ThreeFish initialization vector (IV) and key in bytes.
-        /// </summary>
-        public const int ShuffleKey = 128;
-
-        /// <summary>
-        ///     Random number generator for cryptographic operations.
-        /// </summary>
-        public static readonly RandomNumberGenerator RndNum = RandomNumberGenerator.Create();
-
-        /// <summary>
-        ///     Hash value used for various cryptographic purposes.
-        /// </summary>
-        /// <remarks>
-        ///     Initialized as an empty byte array.
-        /// </remarks>
-        public static byte[] Hash = Array.Empty<byte>();
-    }
 #pragma warning disable
 
     private const int BlockBitSize = 128;
