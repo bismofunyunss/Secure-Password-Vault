@@ -1,5 +1,5 @@
 using System.Text;
-using System.Windows.Forms;
+using Secure_Password_Vault;
 
 namespace ProjectTests;
 
@@ -12,8 +12,8 @@ public class Tests
     /// </summary>
     public class EncryptionExample
     {
-        public static readonly string passString = "Password1234567890!!!!";
-        public static readonly string plainText = "Here's some text to encrypt.";
+        public static readonly string PassString = "Password1234567890!!!!!!!!!!!!";
+        public static readonly string PlainText = "Here's some text to encrypt.";
 
         // Salt for key derivation
         public static readonly byte[] Salt =
@@ -46,9 +46,30 @@ public class Tests
             0xE1, 0xA4, 0x72, 0x9D
         ];
 
+        // Threefish nonce
+        public static readonly byte[] Nonce3 = 
+        [
+            0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
+            0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10,
+            0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+            0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00,
+            0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE,
+            0xED, 0xCB, 0xA9, 0x87, 0x65, 0x43, 0x21, 0x00,
+            0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10,
+            0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+            0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00,
+            0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE,
+            0xED, 0xCB, 0xA9, 0x87, 0x65, 0x43, 0x21, 0x00,
+            0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10,
+            0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+            0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00,
+            0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE,
+            0xED, 0xCB, 0xA9, 0x87, 0x65, 0x43, 0x21, 0x00,
+        ];
+
         // The expected result after encryption
         public const string ExpectedResult =
-            "EjRWeJq83vARIjNEVWZ3iJmqu8zd7v+XHI9aYy7XSQvCfziW4aRynRyPWmMu10kLwn84luGkcp2zYHJGIimTvMhsS1d0NuUNiU98xEnBZvHL3bUERDSlKFwwIxqw71869mnBt/tSO8WuZkSC+hhzLgLud9kSgI+yZ9rGfwLRqONsASGW1ol07VtLdhwo1/8gJRGR1P/hHoEklOWeJdYHtMDUhV/wgp4D";
+            "RgB2s/AiaJnM7uK15TMyHDOH8ERyes0cmZI/ROF2mlRU5lwvSRBmlkNlm8tZz8I1iQPM1cYYdoexu/9jj2NlxP5pd2IAM8uYWZiuYGQQZkrt1DApVfwhvyMc/yIGObRc6bqSOQ5BRdLbSTR0rRcACdoQ8PRjECflBP+dEcWGDsu8t/ekZHuXUUWkZ1pF95iAh9+iP5p8WO4SCJtvQV7T3Hc7BO/cEWSd19i3VUw0EBBDQx4m8Kd4tPL/mLbeAN1lNmr+qpndVphl3WyoSWaEumYtqbttdJQkuvRMdHI8NLqK81rY5/FNLzgjlPOZK1Z/IsQTcMSIv58zGIf/SI+kdnXvyozcFqHwmPzN09CWgSHeliTKh6pUSYjzQzIgVYG6HjiY0gBARbjMnqW843WL3P6AeeDMN3aq7mUFXyNc40MBiOEzjTD+hzyAa1hOw2NRlwg3EI93HBFcm1R3z8FDjZoyTwBgdjIsvUYqQFTCcomBj7o9VYjkqpDcuqpmehntwYCZdVB9LHfdfWMhcMSc4/45qU/hO47H//5yI049OGj+eDgE/jNFuyjLUiX2gO52Cy4LgokhKTHc2F0fUZKtELlJqywbGkR0x7hTu/uAgaZx1mafji5m1+59BFUvXREAp8v2OCnwZ3aWZnlIAMWqbKkAazv9e2WkZHDidpcpqFPnlM0VLnfkNOpiIMqPLQBuRNLWn/LMdz1URDKr/DuqbLWjwruv7boH0ZiZSrjdIFV/EKaH7TK6Tt7wK8NnuoJxUSLW4WoyqgU=";
     }
 
 
@@ -70,27 +91,32 @@ public class Tests
     {
         try
         {
-            // Derive keys using Argon2Id
-            var bytes = await Crypto.Argon2Id(EncryptionExample.passString.ToCharArray(), EncryptionExample.Salt, 320);
+            // Derive encryption key from password and salt
+            var passWordBytes = Encoding.UTF8.GetBytes(EncryptionExample.PassString);
+            var bytes = await Crypto.Argon2Id(Encoding.UTF8.GetChars(passWordBytes), EncryptionExample.Salt, 448);
+            if (bytes == Array.Empty<byte>())
+                throw new Exception("Value was empty.");
 
-            // Initialize key arrays
-            var key = new byte[32];
-            var key2 = new byte[32];
-            var key3 = new byte[128];
-            var hMacKey = new byte[64];
-            var hMacKey2 = new byte[64];
+            // Extract key components for encryption
+            var key = new byte[Crypto.CryptoConstants.KeySize];
+            var key2 = new byte[Crypto.CryptoConstants.ThreeFish];
+            var key3 = new byte[Crypto.CryptoConstants.KeySize];
+            var key4 = new byte[Crypto.CryptoConstants.ShuffleKey];
+            var hMacKey = new byte[Crypto.CryptoConstants.HmacLength];
+            var hMackey2 = new byte[Crypto.CryptoConstants.HmacLength];
 
-            // Copy bytes to key arrays
             Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
             Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
-            Buffer.BlockCopy(bytes, key.Length + key2.Length, hMacKey, 0, hMacKey.Length);
-            Buffer.BlockCopy(bytes, key.Length + key2.Length + hMacKey.Length, key3, 0, key3.Length);
-            Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + hMacKey.Length, hMacKey2, 0, hMacKey2.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length, key3, 0, key3.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length, key4, 0, key4.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length, hMacKey, 0, hMacKey.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length + hMacKey.Length, hMackey2, 0,
+                hMackey2.Length);
 
             // Encrypt test data using EncryptAsyncV3Debug
             byte[] encryptedTest = await Crypto.EncryptAsyncV3Debug(
-                DataConversionHelpers.StringToByteArray(EncryptionExample.plainText),
-                EncryptionExample.Nonce, EncryptionExample.Nonce2, key, key2, hMacKey);
+                DataConversionHelpers.StringToByteArray(EncryptionExample.PlainText),
+                EncryptionExample.Nonce, EncryptionExample.Nonce3, EncryptionExample.Nonce2, key, key2, key3, key4, hMacKey, hMackey2);
 
             // Convert encrypted result to Base64 string
             string encryptResult = DataConversionHelpers.ByteArrayToBase64String(encryptedTest);
@@ -100,30 +126,38 @@ public class Tests
             Assert.AreEqual(EncryptionExample.ExpectedResult, encryptResult);
 
             // Derive keys again for decryption
-            bytes = await Crypto.Argon2Id(EncryptionExample.passString.ToCharArray(), EncryptionExample.Salt, 320);
+            // Derive encryption key from password and salt
+            passWordBytes = Encoding.UTF8.GetBytes(EncryptionExample.PassString); 
+            bytes = await Crypto.Argon2Id(Encoding.UTF8.GetChars(passWordBytes), EncryptionExample.Salt, 448);
+            if (bytes == Array.Empty<byte>())
+                throw new Exception("Value was empty.");
 
-            // Reset key arrays
-            key = new byte[32];
-            key2 = new byte[32];
-            key3 = new byte[128];
-            hMacKey = new byte[64];
-            hMacKey2 = new byte[64];
-            
-            // Copy bytes to key arrays
+            // Extract key components for encryption
+            key = new byte[Crypto.CryptoConstants.KeySize]; 
+            key2 = new byte[Crypto.CryptoConstants.ThreeFish]; 
+            key3 = new byte[Crypto.CryptoConstants.KeySize]; 
+            key4 = new byte[Crypto.CryptoConstants.ShuffleKey]; 
+            hMacKey = new byte[Crypto.CryptoConstants.HmacLength]; 
+            hMackey2 = new byte[Crypto.CryptoConstants.HmacLength];
+
             Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
             Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
-            Buffer.BlockCopy(bytes, key.Length + key2.Length, hMacKey, 0, hMacKey.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length, key3, 0, key3.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length, key4, 0, key4.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length, hMacKey, 0, hMacKey.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length + hMacKey.Length, hMackey2, 0,
+                hMackey2.Length);
 
             // Decrypt the test data
-            byte[] decryptedTest = await Crypto.DecryptAsyncV3(
-                DataConversionHelpers.Base64StringToByteArray(encryptResult), key, key2, key3, hMacKey, hMacKey2);
+            byte[] decryptedTest = await Crypto.DecryptAsyncV3Debug(
+                DataConversionHelpers.Base64StringToByteArray(encryptResult), key, key2, key3, key4, hMacKey, hMackey2);
 
             // Convert decrypted result to string
             string decryptResult = DataConversionHelpers.ByteArrayToString(decryptedTest);
 
             // Assert the decryption results
             Assert.IsNotNull(decryptResult);
-            Assert.AreEqual(EncryptionExample.plainText, decryptResult);
+            Assert.AreEqual(EncryptionExample.PlainText, decryptResult);
         }
         catch (Exception ex)
         {
@@ -144,23 +178,28 @@ public class Tests
         {
             // Derive keys using Argon2Id
             var bytes = await Crypto.Argon2Id(
-                EncryptionExample.passString.ToCharArray(),
-                EncryptionExample.Salt, 128);
+                EncryptionExample.PassString.ToCharArray(),
+                EncryptionExample.Salt, 448);
 
-            // Initialize key arrays
-            var key = new byte[32];
-            var key2 = new byte[32];
-            var hMacKey = new byte[64];
+            // Extract key components for encryption
+            var key = new byte[Crypto.CryptoConstants.KeySize];
+            var key2 = new byte[Crypto.CryptoConstants.ThreeFish];
+            var key3 = new byte[Crypto.CryptoConstants.KeySize];
+            var key4 = new byte[Crypto.CryptoConstants.ShuffleKey];
+            var hMacKey = new byte[Crypto.CryptoConstants.HmacLength];
+            var hMackey2 = new byte[Crypto.CryptoConstants.HmacLength];
 
-            // Copy bytes to key arrays
             Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
             Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
-            Buffer.BlockCopy(bytes, key.Length + key2.Length, hMacKey, 0, hMacKey.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length, key3, 0, key3.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length, key4, 0, key4.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length, hMacKey, 0, hMacKey.Length);
+            Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length + hMacKey.Length, hMackey2, 0,
+                hMackey2.Length);
 
             // Encrypt test data using EncryptAsyncV3Debug
-            byte[] encryptedTest = await Crypto.EncryptAsyncV3Debug(
-                DataConversionHelpers.StringToByteArray(EncryptionExample.plainText),
-                EncryptionExample.Nonce, EncryptionExample.Nonce2, key, key2, hMacKey);
+            byte[] encryptedTest = await Crypto.EncryptAsyncV3Debug(DataConversionHelpers.StringToByteArray(EncryptionExample.PlainText),
+            EncryptionExample.Nonce, EncryptionExample.Nonce3, EncryptionExample.Nonce2, key, key2, key3, key4, hMacKey, hMackey2);
 
             // Convert encrypted result to Base64 string
             string base64Result = DataConversionHelpers.ByteArrayToBase64String(encryptedTest);
@@ -187,7 +226,7 @@ public class Tests
         try
         {
             // Convert the password string to a character array
-            char[] passArray = EncryptionExample.passString.ToCharArray();
+            char[] passArray = EncryptionExample.PassString.ToCharArray();
 
             // Hash the password using Argon2Id with a specified salt and a target hash length of 32 bytes
             byte[] result = await Crypto.Argon2Id(passArray, EncryptionExample.Salt, 32) ?? Array.Empty<byte>();

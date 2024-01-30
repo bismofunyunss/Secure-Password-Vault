@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using System.Windows.Forms;
 using Konscious.Security.Cryptography;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
@@ -22,12 +23,12 @@ public static class Crypto
         /// <summary>
         ///     Number of iterations for key derivation.
         /// </summary>
-        public const int Iterations = 32;
+        public const int Iterations = 1;
 
         /// <summary>
         ///     Memory size for key derivation in KiB.
         /// </summary>
-        public const int MemorySize = 1024 * 1024 * 5;
+        public const int MemorySize = 1024 * 1024 * 1;
 
         /// <summary>
         ///     Size of the salt used in cryptographic operations.
@@ -70,7 +71,7 @@ public static class Crypto
         public const int ThreeFish = 128;
 
         /// <summary>
-        ///     Size of the ThreeFish initialization vector (IV) and key in bytes.
+        ///     Size of the shuffle key in bytes.
         /// </summary>
         public const int ShuffleKey = 128;
 
@@ -168,17 +169,14 @@ public static class Crypto
     /// <param name="min">The minimum value of the range (inclusive).</param>
     /// <param name="max">The maximum value of the range (inclusive).</param>
     /// <returns>A random integer within the specified range.</returns>
-    /// <remarks>
-    ///     This method generates a random integer within the specified inclusive range using the RndInt method.
-    ///     The generated integer is constrained to the provided range by applying modular arithmetic.
-    /// </remarks>
-    /// <param name="min">The minimum value of the range (inclusive).</param>
-    /// <param name="max">The maximum value of the range (inclusive).</param>
-    /// <returns>A random integer within the specified range.</returns>
     /// <exception cref="ArgumentException">
     ///     Thrown if the specified minimum value is greater than or equal to the maximum
     ///     value.
     /// </exception>
+    /// <remarks>
+    ///     This method generates a random integer within the specified inclusive range using the RndInt method.
+    ///     The generated integer is constrained to the provided range by applying modular arithmetic.
+    /// </remarks>
     public static int BoundedInt(int min, int max)
     {
         // Validate input parameters
@@ -206,8 +204,6 @@ public static class Crypto
     ///     This method generates a random byte array by obtaining random bytes from a cryptographically secure
     ///     random number generator. The size of the byte array is determined by the input parameter 'size'.
     /// </remarks>
-    /// <param name="size">The size of the byte array to generate.</param>
-    /// <returns>A random byte array of the specified size.</returns>
     public static byte[] RndByteSized(int size)
     {
         // Create a buffer to store random bytes
@@ -781,7 +777,7 @@ public static class Crypto
     /// <param name="hMacKey">The key used for HMAC in the second layer of encryption.</param>
     /// <param name="hMacKey2">The key used for HMAC in the third layer of encryption.</param>
     /// <returns>A shuffled byte array containing nonces and the final encrypted result.</returns>
-    /// <exception cref="ArgumentException">Thrown when the provided plaintext is empty.</exception>
+    /// <exception cref="ArgumentException">Thrown when any of the input parameters is an empty array.</exception>
     /// <exception cref="Exception">Thrown when any intermediate or final encrypted value is empty.</exception>
     public static async Task<byte[]> EncryptAsyncV3(byte[] plaintext,
         byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] hMacKey, byte[] hMacKey2)
@@ -789,6 +785,18 @@ public static class Crypto
         // Parameter checks
         if (plaintext == Array.Empty<byte>())
             throw new ArgumentException("Value was empty.", nameof(plaintext));
+        if (key == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key));
+        if (key2 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key2));
+        if (key3 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key3));
+        if (key4 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key4));
+        if (hMacKey == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(hMacKey));
+        if (hMacKey2 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(hMacKey2));
 
         // Generate nonces for each encryption layer
         var nonce = RndByteSized(CryptoConstants.ChaChaNonceSize);
@@ -832,13 +840,26 @@ public static class Crypto
     /// <param name="hMacKey">The key used for HMAC in the second layer of decryption.</param>
     /// <param name="hMacKey2">The key used for HMAC in the third layer of decryption.</param>
     /// <returns>The decrypted byte array.</returns>
-    /// <exception cref="ArgumentException">Thrown when the provided cipherText is empty.</exception>
+    /// <exception cref="ArgumentException">Thrown when any of the input parameters is an empty array.</exception>
+    /// <exception cref="Exception">Thrown when any intermediate or final decrypted value is empty.</exception>
     public static async Task<byte[]> DecryptAsyncV3(byte[] cipherText,
         byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] hMacKey, byte[] hMacKey2)
     {
         // Parameter checks
         if (cipherText == Array.Empty<byte>())
             throw new ArgumentException("Value was empty.", nameof(cipherText));
+        if (key == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key));
+        if (key2 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key2));
+        if (key3 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key3));
+        if (key4 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key4));
+        if (hMacKey == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(hMacKey));
+        if (hMacKey2 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(hMacKey2));
 
         // Extract the shuffle key from the provided key4
         var shuffleKey = BitConverter.ToInt32(key4, 0);
@@ -862,9 +883,9 @@ public static class Crypto
             cipherResult.Length);
 
         // Decrypt at each layer in reverse order
-        var resultL3 = await DecryptAsync(cipherResult, key3, hMacKey2);
-        var resultL2 = DecryptThreeFishAsync(resultL3, key2, hMacKey);
-        var result = SecretAeadXChaCha20Poly1305.Decrypt(resultL2, nonce, key);
+        var resultL3 = await DecryptAsync(cipherResult, key3, hMacKey2) ?? throw new Exception("Value was empty.");
+        var resultL2 = DecryptThreeFishAsync(resultL3, key2, hMacKey) ?? throw new Exception("Value was empty.");
+        var result = SecretAeadXChaCha20Poly1305.Decrypt(resultL2, nonce, key) ?? throw new Exception("Value was empty.");
 
         // Clear sensitive information to prevent accidental exposure
         ClearSensitiveData(key, key2, key3, key4, hMacKey, hMacKey2);
@@ -874,40 +895,114 @@ public static class Crypto
     }
 
     public static async Task<byte[]> EncryptAsyncV3Debug(byte[] plaintext,
-        byte[] nonce, byte[] nonce2, byte[] key, byte[] key2, byte[] hMacKey)
+       byte[] nonce, byte[] nonce2, byte[] nonce3, byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] hMacKey, byte[] hMacKey2)
     {
         // Debug method allows us to set our own nonce
-        try
-        {
-            if (plaintext == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty.",
-                    plaintext == Array.Empty<byte>() ? nameof(plaintext) :
-                    key == Array.Empty<byte>() ? nameof(key2) :
-                    key2 == Array.Empty<byte>() ? nameof(key2) :
-                    nameof(hMacKey));
+        // Parameter checks
+        if (plaintext == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(plaintext));
+        if (key == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key));
+        if (key2 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key2));
+        if (key3 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key3));
+        if (key4 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key4));
+        if (hMacKey == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(hMacKey));
+        if (hMacKey2 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(hMacKey2));
 
-            var cipherText = SecretAeadXChaCha20Poly1305.Encrypt(plaintext, nonce, key);
-            var t = DataConversionHelpers.ByteArrayToBase64String(cipherText);
-            MessageBox.Show(t);
-            var cipherTextL2 = await EncryptAsync(cipherText, key2, nonce2, hMacKey);
-            t = DataConversionHelpers.ByteArrayToBase64String(cipherTextL2);
-            MessageBox.Show(t);
-            ClearSensitiveData(key, key2, hMacKey);
+        // Encrypt using XChaCha20-Poly1305
+        var cipherText = SecretAeadXChaCha20Poly1305.Encrypt(plaintext, nonce, key) ??
+                         throw new Exception("Value was empty.");
 
-            return nonce.Concat(nonce2).Concat(cipherTextL2).ToArray();
-        }
-        catch (CryptographicException ex)
-        {
-            ClearSensitiveData(key, key2, hMacKey);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
-        catch (Exception ex)
-        {
-            ClearSensitiveData(key, key2, hMacKey);
-            ErrorLogging.ErrorLog(ex);
-            return Array.Empty<byte>();
-        }
+        // Encrypt using ThreeFish and HMAC
+        var cipherTextL2 = EncryptThreeFishAsync(cipherText, key2, nonce2, hMacKey) ??
+                           throw new Exception("Value was empty.");
+
+        // Encrypt using provided key and nonce, and await the result
+        var cipherTextL3 = await EncryptAsync(cipherTextL2, key3, nonce3, hMacKey2) ??
+                           throw new Exception("Value was empty.");
+
+        // Concatenate nonces and the third level ciphertext
+        var result = nonce.Concat(nonce2).Concat(nonce3).Concat(cipherTextL3).ToArray();
+
+        // Shuffle the result based on a key
+        var shuffleKey = BitConverter.ToInt32(key4, 0);
+        var shuffledResult = Shuffle(result, shuffleKey);
+
+        // Clear sensitive information to prevent accidental exposure
+        ClearSensitiveData(key, key2, key3, key4, hMacKey, hMacKey2);
+
+        // Return the shuffled and encrypted result
+        return shuffledResult;
+    }
+
+
+    /// <summary>
+    ///     Asynchronously decrypts a byte array that has been encrypted using a multi-layer encryption approach.
+    /// </summary>
+    /// <param name="cipherText">The byte array to be decrypted.</param>
+    /// <param name="key">The key used for the first layer of decryption (XChaCha20-Poly1305).</param>
+    /// <param name="key2">The key used for the second layer of decryption (ThreeFish).</param>
+    /// <param name="key3">The key used for the third layer of decryption.</param>
+    /// <param name="key4">The key used for unshuffling the input cipherText.</param>
+    /// <param name="hMacKey">The key used for HMAC in the second layer of decryption.</param>
+    /// <param name="hMacKey2">The key used for HMAC in the third layer of decryption.</param>
+    /// <returns>The decrypted byte array.</returns>
+    /// <exception cref="ArgumentException">Thrown when any of the input parameters is an empty array.</exception>
+    /// <exception cref="Exception">Thrown when any intermediate or final decrypted value is empty.</exception>
+    public static async Task<byte[]> DecryptAsyncV3Debug(byte[] cipherText, 
+        byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] hMacKey, byte[] hMacKey2)
+    {
+        // Parameter checks
+        if (cipherText == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(cipherText));
+        if (key == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key));
+        if (key2 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key2));
+        if (key3 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key3));
+        if (key4 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(key4));
+        if (hMacKey == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(hMacKey));
+        if (hMacKey2 == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(hMacKey2));
+
+        // Extract the shuffle key from the provided key4
+        var shuffleKey = BitConverter.ToInt32(key4, 0);
+
+        // Unshuffle the input cipherText
+        var unshuffledResult = DeShuffle(cipherText, shuffleKey);
+
+        // Extract nonces and ciphertext from the unshuffled result
+        var nonce = new byte[CryptoConstants.ChaChaNonceSize];
+        Buffer.BlockCopy(unshuffledResult, 0, nonce, 0, nonce.Length);
+
+        var nonce2 = new byte[CryptoConstants.ThreeFish];
+        Buffer.BlockCopy(unshuffledResult, nonce.Length, nonce2, 0, nonce2.Length);
+
+        var nonce3 = new byte[CryptoConstants.Iv];
+        Buffer.BlockCopy(unshuffledResult, nonce.Length + nonce2.Length, nonce3, 0, nonce3.Length);
+
+        var cipherResult =
+            new byte[unshuffledResult.Length - nonce3.Length - nonce2.Length - nonce.Length];
+        Buffer.BlockCopy(unshuffledResult, nonce.Length + nonce2.Length + nonce3.Length, cipherResult, 0,
+            cipherResult.Length);
+
+        // Decrypt at each layer in reverse order
+        var resultL3 = await DecryptAsync(cipherResult, key3, hMacKey2) ?? throw new Exception("Value was empty.");
+        var resultL2 = DecryptThreeFishAsync(resultL3, key2, hMacKey) ?? throw new Exception("Value was empty.");
+        var result = SecretAeadXChaCha20Poly1305.Decrypt(resultL2, nonce, key) ?? throw new Exception("Value was empty.");
+
+        // Clear sensitive information to prevent accidental exposure
+        ClearSensitiveData(key, key2, key3, key4, hMacKey, hMacKey2);
+
+        return result;
     }
 
     #region Unused
