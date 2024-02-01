@@ -16,7 +16,7 @@ public partial class Vault : Form
         /// <summary>
         /// Gets the maximum allowed file size in bytes.
         /// </summary>
-        public const int MaximumFileSize = 700_000_000;
+        public const int MaximumFileSize = 1_200_000_000;
 
         /// <summary>
         /// Gets or sets a value indicating whether an animation is currently in progress.
@@ -51,12 +51,12 @@ public partial class Vault : Form
         /// <summary>
         /// Gets the tooltip used for providing information to the user.
         /// </summary>
-        public static ToolTip Tooltip = new();
+        public static readonly ToolTip Tooltip = new();
 
         /// <summary>
         /// Gets or sets the size of the currently loaded file.
         /// </summary>
-        public static int FileSize { get; set; }
+        public static long FileSize { get; set; }
     }
 
 

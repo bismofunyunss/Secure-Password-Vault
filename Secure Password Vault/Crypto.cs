@@ -1,6 +1,6 @@
-﻿using System.Security.Cryptography;
+﻿using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text;
-using System.Windows.Forms;
 using Konscious.Security.Cryptography;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
@@ -90,7 +90,7 @@ public static class Crypto
     }
 
     /// <summary>
-    ///     Hashes a password inside of a char array or derives a key from a password.
+    ///     Hashes a password inside a char array or derives a key from a password.
     /// </summary>
     /// <param name="passWord">The char array to hash.</param>
     /// <param name="salt">The salt used during the argon2id hashing process.</param>
@@ -224,6 +224,30 @@ public static class Crypto
         foreach (var array in data) Array.Clear(array, 0, array.Length);
     }
 
+    public static async Task<byte[]> CompressText(byte[] inputText)
+    {
+        using var outputStream = new MemoryStream();
+
+        // Use 'using' statement with 'await' for asynchronous writing
+        await using (var zipStream = new GZipStream(outputStream, CompressionLevel.SmallestSize))
+        {
+            await zipStream.WriteAsync(inputText);
+        }
+        // No need to 'return outputStream.ToArray();' explicitly, MemoryStream will have the data
+        return outputStream.ToArray();
+    }
+
+    public static async Task<byte[]> DecompressText(byte[] inputText)
+    {
+        using var inputStream = new MemoryStream(inputText);
+        await using var zipStream = new GZipStream(inputStream, CompressionMode.Decompress);
+        using var outputStream = new MemoryStream();
+
+        // Use 'await' for asynchronous copying
+        await zipStream.CopyToAsync(outputStream);
+
+        return outputStream.ToArray();
+    }
 
     /// <summary>
     ///     Encrypts the contents of a file using Argon2 key derivation and XChaCha20-Poly1305 encryption.
@@ -286,8 +310,10 @@ public static class Crypto
             throw new ArgumentException("Value was empty.",
                 fileBytes == null || fileBytes.Length == 0 ? nameof(fileBytes) : nameof(salt));
 
+        var compressedText = await CompressText(fileBytes);
+
         // Encrypt the file content
-        var encryptedFile = await EncryptAsyncV3(fileBytes, key, key2, key3, key4, hMacKey, hMackey2);
+        var encryptedFile = await EncryptAsyncV3(compressedText, key, key2, key3, key4, hMacKey, hMackey2);
 
         // Clear sensitive information
         ClearSensitiveData(key, key2, hMacKey, Encoding.UTF8.GetBytes(passWord));
@@ -359,10 +385,12 @@ public static class Crypto
         // Decrypt the file content
         var decryptedFile = await DecryptAsyncV3(fileBytes, key, key2, key3, key4, hMacKey, hMackey2);
 
+        var decompressedText = await DecompressText(decryptedFile);
+
         // Clear sensitive information
         Array.Clear(passWord, 0, passWord.Length);
 
-        return decryptedFile;
+        return decompressedText;
     }
 
     /// <summary>
@@ -646,7 +674,7 @@ public static class Crypto
     /// <param name="hMacKey">The key used for HMAC-SHA3 authentication.</param>
     /// <returns>The encrypted and authenticated byte array.</returns>
     private static byte[] EncryptThreeFishAsync(byte[] inputText, byte[] key, byte[] iv, byte[] hMacKey)
-    {
+    { 
         // Initialize ThreeFish block cipher with CBC mode and PKCS7 padding
         IBlockCipher threeFish = new ThreefishEngine(1024);
         IBlockCipherMode cipherMode = new CbcBlockCipher(threeFish);
@@ -654,18 +682,18 @@ public static class Crypto
 
         // Create a buffered block cipher with the chosen mode and padding
         var cbcCipher = new PaddedBufferedBlockCipher(cipherMode, padding);
-
+        
         // Initialize the cipher with the key and IV
         var keyParam = new KeyParameter(key);
         cbcCipher.Init(true, new ParametersWithIV(keyParam, iv));
 
-        // Process the input text and obtain the final cipher text
-        var blockSize = cbcCipher.GetBlockSize();
-        var cipherText = new byte[cbcCipher.GetOutputSize(inputText.Length)];
-        var processLength = cbcCipher.ProcessBytes(inputText, 0, inputText.Length, cipherText, 0);
-        var finalLength = cbcCipher.DoFinal(cipherText, processLength);
-        var finalCipherText = new byte[cipherText.Length - (blockSize - finalLength)];
-        Buffer.BlockCopy(cipherText, 0, finalCipherText, 0, finalCipherText.Length);
+            // Process the input text and obtain the final cipher text
+            var blockSize = cbcCipher.GetBlockSize();
+            var cipherText = new byte[cbcCipher.GetOutputSize(inputText.Length)];
+            var processLength = cbcCipher.ProcessBytes(inputText, 0, inputText.Length, cipherText, 0);
+            var finalLength = cbcCipher.DoFinal(cipherText, processLength);
+            var finalCipherText = new byte[cipherText.Length - (blockSize - finalLength)];
+            Buffer.BlockCopy(cipherText, 0, finalCipherText, 0, finalCipherText.Length);
 
         // Clear sensitive key parameter
         ClearSensitiveData(key);
