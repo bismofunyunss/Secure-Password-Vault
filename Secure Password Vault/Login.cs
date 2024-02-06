@@ -161,11 +161,11 @@ public partial class Login : Form
 
     private char[] CreateArray()
     {
-        var buffer = passTxt.Text.Length;
-        _passwordArray = new char[buffer];
-        passTxt.Text.CopyTo(0, _passwordArray, 0, buffer);
+            var buffer = passTxt.Text.Length;
+            _passwordArray = new char[buffer];
+            passTxt.Text.CopyTo(0, _passwordArray, 0, buffer);
 
-        return _passwordArray;
+            return _passwordArray;
     }
 
     private async Task ProcessLoginAsync(bool userExists)
@@ -208,7 +208,7 @@ public partial class Login : Form
         // Perform aggressive garbage collection.
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
-        // Convert decryptedBytes to text and write it back to the user data file.
+        // Convert decryptedBytes to text andwrite it back to the user data file.
         var decryptedText = DataConversionHelpers.ByteArrayToString(decryptedBytes);
         await File.WriteAllTextAsync(Authentication.GetUserFilePath(userNameTxt.Text), decryptedText);
 

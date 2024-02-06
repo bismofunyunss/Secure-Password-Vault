@@ -19,7 +19,7 @@ public partial class RegisterAccount : Form
     /// <returns>
     ///     True if the passwords meet the validity criteria, otherwise false.
     /// </returns>
-    private static bool CheckPasswordValidity(IReadOnlyCollection<char> password, char[] password2)
+    public static bool CheckPasswordValidity(IReadOnlyCollection<char> password, IReadOnlyCollection<char>? password2 = null)
     {
         // Check password length: must be between 16 and 64 characters (inclusive).
         if (password.Count is < 24 or > 120)
@@ -30,7 +30,7 @@ public partial class RegisterAccount : Form
             return false;
 
         // Check for the absence of whitespaces in both passwords and if they are equal.
-        if (password.Any(char.IsWhiteSpace) || password2.Any(char.IsWhiteSpace) || !password.SequenceEqual(password2))
+        if (password.Any(char.IsWhiteSpace) || (password2 != null && (password2.Any(char.IsWhiteSpace) || !password.SequenceEqual(password2))))
             return false;
 
         // Check for at least one symbol or punctuation character.

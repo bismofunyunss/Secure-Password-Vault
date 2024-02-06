@@ -58,6 +58,8 @@
             EncryptBtn = new Button();
             ExportFileBtn = new Button();
             ImportFileBtn = new Button();
+            CustomPasswordTextBox = new TextBox();
+            CustomPasswordCheckBox = new CheckBox();
             UserWelcomeLbl = new Label();
             hashbox = new GroupBox();
             pictureBox2 = new PictureBox();
@@ -66,6 +68,11 @@
             hashoutputlbl = new Label();
             hashoutputtxt = new TextBox();
             Hashimportfile = new Button();
+            PasswordBox = new GroupBox();
+            ViewPasswordsCheckbox = new CheckBox();
+            label1 = new Label();
+            ConfirmPassword = new TextBox();
+            passLbl = new Label();
             ((System.ComponentModel.ISupportInitialize)PassVault).BeginInit();
             vaultBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox4).BeginInit();
@@ -73,6 +80,7 @@
             ((System.ComponentModel.ISupportInitialize)pictureBox3).BeginInit();
             hashbox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
+            PasswordBox.SuspendLayout();
             SuspendLayout();
             // 
             // PassVault
@@ -415,12 +423,36 @@
             ImportFileBtn.MouseLeave += ImportFileBtn_MouseLeave;
             ImportFileBtn.MouseHover += ImportFileBtn_MouseHover;
             // 
+            // CustomPasswordTextBox
+            // 
+            CustomPasswordTextBox.BackColor = Color.Black;
+            CustomPasswordTextBox.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            CustomPasswordTextBox.ForeColor = Color.Gold;
+            CustomPasswordTextBox.Location = new Point(10, 67);
+            CustomPasswordTextBox.Name = "CustomPasswordTextBox";
+            CustomPasswordTextBox.Size = new Size(305, 33);
+            CustomPasswordTextBox.TabIndex = 22;
+            CustomPasswordTextBox.UseSystemPasswordChar = true;
+            // 
+            // CustomPasswordCheckBox
+            // 
+            CustomPasswordCheckBox.AutoSize = true;
+            CustomPasswordCheckBox.Location = new Point(338, 84);
+            CustomPasswordCheckBox.Name = "CustomPasswordCheckBox";
+            CustomPasswordCheckBox.Size = new Size(249, 29);
+            CustomPasswordCheckBox.TabIndex = 18;
+            CustomPasswordCheckBox.Text = "Use Custom Password";
+            CustomPasswordCheckBox.UseVisualStyleBackColor = true;
+            CustomPasswordCheckBox.CheckedChanged += CustomPasswordCheckBox_CheckedChanged;
+            CustomPasswordCheckBox.MouseLeave += CustomPasswordCheckBox_MouseLeave;
+            CustomPasswordCheckBox.MouseHover += CustomPasswordCheckBox_MouseHover;
+            // 
             // UserWelcomeLbl
             // 
             UserWelcomeLbl.AutoSize = true;
             UserWelcomeLbl.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             UserWelcomeLbl.ForeColor = Color.WhiteSmoke;
-            UserWelcomeLbl.Location = new Point(12, 995);
+            UserWelcomeLbl.Location = new Point(12, 1181);
             UserWelcomeLbl.Name = "UserWelcomeLbl";
             UserWelcomeLbl.Size = new Size(146, 25);
             UserWelcomeLbl.TabIndex = 17;
@@ -436,7 +468,7 @@
             hashbox.Controls.Add(Hashimportfile);
             hashbox.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
             hashbox.ForeColor = Color.WhiteSmoke;
-            hashbox.Location = new Point(12, 710);
+            hashbox.Location = new Point(12, 896);
             hashbox.Name = "hashbox";
             hashbox.Size = new Size(930, 282);
             hashbox.TabIndex = 11;
@@ -519,12 +551,70 @@
             Hashimportfile.MouseLeave += Hashimportfile_MouseLeave;
             Hashimportfile.MouseHover += Hashimportfile_MouseHover;
             // 
+            // PasswordBox
+            // 
+            PasswordBox.Controls.Add(ViewPasswordsCheckbox);
+            PasswordBox.Controls.Add(label1);
+            PasswordBox.Controls.Add(ConfirmPassword);
+            PasswordBox.Controls.Add(passLbl);
+            PasswordBox.Controls.Add(CustomPasswordTextBox);
+            PasswordBox.Controls.Add(CustomPasswordCheckBox);
+            PasswordBox.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            PasswordBox.ForeColor = Color.WhiteSmoke;
+            PasswordBox.Location = new Point(12, 704);
+            PasswordBox.Name = "PasswordBox";
+            PasswordBox.Size = new Size(593, 186);
+            PasswordBox.TabIndex = 18;
+            PasswordBox.TabStop = false;
+            PasswordBox.Text = "Custom Password For Encryption / Decryption";
+            // 
+            // ViewPasswordsCheckbox
+            // 
+            ViewPasswordsCheckbox.AutoSize = true;
+            ViewPasswordsCheckbox.Location = new Point(338, 119);
+            ViewPasswordsCheckbox.Name = "ViewPasswordsCheckbox";
+            ViewPasswordsCheckbox.Size = new Size(190, 29);
+            ViewPasswordsCheckbox.TabIndex = 26;
+            ViewPasswordsCheckbox.Text = "View Passwords";
+            ViewPasswordsCheckbox.UseVisualStyleBackColor = true;
+            ViewPasswordsCheckbox.CheckedChanged += ViewPasswordsCheckbox_CheckedChanged;
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(10, 103);
+            label1.Name = "label1";
+            label1.Size = new Size(188, 25);
+            label1.TabIndex = 25;
+            label1.Text = "Confirm Password";
+            // 
+            // ConfirmPassword
+            // 
+            ConfirmPassword.BackColor = Color.Black;
+            ConfirmPassword.Font = new Font("Times New Roman", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            ConfirmPassword.ForeColor = Color.Gold;
+            ConfirmPassword.Location = new Point(10, 131);
+            ConfirmPassword.Name = "ConfirmPassword";
+            ConfirmPassword.Size = new Size(305, 33);
+            ConfirmPassword.TabIndex = 24;
+            ConfirmPassword.UseSystemPasswordChar = true;
+            // 
+            // passLbl
+            // 
+            passLbl.AutoSize = true;
+            passLbl.Location = new Point(10, 39);
+            passLbl.Name = "passLbl";
+            passLbl.Size = new Size(103, 25);
+            passLbl.TabIndex = 23;
+            passLbl.Text = "Password";
+            // 
             // Vault
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.ControlDarkDark;
-            ClientSize = new Size(954, 1028);
+            ClientSize = new Size(954, 1226);
+            Controls.Add(PasswordBox);
             Controls.Add(UserWelcomeLbl);
             Controls.Add(hashbox);
             Controls.Add(FileEncryptDecryptBox);
@@ -545,6 +635,8 @@
             hashbox.ResumeLayout(false);
             hashbox.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox2).EndInit();
+            PasswordBox.ResumeLayout(false);
+            PasswordBox.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -581,5 +673,12 @@
         private PictureBox pictureBox2;
         private PictureBox pictureBox4;
         private PictureBox pictureBox3;
+        private TextBox CustomPasswordTextBox;
+        private CheckBox CustomPasswordCheckBox;
+        private GroupBox PasswordBox;
+        private Label passLbl;
+        private Label label1;
+        private TextBox ConfirmPassword;
+        private CheckBox ViewPasswordsCheckbox;
     }
 }
