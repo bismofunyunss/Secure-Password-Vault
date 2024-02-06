@@ -12,57 +12,6 @@ public partial class Vault : Form
         InitializeComponent();
     }
 
-    /// <summary>
-    ///     Represents static fields and constants used for file processing and UI interactions.
-    /// </summary>
-    private static class FileProcessingConstants
-    {
-        /// <summary>
-        ///     Gets the maximum allowed file size in bytes.
-        /// </summary>
-        public const int MaximumFileSize = 1_000_000_000;
-
-        /// <summary>
-        ///     Gets or sets an array to store the characters of the user's password.
-        /// </summary>
-        public static char[] PasswordArray = Array.Empty<char>();
-
-        /// <summary>
-        ///     Gets or sets the path of the currently loaded file.
-        /// </summary>
-        public static string LoadedFile = string.Empty;
-
-        /// <summary>
-        ///     Gets or sets the hash value of the currently loaded file.
-        /// </summary>
-        public static string LoadedFileHash = string.Empty;
-
-        /// <summary>
-        ///     Gets or sets the result of a file processing operation.
-        /// </summary>
-        public static string Result = string.Empty;
-
-        /// <summary>
-        ///     Gets the tooltip used for providing information to the user.
-        /// </summary>
-        public static readonly ToolTip Tooltip = new();
-
-        /// <summary>
-        ///     Gets or sets a value indicating whether an animation is currently in progress.
-        /// </summary>
-        public static bool IsAnimating { get; set; }
-
-        /// <summary>
-        ///     Gets or sets a value indicating whether a file is currently opened.
-        /// </summary>
-        public static bool FileOpened { get; set; }
-
-        /// <summary>
-        ///     Gets or sets the size of the currently loaded file.
-        /// </summary>
-        public static long FileSize { get; set; }
-    }
-
     private void addRowBtn_Click(object sender, EventArgs e)
     {
         PassVault.Rows.Add();
@@ -370,46 +319,46 @@ public partial class Vault : Form
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
 
 
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            if (openFileDialog.ShowDialog() != DialogResult.OK)
+                return;
+
+            // Get information about the selected file.
+            var selectedFileName = openFileDialog.FileName;
+            var selectedExtension = Path.GetExtension(selectedFileName).ToLower();
+            var fileInfo = new FileInfo(selectedFileName);
+
+            // Update FileProcessingConstants with file information.
+            FileProcessingConstants.FileOpened = true;
+            FileProcessingConstants.LoadedFile = selectedFileName;
+
+            // Read the content of the file if it is not empty.
+            if (!string.IsNullOrEmpty(FileProcessingConstants.Result))
             {
-                // Get information about the selected file.
-                var selectedFileName = openFileDialog.FileName;
-                var selectedExtension = Path.GetExtension(selectedFileName).ToLower();
-                var fileInfo = new FileInfo(selectedFileName);
+                await using var fs = new FileStream(selectedFileName, FileMode.OpenOrCreate, FileAccess.Read);
+                using var sr = new StreamReader(fs, Encoding.UTF8);
+                var result = await sr.ReadToEndAsync();
 
-                // Update FileProcessingConstants with file information.
-                FileProcessingConstants.FileOpened = true;
-                FileProcessingConstants.LoadedFile = selectedFileName;
-
-                // Read the content of the file if it is not empty.
-                if (!string.IsNullOrEmpty(FileProcessingConstants.Result))
-                {
-                    await using var fs = new FileStream(selectedFileName, FileMode.OpenOrCreate, FileAccess.Read);
-                    using var sr = new StreamReader(fs, Encoding.UTF8);
-                    var result = await sr.ReadToEndAsync();
-
-                    if (string.IsNullOrEmpty(result))
-                        throw new IOException("Result was empty.");
-                }
-
-                // Perform additional validations on the selected file.
-                if (string.IsNullOrEmpty(selectedFileName))
-                    throw new ArgumentException("Value was empty.", nameof(selectedFileName));
-
-                if (selectedExtension != ".txt")
-                    throw new ArgumentException("Invalid file extension. Please select a text file.",
-                        nameof(selectedExtension));
-
-                if (fileInfo.Length > FileProcessingConstants.MaximumFileSize)
-                    throw new ArgumentException("File size is too large.", nameof(FileProcessingConstants.FileSize));
-
-                // Update FileProcessingConstants with file size.
-                FileProcessingConstants.FileSize = (int)fileInfo.Length;
-
-                // Display the file size.
-                var fileSize = fileInfo.Length.ToString("#,0");
-                FileSizeNumLbl.Text = $@"{fileSize} bytes";
+                if (string.IsNullOrEmpty(result))
+                    throw new IOException("Result was empty.");
             }
+
+            // Perform additional validations on the selected file.
+            if (string.IsNullOrEmpty(selectedFileName))
+                throw new ArgumentException("Value was empty.", nameof(selectedFileName));
+
+            if (selectedExtension != ".txt")
+                throw new ArgumentException("Invalid file extension. Please select a text file.",
+                    nameof(selectedExtension));
+
+            if (fileInfo.Length > FileProcessingConstants.MaximumFileSize)
+                throw new ArgumentException("File size is too large.", nameof(FileProcessingConstants.FileSize));
+
+            // Update FileProcessingConstants with file size.
+            FileProcessingConstants.FileSize = (int)fileInfo.Length;
+
+            // Display the file size.
+            var fileSize = fileInfo.Length.ToString("#,0");
+            FileSizeNumLbl.Text = $@"{fileSize} bytes";
 
             // Display success messages and reset UI.
             FileOutputLbl.Text = "File opened.";
@@ -951,5 +900,56 @@ public partial class Vault : Form
             CustomPasswordTextBox.Enabled = true;
             ConfirmPassword.Enabled = true;
         }
+    }
+
+    /// <summary>
+    ///     Represents static fields and constants used for file processing and UI interactions.
+    /// </summary>
+    private static class FileProcessingConstants
+    {
+        /// <summary>
+        ///     Gets the maximum allowed file size in bytes.
+        /// </summary>
+        public const int MaximumFileSize = 1_000_000_000;
+
+        /// <summary>
+        ///     Gets or sets an array to store the characters of the user's password.
+        /// </summary>
+        public static char[] PasswordArray = Array.Empty<char>();
+
+        /// <summary>
+        ///     Gets or sets the path of the currently loaded file.
+        /// </summary>
+        public static string LoadedFile = string.Empty;
+
+        /// <summary>
+        ///     Gets or sets the hash value of the currently loaded file.
+        /// </summary>
+        public static string LoadedFileHash = string.Empty;
+
+        /// <summary>
+        ///     Gets or sets the result of a file processing operation.
+        /// </summary>
+        public static string Result = string.Empty;
+
+        /// <summary>
+        ///     Gets the tooltip used for providing information to the user.
+        /// </summary>
+        public static readonly ToolTip Tooltip = new();
+
+        /// <summary>
+        ///     Gets or sets a value indicating whether an animation is currently in progress.
+        /// </summary>
+        public static bool IsAnimating { get; set; }
+
+        /// <summary>
+        ///     Gets or sets a value indicating whether a file is currently opened.
+        /// </summary>
+        public static bool FileOpened { get; set; }
+
+        /// <summary>
+        ///     Gets or sets the size of the currently loaded file.
+        /// </summary>
+        public static long FileSize { get; set; }
     }
 }

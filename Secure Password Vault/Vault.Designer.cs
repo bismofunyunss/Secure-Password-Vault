@@ -573,9 +573,9 @@
             ViewPasswordsCheckbox.AutoSize = true;
             ViewPasswordsCheckbox.Location = new Point(338, 119);
             ViewPasswordsCheckbox.Name = "ViewPasswordsCheckbox";
-            ViewPasswordsCheckbox.Size = new Size(190, 29);
+            ViewPasswordsCheckbox.Size = new Size(195, 29);
             ViewPasswordsCheckbox.TabIndex = 26;
-            ViewPasswordsCheckbox.Text = "View Passwords";
+            ViewPasswordsCheckbox.Text = "Show Passwords";
             ViewPasswordsCheckbox.UseVisualStyleBackColor = true;
             ViewPasswordsCheckbox.CheckedChanged += ViewPasswordsCheckbox_CheckedChanged;
             // 

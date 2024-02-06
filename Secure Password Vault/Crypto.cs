@@ -23,12 +23,12 @@ public static class Crypto
         /// <summary>
         ///     Number of iterations for key derivation.
         /// </summary>
-        public const int Iterations = 48;
+        public const int Iterations = 1;
 
         /// <summary>
         ///     Memory size for key derivation in KiB.
         /// </summary>
-        public const int MemorySize = 1024 * 1024 * 6;
+        public const int MemorySize = 1024 * 1024 * 1;
 
         /// <summary>
         ///     Size of the salt used in cryptographic operations.
@@ -725,7 +725,7 @@ public static class Crypto
         var cipherText = new byte[cbcCipher.GetOutputSize(inputText.Length)];
         var processLength = cbcCipher.ProcessBytes(inputText, 0, inputText.Length, cipherText, 0);
         var finalLength = cbcCipher.DoFinal(cipherText, processLength);
-        var finalCipherText = new byte[cipherText.Length - (blockSize - finalLength)];
+        var finalCipherText = new byte[finalLength + processLength];
         Buffer.BlockCopy(cipherText, 0, finalCipherText, 0, finalCipherText.Length);
 
         // Clear sensitive key parameter
@@ -819,7 +819,7 @@ public static class Crypto
         var plainText = new byte[cbcCipher.GetOutputSize(cipherResult.Length)];
         var processLength = cbcCipher.ProcessBytes(cipherResult, 0, cipherResult.Length, plainText, 0);
         var finalLength = cbcCipher.DoFinal(plainText, processLength);
-        var finalPlainText = new byte[plainText.Length - (blockSize - finalLength)];
+        var finalPlainText = new byte[finalLength + processLength];
         Buffer.BlockCopy(plainText, 0, finalPlainText, 0, finalPlainText.Length);
 
         // Return the final decrypted plainText
@@ -854,7 +854,7 @@ public static class Crypto
         var cipherText = new byte[cbcCipher.GetOutputSize(inputText.Length)];
         var processLength = cbcCipher.ProcessBytes(inputText, 0, inputText.Length, cipherText, 0);
         var finalLength = cbcCipher.DoFinal(cipherText, processLength);
-        var finalCipherText = new byte[cipherText.Length - (blockSize - finalLength)];
+        var finalCipherText = new byte[finalLength + processLength];
         Buffer.BlockCopy(cipherText, 0, finalCipherText, 0, cipherText.Length);
 
         // Clear sensitive key parameter
@@ -926,7 +926,7 @@ public static class Crypto
 
         // Extract IV and cipherText from the inputText
         var iv = new byte[CryptoConstants.Iv];
-        var cipherResult = new byte[inputText.Length - CryptoConstants.KeySize - CryptoConstants.HmacLength];
+        var cipherResult = new byte[inputText.Length - CryptoConstants.Iv - CryptoConstants.HmacLength];
 
         Buffer.BlockCopy(inputText, 0, iv, 0, iv.Length);
         Buffer.BlockCopy(inputText, iv.Length, cipherResult, 0, cipherResult.Length);
@@ -948,7 +948,7 @@ public static class Crypto
         var plainText = new byte[cbcCipher.GetOutputSize(cipherResult.Length)];
         var processLength = cbcCipher.ProcessBytes(cipherResult, 0, cipherResult.Length, plainText, 0);
         var finalLength = cbcCipher.DoFinal(plainText, processLength);
-        var finalPlainText = new byte[plainText.Length - (blockSize - finalLength)];
+        var finalPlainText = new byte[finalLength + processLength];
         Buffer.BlockCopy(plainText, 0, finalPlainText, 0, finalPlainText.Length);
 
         // Return the final decrypted plainText
