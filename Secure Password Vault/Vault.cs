@@ -900,6 +900,11 @@ public partial class Vault : Form
             CustomPasswordTextBox.Enabled = true;
             ConfirmPassword.Enabled = true;
         }
+        else
+        {
+            CustomPasswordTextBox.Enabled = false;
+            ConfirmPassword.Enabled = false;
+        }
     }
 
     /// <summary>

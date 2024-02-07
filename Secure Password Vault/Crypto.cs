@@ -23,12 +23,12 @@ public static class Crypto
         /// <summary>
         ///     Number of iterations for key derivation.
         /// </summary>
-        public const int Iterations = 1;
+        public const int Iterations = 48;
 
         /// <summary>
         ///     Memory size for key derivation in KiB.
         /// </summary>
-        public const int MemorySize = 1024 * 1024 * 1;
+        public const int MemorySize = 1024 * 1024 * 6;
 
         /// <summary>
         ///     Size of the salt used in cryptographic operations.
@@ -250,6 +250,35 @@ public static class Crypto
         return outputStream.ToArray();
     }
 
+    public static (byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] hMacKey, byte[] hMackey2,
+        byte[] hMacKey3) InitBuffers(byte[] src)
+    {
+        // Extract key components for encryption
+        var key = new byte[CryptoConstants.KeySize];
+        var key2 = new byte[CryptoConstants.ThreeFish];
+        var key3 = new byte[CryptoConstants.KeySize];
+        var key4 = new byte[CryptoConstants.KeySize];
+        var key5 = new byte[CryptoConstants.ShuffleKey];
+        var hMacKey = new byte[CryptoConstants.HmacLength];
+        var hMackey2 = new byte[CryptoConstants.HmacLength];
+        var hMacKey3 = new byte[CryptoConstants.HmacLength];
+
+        CopyBytes(src, key, key2, key3, key4, key5, hMacKey, hMackey2, hMacKey3);
+
+        return (key, key2, key3, key4, key5, hMacKey, hMackey2, hMacKey3);
+    }
+
+    public static void CopyBytes(byte[] src, params byte[][] dest)
+    {
+        var offset = 0;
+
+        foreach (var t in dest)
+        {
+            Buffer.BlockCopy(src, offset, t, 0, t.Length);
+            offset += t.Length;
+        }
+    }
+
     /// <summary>
     ///     Encrypts the contents of a file using Argon2 key derivation and XChaCha20-Poly1305 encryption.
     /// </summary>
@@ -286,27 +315,6 @@ public static class Crypto
         if (bytes == Array.Empty<byte>())
             throw new Exception("Value was empty.");
 
-        // Extract key components for encryption
-        var key = new byte[CryptoConstants.KeySize];
-        var key2 = new byte[CryptoConstants.ThreeFish];
-        var key3 = new byte[CryptoConstants.KeySize];
-        var key4 = new byte[CryptoConstants.KeySize];
-        var key5 = new byte[CryptoConstants.ShuffleKey];
-        var hMacKey = new byte[CryptoConstants.HmacLength];
-        var hMackey2 = new byte[CryptoConstants.HmacLength];
-        var hMacKey3 = new byte[CryptoConstants.HmacLength];
-
-        Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
-        Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
-        Buffer.BlockCopy(bytes, key.Length + key2.Length, key3, 0, key3.Length);
-        Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length, key4, 0, key4.Length);
-        Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length, key5, 0, key5.Length);
-        Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length + key5.Length, hMacKey, 0, hMacKey.Length);
-        Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length + key5.Length + hMacKey.Length, hMackey2, 0,
-            hMackey2.Length);
-        Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length + key5.Length + hMacKey.Length + hMackey2.Length, hMacKey3, 0,
-            hMacKey3.Length);
-
         // Read content of the specified file
         var fileStr = await File.ReadAllTextAsync(file);
         var fileBytes = DataConversionHelpers.StringToByteArray(fileStr);
@@ -316,13 +324,17 @@ public static class Crypto
             throw new ArgumentException("Value was empty.",
                 fileBytes == null || fileBytes.Length == 0 ? nameof(fileBytes) : nameof(salt));
 
+        (byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] hMacKey,
+                byte[] hMacKey2, byte[] hMacKey3) = InitBuffers(bytes);
+
         var compressedText = await CompressText(fileBytes);
 
         // Encrypt the file content
-        var encryptedFile = await EncryptAsyncV3(compressedText, key, key2, key3, key4, key5, hMacKey, hMackey2, hMacKey3);
+        var encryptedFile =
+            await EncryptAsyncV3(compressedText, key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3);
 
         // Clear sensitive information
-        ClearSensitiveData(key, key2, hMacKey, Encoding.UTF8.GetBytes(passWord));
+        ClearSensitiveData(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3, Encoding.UTF8.GetBytes(passWord));
 
         return encryptedFile;
     }
@@ -363,26 +375,8 @@ public static class Crypto
         // Derive decryption key from password and salts using Argon2id
         var bytes = await Argon2Id(passWord, salt, 544);
 
-        // Extract key components for encryption
-        var key = new byte[CryptoConstants.KeySize];
-        var key2 = new byte[CryptoConstants.ThreeFish];
-        var key3 = new byte[CryptoConstants.KeySize];
-        var key4 = new byte[CryptoConstants.KeySize];
-        var key5 = new byte[CryptoConstants.ShuffleKey];
-        var hMacKey = new byte[CryptoConstants.HmacLength];
-        var hMackey2 = new byte[CryptoConstants.HmacLength];
-        var hMacKey3 = new byte[CryptoConstants.HmacLength];
-
-        Buffer.BlockCopy(bytes, 0, key, 0, key.Length);
-        Buffer.BlockCopy(bytes, key.Length, key2, 0, key2.Length);
-        Buffer.BlockCopy(bytes, key.Length + key2.Length, key3, 0, key3.Length);
-        Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length, key4, 0, key4.Length);
-        Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length, key5, 0, key5.Length);
-        Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length + key5.Length, hMacKey, 0, hMacKey.Length);
-        Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length + key5.Length + hMacKey.Length, hMackey2, 0,
-            hMackey2.Length);
-        Buffer.BlockCopy(bytes, key.Length + key2.Length + key3.Length + key4.Length + key5.Length + hMacKey.Length + hMackey2.Length, hMacKey3, 0,
-            hMacKey3.Length);
+        (byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] hMacKey,
+            byte[] hMacKey2, byte[] hMacKey3) = InitBuffers(bytes);
 
         // Read and decode the content of the encrypted file
         var fileStr = await File.ReadAllTextAsync(file);
@@ -394,12 +388,12 @@ public static class Crypto
                 fileBytes == Array.Empty<byte>() ? nameof(fileBytes) : nameof(salt));
 
         // Decrypt the file content
-        var decryptedFile = await DecryptAsyncV3(fileBytes, key, key2, key3, key4, key5, hMacKey, hMackey2, hMacKey3);
+        var decryptedFile = await DecryptAsyncV3(fileBytes, key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3);
 
         var decompressedText = await DecompressText(decryptedFile);
 
         // Clear sensitive information
-        Array.Clear(passWord, 0, passWord.Length);
+        ClearSensitiveData(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3, Encoding.UTF8.GetBytes(passWord));
 
         return decompressedText;
     }
@@ -864,7 +858,7 @@ public static class Crypto
         var prependItems = new byte[finalCipherText.Length + iv.Length];
         Buffer.BlockCopy(iv, 0, prependItems, 0, iv.Length);
         Buffer.BlockCopy(finalCipherText, 0, prependItems, iv.Length, finalCipherText.Length);
-        
+
         // Calculate HMAC-SHA3 tag and concatenate it with IV and cipherText
         var tag = Hmacsha3(prependItems, hMacKey);
         var authenticatedBuffer = new byte[prependItems.Length + tag.Length];
@@ -969,7 +963,8 @@ public static class Crypto
     /// <exception cref="ArgumentException">Thrown when any of the input parameters is an empty array.</exception>
     /// <exception cref="Exception">Thrown when any intermediate or final encrypted value is empty.</exception>
     public static async Task<byte[]> EncryptAsyncV3(byte[] plaintext,
-        byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] hMacKey, byte[] hMacKey2, byte[] hMacKey3)
+        byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] hMacKey, byte[] hMacKey2,
+        byte[] hMacKey3)
     {
         // Parameter checks
         if (plaintext == Array.Empty<byte>())
@@ -1013,7 +1008,7 @@ public static class Crypto
         var cipherTextL4 = await EncryptAsync(cipherTextL3, key4, nonce4, hMacKey3) ??
                            throw new Exception("Value was empty.");
 
-        // Concatenate nonces and the third level ciphertext
+        // Concatenate nonces and the fourth level ciphertext
         var result = nonce.Concat(nonce2).Concat(nonce3).Concat(nonce4).Concat(cipherTextL4).ToArray();
 
         // Shuffle the result based on a key
@@ -1040,7 +1035,8 @@ public static class Crypto
     /// <exception cref="ArgumentException">Thrown when any of the input parameters is an empty array.</exception>
     /// <exception cref="Exception">Thrown when any intermediate or final decrypted value is empty.</exception>
     public static async Task<byte[]> DecryptAsyncV3(byte[] cipherText,
-        byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] hMacKey, byte[] hMacKey2, byte[] hMacKey3)
+        byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] hMacKey, byte[] hMacKey2,
+        byte[] hMacKey3)
     {
         // Parameter checks
         if (cipherText == Array.Empty<byte>())
@@ -1081,24 +1077,25 @@ public static class Crypto
         var cipherResult =
             new byte[unshuffledResult.Length - nonce4.Length - nonce3.Length - nonce2.Length - nonce.Length];
 
-        Buffer.BlockCopy(unshuffledResult, nonce.Length + nonce2.Length + nonce3.Length + nonce4.Length, cipherResult, 0,
+        Buffer.BlockCopy(unshuffledResult, nonce.Length + nonce2.Length + nonce3.Length + nonce4.Length, cipherResult,
+            0,
             cipherResult.Length);
 
         // Decrypt using AES and HMAC
         var resultL4 = await DecryptAsync(cipherResult, key4, hMacKey3) ??
-                         throw new Exception("Value was empty.");
+                       throw new Exception("Value was empty.");
 
         // Decrypt using Serpent and HMAC
         var resultL3 = DecryptSerpent(resultL4, key3, hMacKey2) ??
-                           throw new Exception("Value was empty.");
+                       throw new Exception("Value was empty.");
 
         // Decrypt using ThreeFish and HMAC
         var resultL2 = DecryptThreeFish(resultL3, key2, hMacKey) ??
-                           throw new Exception("Value was empty.");
+                       throw new Exception("Value was empty.");
 
         // Decrypt using XChaCha20-Poly1305
         var result = SecretAeadXChaCha20Poly1305.Decrypt(resultL2, nonce, key) ??
-                           throw new Exception("Value was empty.");
+                     throw new Exception("Value was empty.");
 
         // Clear sensitive information to prevent accidental exposure
         ClearSensitiveData(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3);
