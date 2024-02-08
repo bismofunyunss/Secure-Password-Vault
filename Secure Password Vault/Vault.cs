@@ -764,15 +764,15 @@ public partial class Vault : Form
             openFileDialog.InitialDirectory =
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
 
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                var selectedFileName = openFileDialog.FileName;
+            if (openFileDialog.ShowDialog() != DialogResult.OK)
+                return;
 
-                FileProcessingConstants.LoadedFileHash = selectedFileName;
+            var selectedFileName = openFileDialog.FileName;
 
-                if (!string.IsNullOrEmpty(selectedFileName))
-                    filenamelbl.Text = $@"File Name: {FileProcessingConstants.LoadedFileHash}";
-            }
+            FileProcessingConstants.LoadedFileHash = selectedFileName;
+
+            if (!string.IsNullOrEmpty(selectedFileName))
+                filenamelbl.Text = $@"File Name: {FileProcessingConstants.LoadedFileHash}";
         }
         catch (Exception ex)
         {
