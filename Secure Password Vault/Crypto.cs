@@ -849,7 +849,7 @@ public static class Crypto
         var processLength = cbcCipher.ProcessBytes(inputText, 0, inputText.Length, cipherText, 0);
         var finalLength = cbcCipher.DoFinal(cipherText, processLength);
         var finalCipherText = new byte[finalLength + processLength];
-        Buffer.BlockCopy(cipherText, 0, finalCipherText, 0, cipherText.Length);
+        Buffer.BlockCopy(cipherText, 0, finalCipherText, 0, finalCipherText.Length);
 
         // Clear sensitive key parameter
         ClearSensitiveData(key);
