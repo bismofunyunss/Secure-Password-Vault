@@ -1,4 +1,5 @@
 ﻿using System.IO.Compression;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using Konscious.Security.Cryptography;
@@ -15,6 +16,12 @@ namespace Secure_Password_Vault;
 
 public static class Crypto
 {
+    public static class Memory
+    {
+        [DllImport("MemoryManagement.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SecureMemoryClear(IntPtr ptr, IntPtr size);
+    }
+
     /// <summary>
     ///     Utility class for cryptographic settings and initialization.
     /// </summary>
@@ -103,8 +110,10 @@ public static class Crypto
             throw new ArgumentException("Value was null or empty.",
                 passWord == null ? nameof(passWord) : nameof(salt));
 
+        var passwordBytes = Encoding.UTF8.GetBytes(passWord);
+
         // Initialize Argon2id
-        using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(passWord));
+        using var argon2 = new Argon2id(passwordBytes);
         argon2.Salt = salt;
         argon2.DegreeOfParallelism = Environment.ProcessorCount * 2;
         argon2.Iterations = CryptoConstants.Iterations;
@@ -112,6 +121,8 @@ public static class Crypto
 
         // Get the result
         var result = await argon2.GetBytesAsync(outputSize);
+
+        ClearBytes(passwordBytes);
         return result;
     }
 
@@ -129,15 +140,16 @@ public static class Crypto
     /// <remarks>
     ///     This method uses fixed-time comparison to mitigate certain types of timing attacks.
     /// </remarks>
-    public static Task<bool> ComparePassword(byte[]? hash1, byte[]? hash2)
+    public static async Task<bool> ComparePassword(byte[]? hash1, byte[]? hash2)
     {
         // Check if either hash is null or empty
         if (hash1 == null || hash1.Length == 0 || hash2 == null || hash2.Length == 0)
             throw new ArgumentException("Value was empty or null.",
                 hash1 == null || hash1.Length == 0 ? nameof(hash1) : nameof(hash2));
-
         // Use CryptographicOperations.FixedTimeEquals for secure comparison
-        return Task.FromResult(CryptographicOperations.FixedTimeEquals(hash1, hash2));
+        var result = await Task.FromResult(CryptographicOperations.FixedTimeEquals(hash1, hash2));
+        ClearBytes(hash1, hash2);
+        return result;
     }
 
     /// <summary>
@@ -215,13 +227,38 @@ public static class Crypto
         return buffer;
     }
 
-    /// <summary>
-    ///     Clears sensitive data from memory.
-    /// </summary>
-    /// <param name="data">The data to be cleared.</param>
-    private static void ClearSensitiveData(params byte[][] data)
+    public static void ClearBytes(params byte[][] arrays)
     {
-        foreach (var array in data) Array.Clear(array, 0, array.Length);
+        foreach (var array in arrays)
+        {
+            GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+            try
+            {
+                // Clear the memory using the SecureMemoryClear function
+                Memory.SecureMemoryClear(handle.AddrOfPinnedObject(), (IntPtr)array.Length * sizeof(byte));
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
+    }
+
+    public static void ClearChars(params char[][] arrays)
+    {
+        foreach (var array in arrays)
+        {
+            GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+            try
+            {
+                // Clear the memory using the SecureMemoryClear function
+                Memory.SecureMemoryClear(handle.AddrOfPinnedObject(), (IntPtr)array.Length * sizeof(char));
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
     }
 
     public static async Task<byte[]> CompressText(byte[] inputText)
@@ -272,10 +309,10 @@ public static class Crypto
     {
         var offset = 0;
 
-        foreach (var t in dest)
+        foreach (var dst in dest)
         {
-            Buffer.BlockCopy(src, offset, t, 0, t.Length);
-            offset += t.Length;
+            Buffer.BlockCopy(src, offset, dst, 0, dst.Length);
+            offset += dst.Length;
         }
     }
 
@@ -324,8 +361,7 @@ public static class Crypto
             throw new ArgumentException("Value was empty.",
                 fileBytes == null || fileBytes.Length == 0 ? nameof(fileBytes) : nameof(salt));
 
-        (byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] hMacKey,
-                byte[] hMacKey2, byte[] hMacKey3) = InitBuffers(bytes);
+        var (key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3) = InitBuffers(bytes);
 
         var compressedText = await CompressText(fileBytes);
 
@@ -334,10 +370,11 @@ public static class Crypto
             await EncryptAsyncV3(compressedText, key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3);
 
         // Clear sensitive information
-        ClearSensitiveData(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3, Encoding.UTF8.GetBytes(passWord));
-
+        ClearBytes(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3, bytes);
+        ClearChars(passWord);
         return encryptedFile;
     }
+
 
 
     /// <summary>
@@ -375,8 +412,7 @@ public static class Crypto
         // Derive decryption key from password and salts using Argon2id
         var bytes = await Argon2Id(passWord, salt, 544);
 
-        (byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] hMacKey,
-            byte[] hMacKey2, byte[] hMacKey3) = InitBuffers(bytes);
+        var (key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3) = InitBuffers(bytes);
 
         // Read and decode the content of the encrypted file
         var fileStr = await File.ReadAllTextAsync(file);
@@ -393,22 +429,22 @@ public static class Crypto
         var decompressedText = await DecompressText(decryptedFile);
 
         // Clear sensitive information
-        ClearSensitiveData(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3, Encoding.UTF8.GetBytes(passWord));
-
+        ClearBytes(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3, bytes);
+        ClearChars(passWord);
         return decompressedText;
     }
 
     /// <summary>
-    ///     Generates an array of random indices for shuffling based on a given size and key.
-    /// </summary>
-    /// <param name="size">The size of the array for which shuffle exchanges are generated.</param>
-    /// <param name="key">The key used for generating random indices.</param>
-    /// <returns>An array of random indices for shuffling.</returns>
-    /// <remarks>
-    ///     The method uses a random number generator with the specified key to generate
-    ///     unique indices for shuffling a byte array of the given size.
-    /// </remarks>
-    public static int[] GetShuffleExchanges(int size, byte[] key)
+        ///     Generates an array of random indices for shuffling based on a given size and key.
+        /// </summary>
+        /// <param name="size">The size of the array for which shuffle exchanges are generated.</param>
+        /// <param name="key">The key used for generating random indices.</param>
+        /// <returns>An array of random indices for shuffling.</returns>
+        /// <remarks>
+        ///     The method uses a random number generator with the specified key to generate
+        ///     unique indices for shuffling a byte array of the given size.
+        /// </remarks>
+        public static int[] GetShuffleExchanges(int size, byte[] key)
     {
         // Create an array to store shuffle exchanges
         var exchanges = new int[size - 1];
@@ -422,8 +458,6 @@ public static class Crypto
             var n = rand.Next(i + 1);
             exchanges[size - 1 - i] = n;
         }
-
-        ClearSensitiveData(key);
 
         // Return the array of shuffle exchanges
         return exchanges;
@@ -453,8 +487,6 @@ public static class Crypto
             (input[i], input[n]) = (input[n], input[i]);
         }
 
-        ClearSensitiveData(key);
-
         // Return the shuffled byte array
         return input;
     }
@@ -482,8 +514,6 @@ public static class Crypto
             var n = exchanges[size - i - 1];
             (input[i], input[n]) = (input[n], input[i]);
         }
-
-        ClearSensitiveData(key);
 
         // Return the de-shuffled byte array
         return input;
@@ -584,9 +614,6 @@ public static class Crypto
             cipherText = memStream.ToArray();
         }
 
-        // Clear sensitive key parameter
-        ClearSensitiveData(key);
-
         // Concatenate IV and cipherText for HMAC-SHA3 authentication
         var prependItems = new byte[cipherText.Length + iv.Length];
         Buffer.BlockCopy(iv, 0, prependItems, 0, iv.Length);
@@ -597,9 +624,6 @@ public static class Crypto
         var authenticatedBuffer = new byte[prependItems.Length + tag.Length];
         Buffer.BlockCopy(prependItems, 0, authenticatedBuffer, 0, prependItems.Length);
         Buffer.BlockCopy(tag, 0, authenticatedBuffer, prependItems.Length, tag.Length);
-
-        // Clear sensitive HMAC key
-        ClearSensitiveData(hMacKey);
 
         // Return the authenticated and encrypted byte array
         return authenticatedBuffer;
@@ -656,9 +680,6 @@ public static class Crypto
         if (!isMatch)
             throw new CryptographicException("Authentication tag does not match.");
 
-        // Clear sensitive HMAC key
-        ClearSensitiveData(hMacKey);
-
         // Extract IV and cipherText from the inputText
         var iv = new byte[CryptoConstants.Iv];
         var cipherResult = new byte[inputText.Length - CryptoConstants.Iv - CryptoConstants.HmacLength];
@@ -682,9 +703,6 @@ public static class Crypto
 
             await decryptStream.FlushFinalBlockAsync();
         }
-
-        // Clear sensitive key array
-        ClearSensitiveData(key);
 
         // Return memStream as byte array
         return memStream.ToArray();
@@ -715,15 +733,11 @@ public static class Crypto
         cbcCipher.Init(true, new ParametersWithIV(keyParam, iv));
 
         // Process the input text and obtain the final cipher text
-        var blockSize = cbcCipher.GetBlockSize();
         var cipherText = new byte[cbcCipher.GetOutputSize(inputText.Length)];
         var processLength = cbcCipher.ProcessBytes(inputText, 0, inputText.Length, cipherText, 0);
         var finalLength = cbcCipher.DoFinal(cipherText, processLength);
         var finalCipherText = new byte[finalLength + processLength];
         Buffer.BlockCopy(cipherText, 0, finalCipherText, 0, finalCipherText.Length);
-
-        // Clear sensitive key parameter
-        ClearSensitiveData(key);
 
         // Concatenate IV and cipherText for HMAC-SHA3 authentication
         var prependItems = new byte[finalCipherText.Length + iv.Length];
@@ -735,9 +749,6 @@ public static class Crypto
         var authenticatedBuffer = new byte[prependItems.Length + tag.Length];
         Buffer.BlockCopy(prependItems, 0, authenticatedBuffer, 0, prependItems.Length);
         Buffer.BlockCopy(tag, 0, authenticatedBuffer, prependItems.Length, tag.Length);
-
-        // Clear sensitive HMAC key
-        ClearSensitiveData(hMacKey);
 
         // Return the authenticated and encrypted byte array
         return authenticatedBuffer;
@@ -786,9 +797,6 @@ public static class Crypto
         if (!isMatch)
             throw new CryptographicException("Authentication tag does not match.");
 
-        // Clear sensitive HMAC key
-        ClearSensitiveData(hMacKey);
-
         // Extract IV and cipherText from the inputText
         var iv = new byte[CryptoConstants.ThreeFish];
         var cipherResult = new byte[inputText.Length - CryptoConstants.ThreeFish - CryptoConstants.HmacLength];
@@ -809,7 +817,6 @@ public static class Crypto
         cbcCipher.Init(false, new ParametersWithIV(keyParam, iv));
 
         // Decrypt the cipherText to obtain the original plainText
-        var blockSize = cbcCipher.GetBlockSize();
         var plainText = new byte[cbcCipher.GetOutputSize(cipherResult.Length)];
         var processLength = cbcCipher.ProcessBytes(cipherResult, 0, cipherResult.Length, plainText, 0);
         var finalLength = cbcCipher.DoFinal(plainText, processLength);
@@ -821,7 +828,7 @@ public static class Crypto
     }
 
     /// <summary>
-    ///     Encrypts a byte array using the ThreeFish block cipher in Cipher Block Chaining (CBC) mode with HMAC-SHA3
+    ///     Encrypts a byte array using the Serpent block cipher in Cipher Block Chaining (CBC) mode with HMAC-SHA3
     ///     authentication.
     /// </summary>
     /// <param name="inputText">The byte array to be encrypted.</param>
@@ -844,15 +851,11 @@ public static class Crypto
         cbcCipher.Init(true, new ParametersWithIV(keyParam, iv));
 
         // Process the input text and obtain the final cipher text
-        var blockSize = cbcCipher.GetBlockSize();
         var cipherText = new byte[cbcCipher.GetOutputSize(inputText.Length)];
         var processLength = cbcCipher.ProcessBytes(inputText, 0, inputText.Length, cipherText, 0);
         var finalLength = cbcCipher.DoFinal(cipherText, processLength);
         var finalCipherText = new byte[finalLength + processLength];
         Buffer.BlockCopy(cipherText, 0, finalCipherText, 0, finalCipherText.Length);
-
-        // Clear sensitive key parameter
-        ClearSensitiveData(key);
 
         // Concatenate IV and cipherText for HMAC-SHA3 authentication
         var prependItems = new byte[finalCipherText.Length + iv.Length];
@@ -865,15 +868,12 @@ public static class Crypto
         Buffer.BlockCopy(prependItems, 0, authenticatedBuffer, 0, prependItems.Length);
         Buffer.BlockCopy(tag, 0, authenticatedBuffer, prependItems.Length, tag.Length);
 
-        // Clear sensitive HMAC key
-        ClearSensitiveData(hMacKey);
-
         // Return the authenticated and encrypted byte array
         return authenticatedBuffer;
     }
 
     /// <summary>
-    ///     Decrypts a byte array that has been encrypted using the ThreeFish block cipher in Cipher Block Chaining (CBC) mode
+    ///     Decrypts a byte array that has been encrypted using the Serpent block cipher in Cipher Block Chaining (CBC) mode
     ///     with HMAC-SHA3 authentication.
     /// </summary>
     /// <param name="inputText">The byte array to be decrypted.</param>
@@ -915,9 +915,6 @@ public static class Crypto
         if (!isMatch)
             throw new CryptographicException("Authentication tag does not match.");
 
-        // Clear sensitive HMAC key
-        ClearSensitiveData(hMacKey);
-
         // Extract IV and cipherText from the inputText
         var iv = new byte[CryptoConstants.Iv];
         var cipherResult = new byte[inputText.Length - CryptoConstants.Iv - CryptoConstants.HmacLength];
@@ -938,7 +935,6 @@ public static class Crypto
         cbcCipher.Init(false, new ParametersWithIV(keyParam, iv));
 
         // Decrypt the cipherText to obtain the original plainText
-        var blockSize = cbcCipher.GetBlockSize();
         var plainText = new byte[cbcCipher.GetOutputSize(cipherResult.Length)];
         var processLength = cbcCipher.ProcessBytes(cipherResult, 0, cipherResult.Length, plainText, 0);
         var finalLength = cbcCipher.DoFinal(plainText, processLength);
@@ -956,9 +952,11 @@ public static class Crypto
     /// <param name="key">The key used for the first layer of encryption (XChaCha20-Poly1305).</param>
     /// <param name="key2">The key used for the second layer of encryption (ThreeFish).</param>
     /// <param name="key3">The key used for the third layer of encryption.</param>
-    /// <param name="key4">The key used for shuffling the final encrypted result.</param>
+    /// <param name="key4">The key used for the fourth layer of encryption.</param>
+    /// <param name="key5">The key used for shuffling the final encrypted result.</param>
     /// <param name="hMacKey">The key used for HMAC in the second layer of encryption.</param>
     /// <param name="hMacKey2">The key used for HMAC in the third layer of encryption.</param>
+    /// <param name="hMacKey3">The key used for HMAC in the fourth layer of encryption.</param>
     /// <returns>A shuffled byte array containing nonces and the final encrypted result.</returns>
     /// <exception cref="ArgumentException">Thrown when any of the input parameters is an empty array.</exception>
     /// <exception cref="Exception">Thrown when any intermediate or final encrypted value is empty.</exception>
@@ -1014,9 +1012,6 @@ public static class Crypto
         // Shuffle the result based on a key
         var shuffledResult = Shuffle(result, key5);
 
-        // Clear sensitive information to prevent accidental exposure
-        ClearSensitiveData(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3);
-
         // Return the shuffled and encrypted result
         return shuffledResult;
     }
@@ -1028,9 +1023,11 @@ public static class Crypto
     /// <param name="key">The key used for the first layer of decryption (XChaCha20-Poly1305).</param>
     /// <param name="key2">The key used for the second layer of decryption (ThreeFish).</param>
     /// <param name="key3">The key used for the third layer of decryption.</param>
-    /// <param name="key4">The key used for unshuffling the input cipherText.</param>
+    /// <param name="key4">The key used for the fourth layer of encryption.</param>
+    /// <param name="key5">The key used for unshuffling the ciphertext.</param>
     /// <param name="hMacKey">The key used for HMAC in the second layer of decryption.</param>
     /// <param name="hMacKey2">The key used for HMAC in the third layer of decryption.</param>
+    /// <param name="hMacKey3">The key used for HMAC in the fourth layer of encryption.</param>
     /// <returns>The decrypted byte array.</returns>
     /// <exception cref="ArgumentException">Thrown when any of the input parameters is an empty array.</exception>
     /// <exception cref="Exception">Thrown when any intermediate or final decrypted value is empty.</exception>
@@ -1097,9 +1094,6 @@ public static class Crypto
         var result = SecretAeadXChaCha20Poly1305.Decrypt(resultL2, nonce, key) ??
                      throw new Exception("Value was empty.");
 
-        // Clear sensitive information to prevent accidental exposure
-        ClearSensitiveData(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3);
-
         // Return the final decrypted result
         return result;
     }
@@ -1143,9 +1137,6 @@ public static class Crypto
         // Shuffle the result based on a key
         var shuffleKey = key4;
         var shuffledResult = Shuffle(result, shuffleKey);
-
-        // Clear sensitive information to prevent accidental exposure
-        ClearSensitiveData(key, key2, key3, key4, hMacKey, hMacKey2);
 
         // Return the shuffled and encrypted result
         return shuffledResult;
@@ -1212,7 +1203,7 @@ public static class Crypto
                      throw new Exception("Value was empty.");
 
         // Clear sensitive information to prevent accidental exposure
-        ClearSensitiveData(key, key2, key3, key4, hMacKey, hMacKey2);
+        ClearBytes(key, key2, key3, key4, hMacKey, hMacKey2);
 
         return result;
     }

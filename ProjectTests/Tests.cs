@@ -92,8 +92,8 @@ public class Tests
         try
         {
             // Derive encryption key from password and salt
-            var passWordBytes = Encoding.UTF8.GetBytes(EncryptionExample.PassString);
-            var bytes = await Crypto.Argon2Id(Encoding.UTF8.GetChars(passWordBytes), EncryptionExample.Salt, 448);
+
+            var bytes = await Crypto.Argon2Id(EncryptionExample.PassString.ToCharArray(), EncryptionExample.Salt, 448);
             if (bytes == Array.Empty<byte>())
                 throw new Exception("Value was empty.");
 
@@ -127,8 +127,8 @@ public class Tests
 
             // Derive keys again for decryption
             // Derive encryption key from password and salt
-            passWordBytes = Encoding.UTF8.GetBytes(EncryptionExample.PassString); 
-            bytes = await Crypto.Argon2Id(Encoding.UTF8.GetChars(passWordBytes), EncryptionExample.Salt, 448);
+            var passWordBytes = EncryptionExample.PassString.ToCharArray();
+            bytes = await Crypto.Argon2Id(passWordBytes, EncryptionExample.Salt, 448);
             if (bytes == Array.Empty<byte>())
                 throw new Exception("Value was empty.");
 
@@ -226,10 +226,10 @@ public class Tests
         try
         {
             // Convert the password string to a character array
-            char[] passArray = EncryptionExample.PassString.ToCharArray();
-
+            var passArray = Encoding.UTF8.GetBytes(EncryptionExample.PassString);
+            var passChars = Encoding.UTF8.GetChars(passArray);
             // Hash the password using Argon2Id with a specified salt and a target hash length of 32 bytes
-            byte[] result = await Crypto.Argon2Id(passArray, EncryptionExample.Salt, 32) ?? Array.Empty<byte>();
+            byte[] result = await Crypto.Argon2Id(passChars, EncryptionExample.Salt, 32) ?? Array.Empty<byte>();
 
             // Assert that the result is not null
             Assert.IsNotNull(result);

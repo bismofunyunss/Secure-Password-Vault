@@ -11,14 +11,6 @@ public partial class RegisterAccount : Form
         InitializeComponent();
     }
 
-    /// <summary>
-    ///     Checks the validity of a password based on specified criteria.
-    /// </summary>
-    /// <param name="password">The first password to be checked, as an IReadOnlyCollection of characters.</param>
-    /// <param name="password2">The second password to be checked, as an array of characters.</param>
-    /// <returns>
-    ///     True if the passwords meet the validity criteria, otherwise false.
-    /// </returns>
     public static bool CheckPasswordValidity(IReadOnlyCollection<char> password, IReadOnlyCollection<char>? password2 = null)
     {
         // Check password length: must be between 16 and 64 characters (inclusive).
@@ -104,14 +96,11 @@ public partial class RegisterAccount : Form
     /// </returns>
     private char[] SetArray()
     {
-        // Get the length of the password from the passTxt TextBox.
-        var buffer = passTxt.Text.Length;
-
         // Create a character array with the same length as the password.
-        var passArray = new char[buffer];
+        var passArray = new char[passTxt.Text.Length];
 
         // Copy the characters from passTxt to the passArray.
-        passTxt.Text.CopyTo(0, passArray, 0, buffer);
+        passTxt.Text.CopyTo(0, passArray, 0, passArray.Length);
 
         // Return the character array representing the password.
         return passArray;
@@ -183,9 +172,8 @@ public partial class RegisterAccount : Form
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
         // Clear sensitive data from memory.
-        Array.Clear(hashedPassword, 0, hashedPassword.Length);
-        Array.Clear(password);
-        Array.Clear(confirmPassword);
+        Crypto.ClearBytes(hashedPassword);
+        Crypto.ClearChars(password, confirmPassword);
 
         // Update UI elements and display success message to the user.
         outputLbl.Text = "Account created";
@@ -214,7 +202,7 @@ public partial class RegisterAccount : Form
     /// <exception cref="ArgumentException">
     ///     Thrown if the username or password does not meet the specified criteria.
     /// </exception>
-    private static void ValidateUsernameAndPassword(string userName, char[] password, char[] password2)
+    private static void ValidateUsernameAndPassword(string userName, IReadOnlyCollection<char> password, IReadOnlyCollection<char> password2)
     {
         // Validate the username for legal characters.
         if (!userName.All(c => char.IsLetterOrDigit(c) || c == '_' || c == ' '))
@@ -267,6 +255,10 @@ public partial class RegisterAccount : Form
         {
             // Enable the UI after an exception occurs.
             EnableUi();
+
+            var passArray = SetArray();
+            var confirmPassArray = SetConfirmationArray();
+            Crypto.ClearChars(passArray, confirmPassArray);
 
             // Update UI elements and log the error.
             outputLbl.ForeColor = Color.WhiteSmoke;

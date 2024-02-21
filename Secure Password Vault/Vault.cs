@@ -37,6 +37,7 @@ public partial class Vault : Form
         var confirmPasswordBuffer = ConfirmPassword.Text.Length;
         var confirmPasswordbufferArray = new char[confirmPasswordBuffer];
         CustomPasswordTextBox.Text.CopyTo(0, passwordArray, 0, buffer);
+        ConfirmPassword.Text.CopyTo(0, confirmPasswordbufferArray, 0, confirmPasswordbufferArray.Length);
         RegisterAccount.CheckPasswordValidity(passwordArray, confirmPasswordbufferArray);
 
         // Validate that the password is not empty.
@@ -56,7 +57,7 @@ public partial class Vault : Form
                 nameof(passwordArray));
 
         FileProcessingConstants.PasswordArray = passwordArray;
-        Array.Clear(passwordArray, 0, passwordArray.Length);
+        Crypto.ClearChars(passwordArray, confirmPasswordbufferArray);
     }
 
     private void deleteRowBtn_Click(object sender, EventArgs e)
@@ -158,7 +159,8 @@ public partial class Vault : Form
             var encryptedVaultString = DataConversionHelpers.ByteArrayToBase64String(encryptedVault);
             await File.WriteAllTextAsync(Authentication.GetUserVault(Authentication.CurrentLoggedInUser),
                 encryptedVaultString);
-            Array.Clear(FileProcessingConstants.PasswordArray, 0, FileProcessingConstants.PasswordArray.Length);
+
+            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
 
             // Perform garbage collection to release resources.
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
@@ -178,6 +180,7 @@ public partial class Vault : Form
             // Enable the UI and stop the animation in case of an error.
             EnableUi();
             FileProcessingConstants.IsAnimating = false;
+            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
 
             // Display an error message and log the exception.
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK,
@@ -520,7 +523,7 @@ public partial class Vault : Form
             // Reset UI state and clear sensitive information.
             FileOutputLbl.Text = @"Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
-            Array.Clear(FileProcessingConstants.PasswordArray, 0, FileProcessingConstants.PasswordArray.Length);
+            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
         }
         catch (Exception ex)
         {
@@ -532,7 +535,7 @@ public partial class Vault : Form
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             FileOutputLbl.Text = @"Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
-            Array.Clear(FileProcessingConstants.PasswordArray, 0, FileProcessingConstants.PasswordArray.Length);
+            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
             ErrorLogging.ErrorLog(ex);
         }
     }
@@ -608,7 +611,7 @@ public partial class Vault : Form
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
 
             // Clear the password array for security reasons.
-            Array.Clear(FileProcessingConstants.PasswordArray, 0, FileProcessingConstants.PasswordArray.Length);
+            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
         }
         catch (Exception ex)
         {
@@ -620,7 +623,7 @@ public partial class Vault : Form
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             FileOutputLbl.Text = @"Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
-            Array.Clear(FileProcessingConstants.PasswordArray, 0, FileProcessingConstants.PasswordArray.Length);
+            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
             ErrorLogging.ErrorLog(ex);
         }
     }
