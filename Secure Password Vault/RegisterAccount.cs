@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Secure_Password_Vault;
 
@@ -11,10 +12,11 @@ public partial class RegisterAccount : Form
         InitializeComponent();
     }
 
-    public static bool CheckPasswordValidity(IReadOnlyCollection<char> password, IReadOnlyCollection<char>? password2 = null)
+    public static bool CheckPasswordValidity(char[] password,
+        char[]? password2 = null)
     {
         // Check password length: must be between 16 and 64 characters (inclusive).
-        if (password.Count is < 24 or > 120)
+        if (password.Length is < 24 or > 120)
             return false;
 
         // Check for at least one uppercase letter, one lowercase letter, and one digit.
@@ -22,7 +24,9 @@ public partial class RegisterAccount : Form
             return false;
 
         // Check for the absence of whitespaces in both passwords and if they are equal.
-        if (password.Any(char.IsWhiteSpace) || (password2 != null && (password2.Any(char.IsWhiteSpace) || !password.SequenceEqual(password2))))
+        if (password.Any(char.IsWhiteSpace) || (password2 != null &&
+                                                (password2.Any(char.IsWhiteSpace) ||
+                                                 !password.SequenceEqual(password2))))
             return false;
 
         // Check for at least one symbol or punctuation character.
@@ -96,22 +100,54 @@ public partial class RegisterAccount : Form
     /// </returns>
     private char[] SetArray()
     {
-        // Create a character array with the same length as the password.
-        var passArray = new char[passTxt.Text.Length];
+        var unmanagedString = Marshal.StringToBSTR(passTxt.Text);
 
-        // Copy the characters from passTxt to the passArray.
-        passTxt.Text.CopyTo(0, passArray, 0, passArray.Length);
+        try
+        {
+            var charArray = Crypto.ConvertUnmanagedStringToCharArray(unmanagedString);
+            var handle = GCHandle.Alloc(charArray, GCHandleType.Pinned);
+            try
+            {
+                // Pin the array to get a pointer
+                var pinnedAddress = handle.AddrOfPinnedObject();
 
-        // Return the character array representing the password.
-        return passArray;
+                return charArray;
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
+        finally
+        {
+            Marshal.ZeroFreeBSTR(unmanagedString);
+        }
     }
 
     private char[] SetConfirmationArray()
     {
-        var confirmPassArray = new char[confirmPassTxt.Text.Length];
-        confirmPassTxt.Text.CopyTo(0, confirmPassArray, 0, confirmPassArray.Length);
+        var unmanagedString = Marshal.StringToBSTR(passTxt.Text);
 
-        return confirmPassArray;
+        try
+        {
+            var charArray = Crypto.ConvertUnmanagedStringToCharArray(unmanagedString);
+            var handle = GCHandle.Alloc(charArray, GCHandleType.Pinned);
+            try
+            {
+                // Pin the array to get a pointer
+                var pinnedAddress = handle.AddrOfPinnedObject();
+
+                return charArray;
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
+        finally
+        {
+            Marshal.ZeroFreeBSTR(unmanagedString);
+        }
     }
 
     /// <summary>
@@ -168,9 +204,6 @@ public partial class RegisterAccount : Form
 
         await File.WriteAllTextAsync(userFile, DataConversionHelpers.ByteArrayToBase64String(encrypted));
 
-        // Perform aggressive garbage collection.
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-
         // Clear sensitive data from memory.
         Crypto.ClearBytes(hashedPassword);
         Crypto.ClearChars(password, confirmPassword);
@@ -184,6 +217,11 @@ public partial class RegisterAccount : Form
         MessageBox.Show("Registration successful! Make sure you do NOT forget your password or you will lose access " +
                         "to all of your files.", "Registration Complete", MessageBoxButtons.OK,
             MessageBoxIcon.Information);
+
+        Crypto.ClearStr(passTxt.Text, confirmPassTxt.Text);
+        passTxt.Clear();
+        confirmPassTxt.Clear();
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
         // Hide the current form, show the login form, and close the current form.
         Hide();
@@ -202,7 +240,8 @@ public partial class RegisterAccount : Form
     /// <exception cref="ArgumentException">
     ///     Thrown if the username or password does not meet the specified criteria.
     /// </exception>
-    private static void ValidateUsernameAndPassword(string userName, IReadOnlyCollection<char> password, IReadOnlyCollection<char> password2)
+    private static void ValidateUsernameAndPassword(string userName, char[] password,
+        char[] password2)
     {
         // Validate the username for legal characters.
         if (!userName.All(c => char.IsLetterOrDigit(c) || c == '_' || c == ' '))

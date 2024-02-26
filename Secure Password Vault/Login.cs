@@ -1,19 +1,19 @@
 using System.Diagnostics;
-using System.Security;
+using System.Runtime.InteropServices;
 
 namespace Secure_Password_Vault;
 
 public partial class Login : Form
 {
     private static bool _isAnimating;
-    private static char[] _passwordArray = Array.Empty<char>();
+    private static char[]? _passwordArray = Array.Empty<char>();
     private static int _attemptsRemaining;
-    public static SecureString SecurePassword = new();
 
     public Login()
     {
         InitializeComponent();
     }
+
     private void CreateNewAccountBtn_Click(object sender, EventArgs e)
     {
         Hide();
@@ -93,7 +93,7 @@ public partial class Login : Form
         catch (Exception ex)
         {
             // Clear sensitive data from memory.
-            Crypto.ClearChars(_passwordArray);
+            Crypto.ClearChars(_passwordArray ?? Array.Empty<char>());
 
             // Log the error.
             ErrorLogging.ErrorLog(ex);
@@ -135,36 +135,31 @@ public partial class Login : Form
         showPasswordCheckBox.Enabled = true;
     }
 
-    public static SecureString ConvertCharArrayToSecureString(char[] charArray)
-    {
-        if (charArray == Array.Empty<char>())
-            throw new ArgumentNullException(nameof(charArray), @"Value was empty.");
-
-        var secureString = new SecureString();
-
-        try
-        {
-            foreach (var c in charArray) secureString.AppendChar(c);
-
-            // Make sure the SecureString is read-only to enhance security.
-            secureString.MakeReadOnly();
-        }
-        catch
-        {
-            secureString.Dispose(); // Dispose if there is an exception to avoid memory leaks.
-            throw;
-        }
-
-        return secureString;
-    }
 
     private char[] CreateArray()
     {
-        var buffer = passTxt.Text.Length;
-        _passwordArray = new char[buffer];
-        passTxt.Text.CopyTo(0, _passwordArray, 0, buffer);
+        var unmanagedString = Marshal.StringToBSTR(passTxt.Text);
 
-        return _passwordArray;
+        try
+        {
+            var charArray = Crypto.ConvertUnmanagedStringToCharArray(unmanagedString);
+            var handle = GCHandle.Alloc(charArray, GCHandleType.Pinned);
+            try
+            {
+                // Pin the array to get a pointer
+                var pinnedAddress = handle.AddrOfPinnedObject();
+
+                return charArray;
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
+        finally
+        {
+            Marshal.ZeroFreeBSTR(unmanagedString);
+        }
     }
 
     private async Task ProcessLoginAsync(bool userExists)
@@ -204,6 +199,8 @@ public partial class Login : Form
         if (decryptedBytes == Array.Empty<byte>())
             throw new ArgumentException("Value was empty.", nameof(decryptedBytes));
 
+        Crypto.ClearChars(_passwordArray);
+
         // Perform aggressive garbage collection.
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
@@ -225,6 +222,8 @@ public partial class Login : Form
 
         // Perform aggressive garbage collection.
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+
+        Crypto.ClearChars(_passwordArray);
 
         // Throw an exception if the hashedInput is empty.
         if (hashedInput == Array.Empty<byte>())
@@ -255,7 +254,7 @@ public partial class Login : Form
     private void UserDoesNotExist()
     {
         EnableUi();
-        Crypto.ClearChars(_passwordArray);
+        Crypto.ClearChars(_passwordArray ?? Array.Empty<char>());
         _isAnimating = false;
         outputLbl.ForeColor = Color.WhiteSmoke;
         outputLbl.Text = @"Idle...";
@@ -283,6 +282,8 @@ public partial class Login : Form
 
         // Perform aggressive garbage collection.
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+
+        Crypto.ClearChars(_passwordArray);
 
         // Throw an exception if the encryptedUserInfo is empty or null.
         if (encryptedUserInfo == Array.Empty<byte>())
@@ -326,6 +327,8 @@ public partial class Login : Form
             var encryptedBytes = await Crypto.EncryptFile(userNameTxt.Text, _passwordArray,
                 Authentication.GetUserVault(userNameTxt.Text));
 
+            Crypto.ClearChars(_passwordArray);
+
             // Perform aggressive garbage collection.
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
@@ -348,12 +351,15 @@ public partial class Login : Form
 
             // Set the secure password and clear sensitive data from memory.
             _passwordArray = CreateArray();
-            SecurePassword = ConvertCharArrayToSecureString(_passwordArray);
+            Crypto.CryptoConstants.SecurePassword = Crypto.ConvertCharArrayToSecureString(_passwordArray);
             Crypto.ClearChars(_passwordArray);
-
             // Show a message and hide the current form, then show the Vault form.
             MessageBox.Show("Login successful. Loading vault...", "Login success.",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            Crypto.ClearStr(passTxt.Text);
+            passTxt.Clear();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             Hide();
             userVault.ShowDialog();
             Close();
@@ -364,12 +370,11 @@ public partial class Login : Form
         _passwordArray = CreateArray();
 
         // Set the secure password and throw an exception if it is null.
-        SecurePassword = ConvertCharArrayToSecureString(_passwordArray);
-        if (SecurePassword == null)
+        Crypto.CryptoConstants.SecurePassword = Crypto.ConvertCharArrayToSecureString(_passwordArray);
+        if (Crypto.CryptoConstants.SecurePassword == null)
             throw new Exception("Value returned empty.");
 
         // Clear sensitive data from memory.
-        Crypto.ClearChars(_passwordArray);
         Crypto.ClearBytes(Crypto.CryptoConstants.Hash);
 
         // Update UI elements for a successful login.
@@ -378,9 +383,17 @@ public partial class Login : Form
         _isAnimating = false;
         UserLog.LogUser(Authentication.CurrentLoggedInUser);
 
+        _passwordArray = CreateArray();
+        Crypto.CryptoConstants.SecurePassword = Crypto.ConvertCharArrayToSecureString(_passwordArray);
+        Crypto.ClearChars(_passwordArray);
+
         // Show a message and hide the current form, then show a blank Vault form.
         MessageBox.Show("Login successful. Loading vault...", "Login success.",
             MessageBoxButtons.OK, MessageBoxIcon.Information);
+        Crypto.ClearStr(passTxt.Text);
+        passTxt.Clear();
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+
         Hide();
         using var blankVault = new Vault();
         blankVault.ShowDialog();
@@ -390,13 +403,14 @@ public partial class Login : Form
 
     private void HandleFailedLogin()
     {
-        Crypto.ClearChars(_passwordArray);
+        Crypto.ClearChars(_passwordArray ?? Array.Empty<char>());
         _isAnimating = false;
         EnableUi();
         outputLbl.ForeColor = Color.Red;
         outputLbl.Text = @"Login failed.";
         MessageBox.Show(@"Log in failed! Please recheck your login credentials and try again.", @"Error",
             MessageBoxButtons.OK, MessageBoxIcon.Error);
+        passTxt.Clear();
         outputLbl.ForeColor = Color.WhiteSmoke;
         outputLbl.Text = @"Idle...";
         _attemptsRemaining--;
@@ -436,8 +450,11 @@ public partial class Login : Form
             rememberMeCheckBox.Checked = false;
             return;
         }
+
         using (var p = Process.GetCurrentProcess())
+        {
             p.PriorityClass = ProcessPriorityClass.AboveNormal;
+        }
 
         userNameTxt.Text = Settings.Default.userName;
         rememberMeCheckBox.Checked = true;

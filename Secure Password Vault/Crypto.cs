@@ -1,5 +1,6 @@
 ﻿using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using Konscious.Security.Cryptography;
@@ -94,6 +95,14 @@ public static class Crypto
         ///     Initialized as an empty byte array.
         /// </remarks>
         public static byte[] Hash = Array.Empty<byte>();
+
+        /// <summary>
+        ///     SecureString password value.
+        /// </summary>
+        /// <remarks>
+        ///     Holds the user's password as a SecureString.
+        /// </remarks>
+        public static SecureString SecurePassword = new();
     }
 
     /// <summary>
@@ -227,11 +236,29 @@ public static class Crypto
         return buffer;
     }
 
+    /// <summary>
+    ///     Clears the sensitive information stored in one or more byte arrays securely.
+    /// </summary>
+    /// <remarks>
+    ///     This method uses a pinned array and the SecureMemoryClear function to overwrite the memory
+    ///     containing sensitive information, enhancing security by preventing the information from being
+    ///     easily accessible in memory.
+    /// </remarks>
+    /// <param name="arrays">The byte arrays containing sensitive information to be cleared.</param>
+    /// <exception cref="ArgumentNullException">Thrown if any of the input arrays is null.</exception>
     public static void ClearBytes(params byte[][] arrays)
     {
+        if (arrays == null)
+            throw new ArgumentNullException(nameof(arrays), "Input arrays cannot be null.");
+
         foreach (var array in arrays)
         {
-            GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+            if (array == null)
+                throw new ArgumentNullException(nameof(array), "Input array cannot be null.");
+
+            // Pin the array to get a stable memory address
+            var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+
             try
             {
                 // Clear the memory using the SecureMemoryClear function
@@ -239,16 +266,35 @@ public static class Crypto
             }
             finally
             {
+                // Release the pinned array
                 handle.Free();
             }
         }
     }
 
+    /// <summary>
+    ///     Clears the sensitive information stored in one or more char arrays securely.
+    /// </summary>
+    /// <remarks>
+    ///     This method uses a pinned array and the SecureMemoryClear function to overwrite the memory
+    ///     containing sensitive information, enhancing security by preventing the information from being
+    ///     easily accessible in memory.
+    /// </remarks>
+    /// <param name="arrays">The char arrays containing sensitive information to be cleared.</param>
+    /// <exception cref="ArgumentNullException">Thrown if any of the input arrays is null.</exception>
     public static void ClearChars(params char[][] arrays)
     {
+        if (arrays == null)
+            throw new ArgumentNullException(nameof(arrays), "Input arrays cannot be null.");
+
         foreach (var array in arrays)
         {
-            GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+            if (array == null)
+                throw new ArgumentNullException(nameof(array), "Input array cannot be null.");
+
+            // Pin the array to get a stable memory address
+            var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+
             try
             {
                 // Clear the memory using the SecureMemoryClear function
@@ -256,13 +302,215 @@ public static class Crypto
             }
             finally
             {
+                // Release the pinned array
                 handle.Free();
             }
         }
     }
 
+    /// <summary>
+    ///     Clears the sensitive information stored in one or more strings securely.
+    /// </summary>
+    /// <remarks>
+    ///     This method uses a pinned string and the SecureMemoryClear function to overwrite the memory
+    ///     containing sensitive information, enhancing security by preventing the information from being
+    ///     easily accessible in memory.
+    /// </remarks>
+    /// <param name="str">The strings containing sensitive information to be cleared.</param>
+    /// <exception cref="ArgumentNullException">Thrown if any of the input strings is null.</exception>
+    public static void ClearStr(params string[] str)
+    {
+        if (str == null)
+            throw new ArgumentNullException(nameof(str), "Input strings cannot be null.");
+
+        foreach (var value in str)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value), "Input string cannot be null.");
+
+            // Pin the string to get a stable memory address
+            var handle = GCHandle.Alloc(value, GCHandleType.Pinned);
+
+            try
+            {
+                // Clear the memory using the SecureMemoryClear function
+                Memory.SecureMemoryClear(handle.AddrOfPinnedObject(), (IntPtr)value.Length * 2);
+            }
+            finally
+            {
+                // Release the pinned string
+                handle.Free();
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Converts a character array to a SecureString.
+    /// </summary>
+    /// <remarks>
+    ///     This method creates a SecureString and appends each character from the provided
+    ///     character array to enhance the security of sensitive information. The resulting
+    ///     SecureString is read-only to prevent further modifications.
+    /// </remarks>
+    /// <param name="charArray">The character array to be converted to a SecureString.</param>
+    /// <returns>A SecureString containing the characters from the input array.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if the input character array is null or empty.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown if the SecureString is disposed due to an exception.</exception>
+    public static SecureString ConvertCharArrayToSecureString(char[] charArray)
+    {
+        if (charArray == null || charArray.Length == 0)
+            throw new ArgumentNullException(nameof(charArray), "Input character array cannot be null or empty.");
+
+        var secureString = new SecureString();
+
+        try
+        {
+            foreach (var c in charArray)
+                secureString.AppendChar(c);
+
+            // Make sure the SecureString is read-only to enhance security.
+            secureString.MakeReadOnly();
+        }
+        catch
+        {
+            // Dispose if there is an exception to avoid memory leaks.
+            secureString.Dispose();
+            throw;
+        }
+
+        return secureString;
+    }
+
+    /// <summary>
+    ///     Converts an unmanaged string represented by a pointer to a SecureString.
+    /// </summary>
+    /// <remarks>
+    ///     This method reads characters from the unmanaged string pointed to by the provided pointer
+    ///     until a null character is encountered. The characters are appended to a SecureString to
+    ///     enhance the security of sensitive information. The resulting SecureString is read-only to
+    ///     prevent further modifications.
+    /// </remarks>
+    /// <param name="unmanagedString">Pointer to an unmanaged string to be converted to a SecureString.</param>
+    /// <returns>A SecureString containing the characters from the unmanaged string.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if the input unmanaged string pointer is null.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown if the SecureString is disposed due to an exception.</exception>
+    public static SecureString ConvertUnmanagedStringToSecureString(IntPtr unmanagedString)
+    {
+        if (unmanagedString == IntPtr.Zero)
+            throw new ArgumentNullException(nameof(unmanagedString), "Pointer to unmanaged string is null.");
+
+        var secureString = new SecureString();
+
+        try
+        {
+            // Loop through the unmanaged string until a null character is encountered
+            var offset = 0;
+            while (true)
+            {
+                var c = (char)Marshal.ReadInt16(unmanagedString, offset);
+                if (c == '\0')
+                    break;
+
+                secureString.AppendChar(c);
+                offset += 2; // Move to the next character (2 bytes for Unicode)
+            }
+
+            // Make the SecureString read-only for enhanced security
+            secureString.MakeReadOnly();
+        }
+        finally
+        {
+            // Zero out the unmanaged string in memory
+            Marshal.ZeroFreeBSTR(unmanagedString);
+        }
+
+        return secureString;
+    }
+
+    /// <summary>
+    ///     Converts an unmanaged string represented by a pointer to a char array.
+    /// </summary>
+    /// <remarks>
+    ///     This method calculates the length of the unmanaged string and converts it to a char array.
+    ///     The resulting char array contains the characters from the unmanaged string, and the unmanaged
+    ///     string is zeroed out in memory for enhanced security.
+    /// </remarks>
+    /// <param name="unmanagedString">Pointer to an unmanaged string to be converted to a char array.</param>
+    /// <returns>A char array containing the characters from the unmanaged string.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if the input unmanaged string pointer is null.</exception>
+    public static char[] ConvertUnmanagedStringToCharArray(IntPtr unmanagedString)
+    {
+        if (unmanagedString == IntPtr.Zero)
+            throw new ArgumentNullException(nameof(unmanagedString), "Pointer to unmanaged string is null.");
+
+        try
+        {
+            // Calculate the length of the unmanaged string
+            var length = 0;
+            while (Marshal.ReadByte(unmanagedString, length * 2) != 0 ||
+                   Marshal.ReadByte(unmanagedString, length * 2 + 1) != 0) length++;
+
+            // Convert the unmanaged string to a char array
+            var charArray = new char[length];
+            Marshal.Copy(unmanagedString, charArray, 0, length);
+
+            return charArray;
+        }
+        finally
+        {
+            // Zero out the unmanaged string in memory
+            Marshal.ZeroFreeBSTR(unmanagedString);
+        }
+    }
+
+    /// <summary>
+    ///     Converts a <see cref="SecureString" /> to a character array.
+    /// </summary>
+    /// <param name="secureString">The SecureString to convert.</param>
+    /// <returns>A character array containing the characters from the SecureString.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="secureString" /> is null.</exception>
+    public static char[] ConvertSecureStringToCharArray(SecureString secureString)
+    {
+        // Check if secureString is null.
+        if (secureString.Length == 0)
+            throw new ArgumentException("SecureString was empty.", nameof(secureString));
+
+        var charArray = new char[secureString.Length];
+        var unmanagedString = IntPtr.Zero;
+
+        try
+        {
+            // Convert SecureString to an unmanaged Unicode string.
+            unmanagedString = Marshal.SecureStringToBSTR(secureString);
+
+            // Copy characters from the unmanaged string to the charArray.
+            for (var i = 0; i < secureString.Length; i++)
+                charArray[i] = (char)Marshal.ReadInt16(unmanagedString, i * 2);
+        }
+        finally
+        {
+            // Zero-free the allocated unmanaged memory.
+            if (unmanagedString != IntPtr.Zero) Marshal.ZeroFreeBSTR(unmanagedString);
+        }
+
+        return charArray;
+    }
+
+    /// <summary>
+    ///     Compresses a byte array using the GZip compression algorithm.
+    /// </summary>
+    /// <remarks>
+    ///     This method takes a byte array as input, compresses it using the GZip compression algorithm,
+    ///     and returns the compressed byte array. The compression level used is <see cref="CompressionLevel.SmallestSize" />.
+    /// </remarks>
+    /// <param name="inputText">The byte array representing the uncompressed text to be compressed.</param>
+    /// <returns>A compressed byte array using the GZip compression algorithm.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if the input byte array is null.</exception>
     public static async Task<byte[]> CompressText(byte[] inputText)
     {
+        if (inputText == null)
+            throw new ArgumentNullException(nameof(inputText), "Input byte array cannot be null.");
+
         using var outputStream = new MemoryStream();
 
         // Use 'using' statement with 'await' for asynchronous writing
@@ -271,12 +519,24 @@ public static class Crypto
             await zipStream.WriteAsync(inputText);
         }
 
-        // No need to 'return outputStream.ToArray();' explicitly, MemoryStream will have the data
         return outputStream.ToArray();
     }
 
+    /// <summary>
+    ///     Decompresses a byte array that was compressed using the GZip compression algorithm.
+    /// </summary>
+    /// <remarks>
+    ///     This method takes a compressed byte array as input, decompresses it using the GZip compression algorithm,
+    ///     and returns the decompressed byte array.
+    /// </remarks>
+    /// <param name="inputText">The byte array representing the compressed text to be decompressed.</param>
+    /// <returns>A decompressed byte array using the GZip compression algorithm.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if the input byte array is null.</exception>
     public static async Task<byte[]> DecompressText(byte[] inputText)
     {
+        if (inputText == null)
+            throw new ArgumentNullException(nameof(inputText), "Input byte array cannot be null.");
+
         using var inputStream = new MemoryStream(inputText);
         await using var zipStream = new GZipStream(inputStream, CompressionMode.Decompress);
         using var outputStream = new MemoryStream();
@@ -287,10 +547,27 @@ public static class Crypto
         return outputStream.ToArray();
     }
 
-    public static (byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] hMacKey, byte[] hMackey2,
-        byte[] hMacKey3) InitBuffers(byte[] src)
+    /// <summary>
+    ///     Initializes multiple byte arrays from a source byte array for cryptographic operations.
+    /// </summary>
+    /// <remarks>
+    ///     This method takes a source byte array and extracts key components for encryption and HMAC operations.
+    ///     It initializes multiple byte arrays for different cryptographic purposes and returns them as a tuple.
+    /// </remarks>
+    /// <param name="src">The source byte array used for initializing cryptographic buffers.</param>
+    /// <returns>
+    ///     A tuple containing byte arrays for encryption keys (key, key2, key3, key4, key5)
+    ///     and HMAC keys (hMacKey, hMackey2, hMacKey3).
+    /// </returns>
+    /// <exception cref="ArgumentNullException">Thrown if the source byte array is null.</exception>
+    public static (byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] hMacKey, byte[] hMackey2, byte
+        [] hMacKey3)
+        InitBuffers(byte[] src)
     {
-        // Extract key components for encryption
+        if (src == null)
+            throw new ArgumentNullException(nameof(src), "Source byte array cannot be null.");
+
+        // Initialize byte arrays for encryption and HMAC keys
         var key = new byte[CryptoConstants.KeySize];
         var key2 = new byte[CryptoConstants.ThreeFish];
         var key3 = new byte[CryptoConstants.KeySize];
@@ -300,19 +577,42 @@ public static class Crypto
         var hMackey2 = new byte[CryptoConstants.HmacLength];
         var hMacKey3 = new byte[CryptoConstants.HmacLength];
 
+        // Copy bytes from the source array to initialized key arrays
         CopyBytes(src, key, key2, key3, key4, key5, hMacKey, hMackey2, hMacKey3);
 
+        // Return the initialized key arrays as a tuple
         return (key, key2, key3, key4, key5, hMacKey, hMackey2, hMacKey3);
     }
 
+    /// <summary>
+    ///     Copies bytes from a source byte array to multiple destination byte arrays.
+    /// </summary>
+    /// <remarks>
+    ///     This method copies bytes from a source byte array to multiple destination byte arrays.
+    ///     It uses Buffer.BlockCopy for efficient copying and advances the offset for each destination array.
+    /// </remarks>
+    /// <param name="src">The source byte array from which bytes are copied.</param>
+    /// <param name="dest">The destination byte arrays where bytes are copied to.</param>
+    /// <exception cref="ArgumentNullException">Thrown if the source byte array or any destination byte array is null.</exception>
+    /// <exception cref="ArgumentException">
+    ///     Thrown if the total length of destination arrays exceeds the length of the source
+    ///     array.
+    /// </exception>
     public static void CopyBytes(byte[] src, params byte[][] dest)
     {
-        var offset = 0;
+        if (src == null)
+            throw new ArgumentNullException(nameof(src), "Source byte array cannot be null.");
 
         foreach (var dst in dest)
         {
-            Buffer.BlockCopy(src, offset, dst, 0, dst.Length);
-            offset += dst.Length;
+            if (dst == null)
+                throw new ArgumentNullException(nameof(dest), "Destination byte array cannot be null.");
+
+            if (src.Length < dst.Length)
+                throw new ArgumentException(
+                    "Length of the destination array cannot exceed the length of the source array.");
+
+            Buffer.BlockCopy(src, 0, dst, 0, dst.Length);
         }
     }
 
@@ -376,7 +676,6 @@ public static class Crypto
     }
 
 
-
     /// <summary>
     ///     Decrypts the contents of an encrypted file using Argon2 key derivation and ChaCha20-Poly1305 decryption.
     /// </summary>
@@ -435,16 +734,16 @@ public static class Crypto
     }
 
     /// <summary>
-        ///     Generates an array of random indices for shuffling based on a given size and key.
-        /// </summary>
-        /// <param name="size">The size of the array for which shuffle exchanges are generated.</param>
-        /// <param name="key">The key used for generating random indices.</param>
-        /// <returns>An array of random indices for shuffling.</returns>
-        /// <remarks>
-        ///     The method uses a random number generator with the specified key to generate
-        ///     unique indices for shuffling a byte array of the given size.
-        /// </remarks>
-        public static int[] GetShuffleExchanges(int size, byte[] key)
+    ///     Generates an array of random indices for shuffling based on a given size and key.
+    /// </summary>
+    /// <param name="size">The size of the array for which shuffle exchanges are generated.</param>
+    /// <param name="key">The key used for generating random indices.</param>
+    /// <returns>An array of random indices for shuffling.</returns>
+    /// <remarks>
+    ///     The method uses a random number generator with the specified key to generate
+    ///     unique indices for shuffling a byte array of the given size.
+    /// </remarks>
+    public static int[] GetShuffleExchanges(int size, byte[] key)
     {
         // Create an array to store shuffle exchanges
         var exchanges = new int[size - 1];

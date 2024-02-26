@@ -24,40 +24,74 @@ public partial class Vault : Form
     private static void SetArray()
     {
         // Check if SecurePassword is null.
-        if (Login.SecurePassword.Length == 0)
-            throw new ArgumentException("Value was empty.", nameof(Login.SecurePassword));
+        if (Crypto.CryptoConstants.SecurePassword == null || Crypto.CryptoConstants.SecurePassword.Length == 0)
+            throw new ArgumentException("Value was empty.", nameof(Crypto.CryptoConstants.SecurePassword));
 
-        FileProcessingConstants.PasswordArray = ConvertSecureStringToCharArray(Login.SecurePassword);
+        var passwordArray = Crypto.ConvertSecureStringToCharArray(Crypto.CryptoConstants.SecurePassword);
+
+        // Pin the array to get a stable memory address
+        var handle = GCHandle.Alloc(passwordArray, GCHandleType.Pinned);
+
+        try
+        {
+            // Access the pinned array's address using the AddrOfPinnedObject method
+            var pinnedAddress = handle.AddrOfPinnedObject();
+
+            // Now you can use 'pinnedAddress' or 'passwordArray' in your unmanaged code or wherever it's needed
+
+            // Assign the pinned array to the PasswordArray property
+            FileProcessingConstants.PasswordArray = passwordArray;
+        }
+        finally
+        {
+            // Make sure to release the GCHandle when you're done using the pinned array
+            handle.Free();
+        }
     }
 
     private void CreateCustomArray()
     {
-        var buffer = CustomPasswordTextBox.Text.Length;
-        var passwordArray = new char[buffer];
-        var confirmPasswordBuffer = ConfirmPassword.Text.Length;
-        var confirmPasswordbufferArray = new char[confirmPasswordBuffer];
-        CustomPasswordTextBox.Text.CopyTo(0, passwordArray, 0, buffer);
-        ConfirmPassword.Text.CopyTo(0, confirmPasswordbufferArray, 0, confirmPasswordbufferArray.Length);
-        RegisterAccount.CheckPasswordValidity(passwordArray, confirmPasswordbufferArray);
+        // Convert passwords to unmanaged strings
+        var passwordPtr = Marshal.StringToBSTR(CustomPasswordTextBox.Text);
+        var confirmPasswordPtr = Marshal.StringToBSTR(ConfirmPassword.Text);
 
-        // Validate that the password is not empty.
-        if (passwordArray == Array.Empty<char>())
-            throw new ArgumentException("Invalid password.", nameof(passwordArray));
+        // Convert unmanaged strings to pinned char arrays
+        var passwordArray = Crypto.ConvertUnmanagedStringToCharArray(passwordPtr);
+        var confirmPasswordArray = Crypto.ConvertUnmanagedStringToCharArray(confirmPasswordPtr);
 
-        // Validate the password using the CheckPasswordValidity method.
-        if (!RegisterAccount.CheckPasswordValidity(passwordArray))
-            throw new ArgumentException(
-                "Password must contain between 24 and 120 characters. It also must include:" +
-                " 1.) At least one uppercase letter." +
-                " 2.) At least one lowercase letter." +
-                " 3.) At least one number." +
-                " 4.) At least one special character." +
-                " 5.) Must not contain any spaces." +
-                " 6.) Both passwords must match.",
-                nameof(passwordArray));
+        // Pin the array to get a stable memory address
+        var handle = GCHandle.Alloc(passwordPtr, GCHandleType.Pinned);
 
-        FileProcessingConstants.PasswordArray = passwordArray;
-        Crypto.ClearChars(passwordArray, confirmPasswordbufferArray);
+        try
+        {
+            try
+            {
+                // Perform password validation using unmanaged arrays
+                RegisterAccount.CheckPasswordValidity(passwordArray, confirmPasswordArray);
+
+                // Validate that the password is not empty
+                if (passwordArray.Length == 0)
+                    throw new ArgumentException("Invalid password.", nameof(passwordArray));
+
+                // Validate the password using the CheckPasswordValidity method
+                if (!RegisterAccount.CheckPasswordValidity(passwordArray))
+                    throw new ArgumentException("Password validation failed.", nameof(passwordArray));
+
+                // Set the password array in FileProcessingConstants
+                FileProcessingConstants.PasswordArray = passwordArray;
+            }
+            finally
+            {
+                // Clear sensitive information
+                Crypto.ClearChars(passwordArray, confirmPasswordArray);
+            }
+        }
+        finally
+        {
+            // Release unmanaged strings
+            Marshal.ZeroFreeBSTR(passwordPtr);
+            Marshal.ZeroFreeBSTR(confirmPasswordPtr);
+        }
     }
 
     private void deleteRowBtn_Click(object sender, EventArgs e)
@@ -68,40 +102,6 @@ public partial class Vault : Form
 
         PassVault.Rows.RemoveAt(selectedRow);
     }
-
-    /// <summary>
-    ///     Converts a <see cref="SecureString" /> to a character array.
-    /// </summary>
-    /// <param name="secureString">The SecureString to convert.</param>
-    /// <returns>A character array containing the characters from the SecureString.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="secureString" /> is null.</exception>
-    public static char[] ConvertSecureStringToCharArray(SecureString secureString)
-    {
-        // Check if secureString is null.
-        if (secureString.Length == 0)
-            throw new ArgumentException("SecureString was empty.", nameof(secureString));
-
-        var charArray = new char[secureString.Length];
-        var unmanagedString = IntPtr.Zero;
-
-        try
-        {
-            // Convert SecureString to an unmanaged Unicode string.
-            unmanagedString = Marshal.SecureStringToGlobalAllocUnicode(secureString);
-
-            // Copy characters from the unmanaged string to the charArray.
-            for (var i = 0; i < secureString.Length; i++)
-                charArray[i] = (char)Marshal.ReadInt16(unmanagedString, i * 2);
-        }
-        finally
-        {
-            // Zero-free the allocated unmanaged memory.
-            if (unmanagedString != IntPtr.Zero) Marshal.ZeroFreeGlobalAllocUnicode(unmanagedString);
-        }
-
-        return charArray;
-    }
-
 
     /// <summary>
     ///     Handles the click event of the Save Vault button.
@@ -115,8 +115,8 @@ public partial class Vault : Form
         {
             // Display a warning message to avoid closing the program during the operation.
             MessageBox.Show(
-                @"Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.",
-                @"Info",
+                "Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.",
+                "Info",
                 MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 
             // Start the animation and disable the UI.
@@ -147,7 +147,8 @@ public partial class Vault : Form
             }
 
             // Convert the secure password to a character array.
-            FileProcessingConstants.PasswordArray = ConvertSecureStringToCharArray(Login.SecurePassword);
+            FileProcessingConstants.PasswordArray =
+                Crypto.ConvertSecureStringToCharArray(Crypto.CryptoConstants.SecurePassword);
 
             // Encrypt the vault and save it to the user's file.
             var encryptedVault = await Crypto.EncryptFile(Authentication.CurrentLoggedInUser,
@@ -167,12 +168,12 @@ public partial class Vault : Form
 
             // Stop the animation, display success messages, and enable the UI.
             FileProcessingConstants.IsAnimating = false;
-            outputLbl.Text = @"Vault saved successfully";
+            outputLbl.Text = "Vault saved successfully";
             outputLbl.ForeColor = Color.LimeGreen;
-            MessageBox.Show(@"Vault saved successfully.", @"Save vault", MessageBoxButtons.OK,
+            MessageBox.Show("Vault saved successfully.", "Save vault", MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
             EnableUi();
-            outputLbl.Text = @"Idle...";
+            outputLbl.Text = "Idle...";
             outputLbl.ForeColor = Color.WhiteSmoke;
         }
         catch (Exception ex)
@@ -183,7 +184,7 @@ public partial class Vault : Form
             Crypto.ClearChars(FileProcessingConstants.PasswordArray);
 
             // Display an error message and log the exception.
-            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK,
+            MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
             ErrorLogging.ErrorLog(ex);
         }
@@ -235,14 +236,14 @@ public partial class Vault : Form
             {
                 // If the vault file does not exist, enable UI and show an error message.
                 EnableUi();
-                MessageBox.Show(@"Vault file does not exist.", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vault file does not exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
         catch (Exception ex)
         {
             // Handle exceptions by enabling UI, displaying an error message, and logging the exception.
             EnableUi();
-            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             ErrorLogging.ErrorLog(ex);
         }
     }
@@ -291,11 +292,11 @@ public partial class Vault : Form
     {
         while (FileProcessingConstants.IsAnimating)
         {
-            outputLbl.Text = @"Saving vault";
+            outputLbl.Text = "Saving vault";
             // Add animated periods
             for (var i = 0; i < 4; i++)
             {
-                outputLbl.Text += @".";
+                outputLbl.Text += ".";
                 await Task.Delay(400); // Delay between each period
             }
         }
@@ -312,7 +313,7 @@ public partial class Vault : Form
         {
             // Create an OpenFileDialog.
             using var openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = @"Txt files(*.txt) | *.txt";
+            openFileDialog.Filter = "Txt files(*.txt) | *.txt";
             openFileDialog.FilterIndex = 1;
             openFileDialog.ShowHiddenFiles = true;
             openFileDialog.CheckFileExists = true;
@@ -361,7 +362,7 @@ public partial class Vault : Form
 
             // Display the file size.
             var fileSize = fileInfo.Length.ToString("#,0");
-            FileSizeNumLbl.Text = $@"{fileSize} bytes";
+            FileSizeNumLbl.Text = $"{fileSize} bytes";
 
             // Display success messages and reset UI.
             FileOutputLbl.Text = "File opened.";
@@ -372,7 +373,6 @@ public partial class Vault : Form
             // Reset UI and clear sensitive data.
             FileOutputLbl.Text = "Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
-            Array.Clear(FileProcessingConstants.PasswordArray, 0, FileProcessingConstants.PasswordArray.Length);
             FileProcessingConstants.Result = string.Empty;
         }
         catch (Exception ex)
@@ -401,11 +401,11 @@ public partial class Vault : Form
         {
             // Check if a file is opened.
             if (!FileProcessingConstants.FileOpened)
-                throw new Exception(@"No file is opened.");
+                throw new Exception("No file is opened.");
 
             // Create a SaveFileDialog.
             using var saveFileDialog = new SaveFileDialog();
-            saveFileDialog.Filter = @"Txt files(*.txt) | *.txt";
+            saveFileDialog.Filter = "Txt files(*.txt) | *.txt";
             saveFileDialog.FilterIndex = 1;
             saveFileDialog.ShowHiddenFiles = true;
             saveFileDialog.CheckFileExists = false;
@@ -435,7 +435,6 @@ public partial class Vault : Form
                 MessageBoxIcon.Information);
 
             // Clear sensitive data.
-            Array.Clear(FileProcessingConstants.PasswordArray, 0, FileProcessingConstants.PasswordArray.Length);
             FileProcessingConstants.Result = string.Empty;
         }
         catch (Exception ex)
@@ -466,12 +465,12 @@ public partial class Vault : Form
                 @"Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.
                 If using a custom password to encrypt with, MAKE SURE YOU REMEMBER THE PASSWORD! You will NOT be able to
                 decrypt the file without the password. It is separate than the password you use to login with.",
-                @"Info",
+                "Info",
                 MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 
             // Check if a file is opened.
             if (!FileProcessingConstants.FileOpened)
-                throw new ArgumentException(@"No file is opened.", nameof(FileProcessingConstants.FileOpened));
+                throw new ArgumentException("No file is opened.", nameof(FileProcessingConstants.FileOpened));
 
             // Set array and start the encryption animation.
             if (CustomPasswordCheckBox.Checked)
@@ -492,7 +491,7 @@ public partial class Vault : Form
 
             // Check if the encrypted file is empty.
             if (encryptedFile == Array.Empty<byte>())
-                throw new ArgumentException(@"Value was empty.", nameof(encryptedFile));
+                throw new ArgumentException("Value was empty.", nameof(encryptedFile));
 
             // Perform garbage collection aggressively.
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
@@ -511,17 +510,17 @@ public partial class Vault : Form
             // Display the encrypted file size.
             var size = (long)FileProcessingConstants.Result.Length;
             var fileSize = size.ToString("#,0");
-            FileSizeNumLbl.Text = $@"{fileSize} bytes";
+            FileSizeNumLbl.Text = $"{fileSize} bytes";
 
             // Display success message.
-            FileOutputLbl.Text = @"File encrypted.";
+            FileOutputLbl.Text = "File encrypted.";
             FileOutputLbl.ForeColor = Color.LimeGreen;
 
-            MessageBox.Show(@"File was encrypted successfully.", @"Success", MessageBoxButtons.OK,
+            MessageBox.Show("File was encrypted successfully.", "Success", MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
 
             // Reset UI state and clear sensitive information.
-            FileOutputLbl.Text = @"Idle...";
+            FileOutputLbl.Text = "Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
             Crypto.ClearChars(FileProcessingConstants.PasswordArray);
         }
@@ -530,10 +529,10 @@ public partial class Vault : Form
             // Handle exceptions, enable UI, and log errors.
             EnableUi();
             FileProcessingConstants.IsAnimating = false;
-            FileOutputLbl.Text = @"Error encrypting file.";
+            FileOutputLbl.Text = "Error encrypting file.";
             FileOutputLbl.ForeColor = Color.Red;
-            MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            FileOutputLbl.Text = @"Idle...";
+            MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FileOutputLbl.Text = "Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
             Crypto.ClearChars(FileProcessingConstants.PasswordArray);
             ErrorLogging.ErrorLog(ex);
@@ -552,17 +551,17 @@ public partial class Vault : Form
         {
             // Display an informational message to the user.
             MessageBox.Show(
-                @"Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.",
-                @"Info",
+                "Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.",
+                "Info",
                 MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 
             // Check if a file is opened.
             if (!FileProcessingConstants.FileOpened)
-                throw new ArgumentException(@"No file is opened.", nameof(FileProcessingConstants.FileOpened));
+                throw new ArgumentException("No file is opened.", nameof(FileProcessingConstants.FileOpened));
 
             // Check if the file size exceeds the maximum allowed size.
             if (FileProcessingConstants.FileSize > FileProcessingConstants.MaximumFileSize)
-                throw new ArgumentException(@"File size is too large.", nameof(FileProcessingConstants.FileSize));
+                throw new ArgumentException("File size is too large.", nameof(FileProcessingConstants.FileSize));
 
             // Initialize an array and disable the UI.
             if (CustomPasswordCheckBox.Checked)
@@ -582,7 +581,7 @@ public partial class Vault : Form
 
             // Check if the decrypted file is empty.
             if (decryptedFile == Array.Empty<byte>())
-                throw new Exception(@"The decrypted file value returned empty.");
+                throw new Exception("The decrypted file value returned empty.");
 
             // Perform garbage collection.
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
@@ -913,7 +912,7 @@ public partial class Vault : Form
     /// <summary>
     ///     Represents static fields and constants used for file processing and UI interactions.
     /// </summary>
-    private static class FileProcessingConstants
+    public static class FileProcessingConstants
     {
         /// <summary>
         ///     Gets the maximum allowed file size in bytes.
