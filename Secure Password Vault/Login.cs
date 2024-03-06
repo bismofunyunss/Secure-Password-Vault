@@ -138,28 +138,14 @@ public partial class Login : Form
 
     private char[] CreateArray()
     {
-        var unmanagedString = Marshal.StringToBSTR(passTxt.Text);
+        var arrayPtr = CryptoV2.Conversions.CreatePinnedCharArray(passTxt.Text);
+        int len = passTxt.Text.Length;
+        var charArray = CryptoV2.Conversions.ConvertIntPtrToCharArray(arrayPtr, len);
 
-        try
-        {
-            var charArray = Crypto.ConvertUnmanagedStringToCharArray(unmanagedString);
-            var handle = GCHandle.Alloc(charArray, GCHandleType.Pinned);
-            try
-            {
-                // Pin the array to get a pointer
-                var pinnedAddress = handle.AddrOfPinnedObject();
+        Marshal.FreeCoTaskMem(arrayPtr);
+        arrayPtr = IntPtr.Zero;
 
-                return charArray;
-            }
-            finally
-            {
-                handle.Free();
-            }
-        }
-        finally
-        {
-            Marshal.ZeroFreeBSTR(unmanagedString);
-        }
+        return charArray;
     }
 
     private async Task ProcessLoginAsync(bool userExists)
@@ -199,8 +185,6 @@ public partial class Login : Form
         if (decryptedBytes == Array.Empty<byte>())
             throw new ArgumentException("Value was empty.", nameof(decryptedBytes));
 
-        Crypto.ClearChars(_passwordArray);
-
         // Perform aggressive garbage collection.
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
@@ -210,9 +194,6 @@ public partial class Login : Form
 
         // Retrieve the user's salt.
         var salt = await Authentication.GetUserSaltAsync(userNameTxt.Text);
-
-        // Set the passwordArray using the SetArray method.
-        _passwordArray = CreateArray();
 
         // Retrieve user information.
         await Authentication.GetUserInfo(userNameTxt.Text);
@@ -283,8 +264,6 @@ public partial class Login : Form
         // Perform aggressive garbage collection.
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
-        Crypto.ClearChars(_passwordArray);
-
         // Throw an exception if the encryptedUserInfo is empty or null.
         if (encryptedUserInfo == Array.Empty<byte>())
             throw new ArgumentException("Value returned empty or null.", nameof(encryptedUserInfo));
@@ -295,10 +274,7 @@ public partial class Login : Form
 
         // Check if the user vault file exists.
         if (File.Exists(Authentication.GetUserVault(userNameTxt.Text)))
-        {
-            // Set the passwordArray using the SetArray method.
-            _passwordArray = CreateArray();
-
+        { 
             // Decrypt the user vault.
             var decryptedVault = await Crypto.DecryptFile(userNameTxt.Text,
                 _passwordArray, Authentication.GetUserVault(userNameTxt.Text));
@@ -314,20 +290,13 @@ public partial class Login : Form
             await File.WriteAllTextAsync(Authentication.GetUserVault(userNameTxt.Text),
                 DataConversionHelpers.ByteArrayToString(decryptedVault));
 
-            Crypto.ClearChars(_passwordArray);
-
             // Create and load the Vault form.
             using var userVault = new Vault();
             userVault.LoadVault();
 
-            // Set the passwordArray using the SetArray method.
-            _passwordArray = CreateArray();
-
             // Encrypt the user vault and write it back to the user vault file.
             var encryptedBytes = await Crypto.EncryptFile(userNameTxt.Text, _passwordArray,
                 Authentication.GetUserVault(userNameTxt.Text));
-
-            Crypto.ClearChars(_passwordArray);
 
             // Perform aggressive garbage collection.
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
@@ -349,25 +318,24 @@ public partial class Login : Form
             _isAnimating = false;
             UserLog.LogUser(Authentication.CurrentLoggedInUser);
 
-            // Set the secure password and clear sensitive data from memory.
-            _passwordArray = CreateArray();
             Crypto.CryptoConstants.SecurePassword = Crypto.ConvertCharArrayToSecureString(_passwordArray);
             Crypto.ClearChars(_passwordArray);
             // Show a message and hide the current form, then show the Vault form.
             MessageBox.Show("Login successful. Loading vault...", "Login success.",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-            Crypto.ClearStr(passTxt.Text);
             passTxt.Clear();
+            Crypto.ClearStr(passTxt.Text);
+
+            _passwordArray = null;
+            passTxt.Text = null;
+
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             Hide();
             userVault.ShowDialog();
             Close();
             return;
         }
-
-        // Set the passwordArray using the SetArray method.
-        _passwordArray = CreateArray();
 
         // Set the secure password and throw an exception if it is null.
         Crypto.CryptoConstants.SecurePassword = Crypto.ConvertCharArrayToSecureString(_passwordArray);
@@ -383,15 +351,19 @@ public partial class Login : Form
         _isAnimating = false;
         UserLog.LogUser(Authentication.CurrentLoggedInUser);
 
-        _passwordArray = CreateArray();
         Crypto.CryptoConstants.SecurePassword = Crypto.ConvertCharArrayToSecureString(_passwordArray);
         Crypto.ClearChars(_passwordArray);
 
         // Show a message and hide the current form, then show a blank Vault form.
         MessageBox.Show("Login successful. Loading vault...", "Login success.",
             MessageBoxButtons.OK, MessageBoxIcon.Information);
-        Crypto.ClearStr(passTxt.Text);
+
         passTxt.Clear();
+        Crypto.ClearStr(passTxt.Text);
+
+        _passwordArray = null;
+        passTxt.Text = null;
+
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
         Hide();

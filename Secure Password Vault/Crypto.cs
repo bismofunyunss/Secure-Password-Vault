@@ -19,8 +19,8 @@ public static class Crypto
 {
     public static class Memory
     {
-        [DllImport("MemoryManagement.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SecureMemoryClear(IntPtr ptr, IntPtr size);
+        [DllImport("MemoryManager.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void clearMemory(IntPtr ptr, IntPtr size);
     }
 
     /// <summary>
@@ -31,12 +31,12 @@ public static class Crypto
         /// <summary>
         ///     Number of iterations for key derivation.
         /// </summary>
-        public const int Iterations = 48;
+        public const int Iterations = 1;
 
         /// <summary>
         ///     Memory size for key derivation in KiB.
         /// </summary>
-        public const int MemorySize = 1024 * 1024 * 6;
+        public const int MemorySize = 1024 * 1024 * 1;
 
         /// <summary>
         ///     Size of the salt used in cryptographic operations.
@@ -262,7 +262,7 @@ public static class Crypto
             try
             {
                 // Clear the memory using the SecureMemoryClear function
-                Memory.SecureMemoryClear(handle.AddrOfPinnedObject(), (IntPtr)array.Length * sizeof(byte));
+                Memory.clearMemory(handle.AddrOfPinnedObject(), (IntPtr)array.Length * sizeof(byte));
             }
             finally
             {
@@ -298,7 +298,7 @@ public static class Crypto
             try
             {
                 // Clear the memory using the SecureMemoryClear function
-                Memory.SecureMemoryClear(handle.AddrOfPinnedObject(), (IntPtr)array.Length * sizeof(char));
+                Memory.clearMemory(handle.AddrOfPinnedObject(), (IntPtr)array.Length * sizeof(char));
             }
             finally
             {
@@ -334,7 +334,7 @@ public static class Crypto
             try
             {
                 // Clear the memory using the SecureMemoryClear function
-                Memory.SecureMemoryClear(handle.AddrOfPinnedObject(), (IntPtr)value.Length * 2);
+                Memory.clearMemory(handle.AddrOfPinnedObject(), (IntPtr)value.Length * 2);
             }
             finally
             {
@@ -671,7 +671,7 @@ public static class Crypto
 
         // Clear sensitive information
         ClearBytes(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3, bytes);
-        ClearChars(passWord);
+       // ClearChars(passWord);
         return encryptedFile;
     }
 
@@ -729,7 +729,7 @@ public static class Crypto
 
         // Clear sensitive information
         ClearBytes(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3, bytes);
-        ClearChars(passWord);
+       // ClearChars(passWord);
         return decompressedText;
     }
 

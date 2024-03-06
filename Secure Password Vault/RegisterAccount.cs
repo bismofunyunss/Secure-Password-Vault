@@ -1,10 +1,15 @@
 ﻿using System.Diagnostics;
+using System.Drawing;
+using System.Runtime.InteropServices;
+using Windows.Devices.Bluetooth.GenericAttributeProfile;
 
 namespace Secure_Password_Vault;
 
 public partial class RegisterAccount : Form
 {
     private static bool _isAnimating;
+    private static char[] passWord = Array.Empty<char>();
+    private static char[] confirmPassWord = Array.Empty<char>();
 
     public RegisterAccount()
     {
@@ -42,10 +47,10 @@ public partial class RegisterAccount : Form
         var userName = userTxt.Text;
 
         // Generate an array of characters for the user's password.
-        var passArray = SetArray();
+        var password = SetArray();
 
         // Generate an array of characters for confirming the user's password.
-        var confirmPassArray = SetConfirmationArray();
+        var confirmPassword = SetConfirmationArray();
 
         // Create or retrieve the user's directory.
         var userDirectory = CreateDirectoryIfNotExists(Path.Combine("Password Vault", "Users", userName));
@@ -63,7 +68,7 @@ public partial class RegisterAccount : Form
             DisableUi();
 
             // Perform asynchronous user registration.
-            await RegisterAsync(userName, passArray, confirmPassArray, userFile, userSalt);
+            await RegisterAsync(userName, password, confirmPassword, userFile, userSalt);
         }
         else
         {
@@ -96,22 +101,26 @@ public partial class RegisterAccount : Form
     /// </returns>
     private char[] SetArray()
     {
-        // Create a character array with the same length as the password.
-        var passArray = new char[passTxt.Text.Length];
+        var arrayPtr = CryptoV2.Conversions.CreatePinnedCharArray(passTxt.Text);
+        int len = passTxt.Text.Length;
+        var charArray = CryptoV2.Conversions.ConvertIntPtrToCharArray(arrayPtr, len);
 
-        // Copy the characters from passTxt to the passArray.
-        passTxt.Text.CopyTo(0, passArray, 0, passArray.Length);
+        Marshal.FreeCoTaskMem(arrayPtr);
+        arrayPtr = IntPtr.Zero;
 
-        // Return the character array representing the password.
-        return passArray;
+        return charArray;
     }
 
     private char[] SetConfirmationArray()
     {
-        var confirmPassArray = new char[confirmPassTxt.Text.Length];
-        confirmPassTxt.Text.CopyTo(0, confirmPassArray, 0, confirmPassArray.Length);
+        var arrayPtr = CryptoV2.Conversions.CreatePinnedCharArray(passTxt.Text);
+        int len = confirmPassTxt.Text.Length;
+        var charArray = CryptoV2.Conversions.ConvertIntPtrToCharArray(arrayPtr, len);
 
-        return confirmPassArray;
+        Marshal.FreeCoTaskMem(arrayPtr);
+        arrayPtr = IntPtr.Zero;
+
+        return charArray;
     }
 
     /// <summary>
@@ -168,9 +177,6 @@ public partial class RegisterAccount : Form
 
         await File.WriteAllTextAsync(userFile, DataConversionHelpers.ByteArrayToBase64String(encrypted));
 
-        // Perform aggressive garbage collection.
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-
         // Clear sensitive data from memory.
         Crypto.ClearBytes(hashedPassword);
         Crypto.ClearChars(password, confirmPassword);
@@ -184,6 +190,15 @@ public partial class RegisterAccount : Form
         MessageBox.Show("Registration successful! Make sure you do NOT forget your password or you will lose access " +
                         "to all of your files.", "Registration Complete", MessageBoxButtons.OK,
             MessageBoxIcon.Information);
+
+        passTxt.Clear();
+        confirmPassTxt.Clear();
+        Crypto.ClearStr(passTxt.Text, confirmPassTxt.Text);
+        passTxt.Text = null;
+        confirmPassTxt.Text = null;
+
+        // Perform aggressive garbage collection.
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
         // Hide the current form, show the login form, and close the current form.
         Hide();
@@ -255,10 +270,6 @@ public partial class RegisterAccount : Form
         {
             // Enable the UI after an exception occurs.
             EnableUi();
-
-            var passArray = SetArray();
-            var confirmPassArray = SetConfirmationArray();
-            Crypto.ClearChars(passArray, confirmPassArray);
 
             // Update UI elements and log the error.
             outputLbl.ForeColor = Color.WhiteSmoke;

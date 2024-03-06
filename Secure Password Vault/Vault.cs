@@ -27,71 +27,26 @@ public partial class Vault : Form
         if (Crypto.CryptoConstants.SecurePassword == null || Crypto.CryptoConstants.SecurePassword.Length == 0)
             throw new ArgumentException("Value was empty.", nameof(Crypto.CryptoConstants.SecurePassword));
 
-        var passwordArray = Crypto.ConvertSecureStringToCharArray(Crypto.CryptoConstants.SecurePassword);
+        var arrayPtr = CryptoV2.Conversions.CreatePinnedCharArray(Crypto.ConvertSecureStringToCharArray(Crypto.CryptoConstants.SecurePassword));
+        int len = Crypto.CryptoConstants.SecurePassword.Length;
+        var charArray = CryptoV2.Conversions.ConvertIntPtrToCharArray(arrayPtr, len);
 
-        // Pin the array to get a stable memory address
-        var handle = GCHandle.Alloc(passwordArray, GCHandleType.Pinned);
+        Marshal.FreeCoTaskMem(arrayPtr);
+        arrayPtr = IntPtr.Zero;
 
-        try
-        {
-            // Access the pinned array's address using the AddrOfPinnedObject method
-            var pinnedAddress = handle.AddrOfPinnedObject();
-
-            // Now you can use 'pinnedAddress' or 'passwordArray' in your unmanaged code or wherever it's needed
-
-            // Assign the pinned array to the PasswordArray property
-            FileProcessingConstants.PasswordArray = passwordArray;
-        }
-        finally
-        {
-            // Make sure to release the GCHandle when you're done using the pinned array
-            handle.Free();
-        }
+        FileProcessingConstants.PasswordArray = charArray;
     }
 
     private void CreateCustomArray()
     {
-        // Convert passwords to unmanaged strings
-        var passwordPtr = Marshal.StringToBSTR(CustomPasswordTextBox.Text);
-        var confirmPasswordPtr = Marshal.StringToBSTR(ConfirmPassword.Text);
+        var arrayPtr = CryptoV2.Conversions.CreatePinnedCharArray(CustomPasswordTextBox.Text);
+        int len = CustomPasswordTextBox.Text.Length;
+        var charArray = CryptoV2.Conversions.ConvertIntPtrToCharArray(arrayPtr, len);
 
-        // Convert unmanaged strings to pinned char arrays
-        var passwordArray = Crypto.ConvertUnmanagedStringToCharArray(passwordPtr);
-        var confirmPasswordArray = Crypto.ConvertUnmanagedStringToCharArray(confirmPasswordPtr);
+        Marshal.FreeCoTaskMem(arrayPtr);
+        arrayPtr = IntPtr.Zero;
 
-        // Pin the array to get a stable memory address
-        var handle = GCHandle.Alloc(passwordPtr, GCHandleType.Pinned);
-
-        try
-        {
-            try
-            {
-                // Perform password validation using unmanaged arrays
-                RegisterAccount.CheckPasswordValidity(passwordArray, confirmPasswordArray);
-
-                // Validate that the password is not empty
-                if (passwordArray.Length == 0)
-                    throw new ArgumentException("Invalid password.", nameof(passwordArray));
-
-                // Validate the password using the CheckPasswordValidity method
-                if (!RegisterAccount.CheckPasswordValidity(passwordArray))
-                    throw new ArgumentException("Password validation failed.", nameof(passwordArray));
-
-                // Set the password array in FileProcessingConstants
-                FileProcessingConstants.PasswordArray = passwordArray;
-            }
-            finally
-            {
-                // Clear sensitive information
-                Crypto.ClearChars(passwordArray, confirmPasswordArray);
-            }
-        }
-        finally
-        {
-            // Release unmanaged strings
-            Marshal.ZeroFreeBSTR(passwordPtr);
-            Marshal.ZeroFreeBSTR(confirmPasswordPtr);
-        }
+        FileProcessingConstants.PasswordArray = charArray;
     }
 
     private void deleteRowBtn_Click(object sender, EventArgs e)
@@ -147,8 +102,7 @@ public partial class Vault : Form
             }
 
             // Convert the secure password to a character array.
-            FileProcessingConstants.PasswordArray =
-                Crypto.ConvertSecureStringToCharArray(Crypto.CryptoConstants.SecurePassword);
+            SetArray();
 
             // Encrypt the vault and save it to the user's file.
             var encryptedVault = await Crypto.EncryptFile(Authentication.CurrentLoggedInUser,
@@ -507,22 +461,22 @@ public partial class Vault : Form
             EnableUi();
             FileProcessingConstants.IsAnimating = false;
 
+            // Display success message.
+            FileOutputLbl.Text = "File encrypted.";
+            FileOutputLbl.ForeColor = Color.LimeGreen;
+            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
+
+            MessageBox.Show("File was encrypted successfully.", "Success", MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+
             // Display the encrypted file size.
             var size = (long)FileProcessingConstants.Result.Length;
             var fileSize = size.ToString("#,0");
             FileSizeNumLbl.Text = $"{fileSize} bytes";
 
-            // Display success message.
-            FileOutputLbl.Text = "File encrypted.";
-            FileOutputLbl.ForeColor = Color.LimeGreen;
-
-            MessageBox.Show("File was encrypted successfully.", "Success", MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-
             // Reset UI state and clear sensitive information.
             FileOutputLbl.Text = "Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
-            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
         }
         catch (Exception ex)
         {
@@ -596,21 +550,23 @@ public partial class Vault : Form
             EnableUi();
             FileProcessingConstants.IsAnimating = false;
 
-            // Display the decrypted file size.
-            var size = (long)FileProcessingConstants.Result.Length;
-            var fileSize = size.ToString("#,0");
-            FileSizeNumLbl.Text = $@"{fileSize} bytes";
-
             // Update UI labels and show success message.
             FileOutputLbl.Text = @"File decrypted.";
             FileOutputLbl.ForeColor = Color.LimeGreen;
-            MessageBox.Show(@"File was decrypted successfully.", @"Success", MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-            FileOutputLbl.Text = @"Idle...";
-            FileOutputLbl.ForeColor = Color.WhiteSmoke;
 
             // Clear the password array for security reasons.
             Crypto.ClearChars(FileProcessingConstants.PasswordArray);
+
+            MessageBox.Show(@"File was decrypted successfully.", @"Success", MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+
+            // Display the encrypted file size.
+            var size = (long)FileProcessingConstants.Result.Length;
+            var fileSize = size.ToString("#,0");
+            FileSizeNumLbl.Text = $"{fileSize} bytes";
+
+            FileOutputLbl.Text = @"Idle...";
+            FileOutputLbl.ForeColor = Color.WhiteSmoke;
         }
         catch (Exception ex)
         {
