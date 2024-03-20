@@ -249,6 +249,7 @@
             Name = "Login";
             Text = "Login";
             Load += Login_Load;
+            Shown += Login_Shown;
             loginBox.ResumeLayout(false);
             loginBox.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox3).EndInit();

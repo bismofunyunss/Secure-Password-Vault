@@ -34,7 +34,7 @@ public static class Authentication
     ///     The salts are retrieved from files stored in the local application data folder.
     ///     The file is named "{userName}.salt".
     /// </remarks>
-    public static async Task<byte[]> GetUserSaltAsync(string userName)
+    public static byte[] GetUserSalt(string userName)
     {
         // Construct the path to the user's salt file
         var userSaltFilePath = Path.Combine(
@@ -42,7 +42,7 @@ public static class Authentication
             "Password Vault", "Users", userName, $"{userName}.salt");
 
         // Read salt value from file asynchronously and convert it to a byte array
-        var salt = DataConversionHelpers.Base64StringToByteArray(await File.ReadAllTextAsync(userSaltFilePath));
+        var salt = DataConversionHelpers.Base64StringToByteArray(File.ReadAllText(userSaltFilePath));
 
         return salt;
     }
@@ -59,14 +59,14 @@ public static class Authentication
     ///     string from the subsequent line to a byte array, updating CryptoConstants.Hash.
     ///     Any exceptions during file reading or processing are logged and rethrown.
     /// </remarks>
-    public static async Task GetUserInfo(string userName)
+    public static void GetUserInfo(string userName)
     {
         var path = GetUserFilePath(userName);
 
         if (!File.Exists(path))
             throw new IOException("File does not exist.");
 
-        var lines = await File.ReadAllLinesAsync(path);
+        var lines = File.ReadAllLines(path);
 
         // Find the line containing "User:"
         var index = Array.IndexOf(lines, "User:");

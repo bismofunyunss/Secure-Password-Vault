@@ -6,9 +6,8 @@ namespace Secure_Password_Vault;
 public partial class Login : Form
 {
     private static bool _isAnimating;
-    private static char[]? _passwordArray = Array.Empty<char>();
+    private static char[] _passwordArray = Array.Empty<char>();
     private static int _attemptsRemaining;
-
     public Login()
     {
         InitializeComponent();
@@ -29,10 +28,6 @@ public partial class Login : Form
     /// <param name="e">The event arguments.</param>
     private async void LogInBtn_Click(object sender, EventArgs e)
     {
-        // Set the priority class of the current process to AboveNormal.
-        Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.AboveNormal;
-
-        // Save the username in settings based on the rememberMeCheckBox state.
         switch (rememberMeCheckBox.Checked)
         {
             case true:
@@ -45,12 +40,10 @@ public partial class Login : Form
                 break;
         }
 
-        // Parse the attempts remaining from the AttemptsNumber TextBox.
         var canParse = int.TryParse(AttemptsNumber.Text, out _attemptsRemaining);
 
         if (canParse)
         {
-            // Display an error message if no attempts remaining and return.
             if (_attemptsRemaining == 0)
             {
                 MessageBox.Show("No attempts remaining. Please restart the program and try again.", "Error",
@@ -65,47 +58,34 @@ public partial class Login : Form
 
         try
         {
-            // Throw an exception if the username is null or empty.    
             if (userNameTxt.Text == string.Empty)
                 throw new ArgumentException("Value was empty.", nameof(userNameTxt));
 
-            // Set the passwordArray using the SetArray method.
             _passwordArray = CreateArray();
 
-            // Throw an exception if the passwordArray is null or empty.
             if (_passwordArray.Length == 0)
                 throw new ArgumentException("Value was empty.", nameof(_passwordArray));
 
-            // Display an information message to the user.
             MessageBox.Show(
                 "Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.",
                 "Info", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 
-            // Disable the UI during login processing.
             DisableUi();
 
-            // Check if the user exists.
             var userExists = Authentication.UserExists(userNameTxt.Text);
 
-            // Call the asynchronous login method.
-            await ProcessLoginAsync(userExists);
+            await ProcessLogin(userExists);
         }
         catch (Exception ex)
         {
-            // Clear sensitive data from memory.
-            Crypto.ClearChars(_passwordArray ?? Array.Empty<char>());
-
-            // Log the error.
+            Crypto.CryptoUtilities.ClearMemory(_passwordArray ?? Array.Empty<char>());
             ErrorLogging.ErrorLog(ex);
-
-            // Update UI elements and display a login failure message.
             _isAnimating = false;
             outputLbl.Text = "Login failed.";
             outputLbl.ForeColor = Color.Red;
             MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
 
-            // Decrement the attempts remaining count and reset UI elements.
             _attemptsRemaining--;
             AttemptsNumber.Text = _attemptsRemaining.ToString();
             outputLbl.ForeColor = Color.WhiteSmoke;
@@ -135,12 +115,31 @@ public partial class Login : Form
         showPasswordCheckBox.Enabled = true;
     }
 
+    /// <summary>
+    /// Performs continuous checks and terminates the process after a random delay.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private static async Task Checks()
+    {
+        bool result = false;
+
+        while (true)
+        {
+            result = await AntiTamper.PerformChecks();
+
+            if (result == true)
+                break;
+        }
+
+        await Task.Delay(Crypto.CryptoUtilities.BoundedInt(5000, 15000));
+        Process.GetCurrentProcess().Kill();
+    }
 
     private char[] CreateArray()
     {
-        var arrayPtr = CryptoV2.Conversions.CreatePinnedCharArray(passTxt.Text);
+        var arrayPtr = Crypto.ConversionMethods.CreatePinnedCharArray(passTxt.Text);
         int len = passTxt.Text.Length;
-        var charArray = CryptoV2.Conversions.ConvertIntPtrToCharArray(arrayPtr, len);
+        var charArray = Crypto.ConversionMethods.ConvertIntPtrToCharArray(arrayPtr, len);
 
         Marshal.FreeCoTaskMem(arrayPtr);
         arrayPtr = IntPtr.Zero;
@@ -148,7 +147,7 @@ public partial class Login : Form
         return charArray;
     }
 
-    private async Task ProcessLoginAsync(bool userExists)
+    private async Task ProcessLogin(bool userExists)
     {
         switch (userExists)
         {
@@ -167,63 +166,57 @@ public partial class Login : Form
     /// </summary>
     private async Task StartLoginProcessAsync()
     {
-        // Start an animation (assuming there's a method named StartAnimation).
         StartAnimation();
 
-        // Uncheck the showPasswordCheckBox if it is checked.
+        Authentication.CurrentLoggedInUser = userNameTxt.Text;
+
         if (showPasswordCheckBox.Checked)
             showPasswordCheckBox.Checked = false;
 
-        // Set the passwordArray using the SetArray method.
         _passwordArray = CreateArray();
 
-        // Decrypt user data using the provided username and password.
-        var decryptedBytes = await Crypto.DecryptFile(userNameTxt.Text, _passwordArray,
-            Authentication.GetUserFilePath(userNameTxt.Text));
+        var decryptedBytes = await Crypto.DecryptFile(Authentication.CurrentLoggedInUser, _passwordArray,
+            Authentication.GetUserFilePath(Authentication.CurrentLoggedInUser));
 
-        // Throw an exception if the decryptedBytes is empty or null.
         if (decryptedBytes == Array.Empty<byte>())
             throw new ArgumentException("Value was empty.", nameof(decryptedBytes));
 
-        // Perform aggressive garbage collection.
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
-        // Convert decryptedBytes to text and write it back to the user data file.
         var decryptedText = DataConversionHelpers.ByteArrayToString(decryptedBytes);
-        await File.WriteAllTextAsync(Authentication.GetUserFilePath(userNameTxt.Text), decryptedText);
+        await File.WriteAllTextAsync(Authentication.GetUserFilePath(Authentication.CurrentLoggedInUser), decryptedText);
 
-        // Retrieve the user's salt.
-        var salt = await Authentication.GetUserSaltAsync(userNameTxt.Text);
+        var salt = Authentication.GetUserSalt(userNameTxt.Text);
 
-        // Retrieve user information.
-        await Authentication.GetUserInfo(userNameTxt.Text);
+        Authentication.GetUserInfo(userNameTxt.Text);
 
-        // Hash the input password using Argon2id.
-        var hashedInput = await Crypto.Argon2Id(_passwordArray, salt, 24);
+        var hashedInput = await Crypto.HashingMethods.Argon2Id(_passwordArray, salt, 32);
 
-        // Perform aggressive garbage collection.
+        var encryptedBytes = await Crypto.EncryptFile(Authentication.CurrentLoggedInUser, _passwordArray, Authentication.GetUserFilePath(Authentication.CurrentLoggedInUser));
+
+        if (encryptedBytes == Array.Empty<byte>())
+            throw new ArgumentException("Value was empty.", nameof(decryptedBytes));
+
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
-        Crypto.ClearChars(_passwordArray);
+        var encryptedText = DataConversionHelpers.ByteArrayToBase64String(encryptedBytes);
+        await File.WriteAllTextAsync(Authentication.GetUserFilePath(Authentication.CurrentLoggedInUser), encryptedText);
 
-        // Throw an exception if the hashedInput is empty.
+        Crypto.CryptoUtilities.ClearMemory(_passwordArray);
+
         if (hashedInput == Array.Empty<byte>())
             throw new ArgumentException("Value was empty.", nameof(hashedInput));
 
-        // Retrieve user information again.
-        await Authentication.GetUserInfo(userNameTxt.Text);
+        var loginSuccessful = await Crypto.CryptoUtilities.ComparePassword(hashedInput, Crypto.CryptoConstants.Hash);
 
-        // Compare the hashed input password with the stored hash.
-        var loginSuccessful = await Crypto.ComparePassword(hashedInput, Crypto.CryptoConstants.Hash);
+        Crypto.CryptoUtilities.ClearMemory(Crypto.CryptoConstants.Hash, hashedInput);
 
-        // Perform aggressive garbage collection.
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
-        // Handle the login success or failure based on the result.
         switch (loginSuccessful)
         {
             case true:
-                HandleLogin();
+                await HandleLogin();
                 break;
             case false:
                 HandleFailedLogin();
@@ -235,7 +228,7 @@ public partial class Login : Form
     private void UserDoesNotExist()
     {
         EnableUi();
-        Crypto.ClearChars(_passwordArray ?? Array.Empty<char>());
+        Crypto.CryptoUtilities.ClearMemory(_passwordArray ?? Array.Empty<char>());
         _isAnimating = false;
         outputLbl.ForeColor = Color.WhiteSmoke;
         outputLbl.Text = @"Idle...";
@@ -245,90 +238,51 @@ public partial class Login : Form
     /// <summary>
     ///     Handles actions and processes for a successful login.
     /// </summary>
-    private async void HandleLogin()
+    private async Task HandleLogin()
     {
-        // Check if the user data file exists, return if not.
         if (!File.Exists(Authentication.GetUserFilePath(userNameTxt.Text)))
             return;
 
-        // Set the currently logged-in user.
-        Authentication.CurrentLoggedInUser = userNameTxt.Text;
-
-        // Set the passwordArray using the SetArray method.
-        _passwordArray = CreateArray();
-
-        // Encrypt user information and write it back to the user data file.
-        var encryptedUserInfo = await Crypto.EncryptFile(userNameTxt.Text, _passwordArray,
-            Authentication.GetUserFilePath(userNameTxt.Text));
-
-        // Perform aggressive garbage collection.
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-
-        // Throw an exception if the encryptedUserInfo is empty or null.
-        if (encryptedUserInfo == Array.Empty<byte>())
-            throw new ArgumentException("Value returned empty or null.", nameof(encryptedUserInfo));
-
-        // Write the encrypted user information back to the user data file.
-        await File.WriteAllTextAsync(Authentication.GetUserFilePath(userNameTxt.Text),
-            DataConversionHelpers.ByteArrayToBase64String(encryptedUserInfo));
-
-        // Check if the user vault file exists.
         if (File.Exists(Authentication.GetUserVault(userNameTxt.Text)))
-        { 
-            // Decrypt the user vault.
+        {
             var decryptedVault = await Crypto.DecryptFile(userNameTxt.Text,
-                _passwordArray, Authentication.GetUserVault(userNameTxt.Text));
+                 _passwordArray, Authentication.GetUserVault(userNameTxt.Text));
 
-            // Perform aggressive garbage collection.
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
-            // Throw an exception if the decryptedVault is empty or null.
             if (decryptedVault == Array.Empty<byte>())
                 throw new ArgumentException("Value returned empty or null", nameof(decryptedVault));
 
-            // Write the decrypted vault contents back to the user vault file.
             await File.WriteAllTextAsync(Authentication.GetUserVault(userNameTxt.Text),
-                DataConversionHelpers.ByteArrayToString(decryptedVault));
+               DataConversionHelpers.ByteArrayToString(decryptedVault));
 
-            // Create and load the Vault form.
             using var userVault = new Vault();
             userVault.LoadVault();
 
-            // Encrypt the user vault and write it back to the user vault file.
             var encryptedBytes = await Crypto.EncryptFile(userNameTxt.Text, _passwordArray,
                 Authentication.GetUserVault(userNameTxt.Text));
 
-            // Perform aggressive garbage collection.
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
-            // Throw an exception if the encryptedBytes is empty or null.
             if (encryptedBytes == Array.Empty<byte>())
                 throw new ArgumentException("Value returned empty or null.", nameof(encryptedBytes));
 
-            // Clear the hash value from memory if it is not null.
-            Crypto.ClearBytes(Crypto.CryptoConstants.Hash);
-
-            // Write the encrypted user vault back to the user vault file.
             await File.WriteAllTextAsync(Authentication.GetUserVault(userNameTxt.Text),
                 DataConversionHelpers.ByteArrayToBase64String(encryptedBytes));
 
-            // Update UI elements for a successful login.
             outputLbl.ForeColor = Color.LimeGreen;
             outputLbl.Text = "Access granted";
             _isAnimating = false;
             UserLog.LogUser(Authentication.CurrentLoggedInUser);
 
-            Crypto.CryptoConstants.SecurePassword = Crypto.ConvertCharArrayToSecureString(_passwordArray);
-            Crypto.ClearChars(_passwordArray);
-            // Show a message and hide the current form, then show the Vault form.
+            Crypto.CryptoConstants.SecurePassword = Crypto.ConversionMethods.ConvertCharArrayToSecureString(_passwordArray);
+
             MessageBox.Show("Login successful. Loading vault...", "Login success.",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
 
+            Crypto.CryptoUtilities.ClearMemory(passTxt.Text);
             passTxt.Clear();
-            Crypto.ClearStr(passTxt.Text);
-
-            _passwordArray = null;
-            passTxt.Text = null;
+            Crypto.CryptoUtilities.ClearMemory(_passwordArray);
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             Hide();
@@ -337,32 +291,23 @@ public partial class Login : Form
             return;
         }
 
-        // Set the secure password and throw an exception if it is null.
-        Crypto.CryptoConstants.SecurePassword = Crypto.ConvertCharArrayToSecureString(_passwordArray);
+        Crypto.CryptoConstants.SecurePassword = Crypto.ConversionMethods.ConvertCharArrayToSecureString(_passwordArray);
         if (Crypto.CryptoConstants.SecurePassword == null)
             throw new Exception("Value returned empty.");
 
-        // Clear sensitive data from memory.
-        Crypto.ClearBytes(Crypto.CryptoConstants.Hash);
+        Crypto.CryptoUtilities.ClearMemory(Crypto.CryptoConstants.Hash);
 
-        // Update UI elements for a successful login.
         outputLbl.ForeColor = Color.LimeGreen;
         outputLbl.Text = "Access granted";
         _isAnimating = false;
         UserLog.LogUser(Authentication.CurrentLoggedInUser);
 
-        Crypto.CryptoConstants.SecurePassword = Crypto.ConvertCharArrayToSecureString(_passwordArray);
-        Crypto.ClearChars(_passwordArray);
-
-        // Show a message and hide the current form, then show a blank Vault form.
         MessageBox.Show("Login successful. Loading vault...", "Login success.",
             MessageBoxButtons.OK, MessageBoxIcon.Information);
 
+        Crypto.CryptoUtilities.ClearMemory(passTxt.Text);
         passTxt.Clear();
-        Crypto.ClearStr(passTxt.Text);
-
-        _passwordArray = null;
-        passTxt.Text = null;
+        Crypto.CryptoUtilities.ClearMemory(_passwordArray);
 
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
@@ -375,7 +320,7 @@ public partial class Login : Form
 
     private void HandleFailedLogin()
     {
-        Crypto.ClearChars(_passwordArray ?? Array.Empty<char>());
+        Crypto.CryptoUtilities.ClearMemory(_passwordArray);
         _isAnimating = false;
         EnableUi();
         outputLbl.ForeColor = Color.Red;
@@ -400,11 +345,10 @@ public partial class Login : Form
         while (_isAnimating)
         {
             outputLbl.Text = @"Logging in";
-            // Add animated periods
             for (var i = 0; i < 4; i++)
             {
                 outputLbl.Text += @".";
-                await Task.Delay(400); // Delay between each period
+                await Task.Delay(400);
             }
         }
     }
@@ -425,10 +369,15 @@ public partial class Login : Form
 
         using (var p = Process.GetCurrentProcess())
         {
-            p.PriorityClass = ProcessPriorityClass.AboveNormal;
+            p.PriorityClass = ProcessPriorityClass.Normal;
         }
 
         userNameTxt.Text = Settings.Default.userName;
         rememberMeCheckBox.Checked = true;
+    }
+
+    private async void Login_Shown(object sender, EventArgs e)
+    {
+       await Checks();
     }
 }

@@ -12,6 +12,23 @@ public partial class Vault : Form
         InitializeComponent();
     }
 
+    /// <summary>
+    ///     Represents static fields and constants used for file processing and UI interactions.
+    /// </summary>
+    public static class FileProcessingConstants
+    {
+        public const int MaximumFileSize = 1_000_000_000;
+        public static char[] PasswordArray = Array.Empty<char>();
+        public static string LoadedFile = string.Empty;
+        public static string LoadedFileToHash = string.Empty;
+        public static string Result = string.Empty;
+        public static bool IsAnimating { get; set; }
+        public static bool FileOpened { get; set; }
+        public static long FileSize { get; set; }
+
+        public static readonly ToolTip Tooltip = new();
+    }
+
     private void addRowBtn_Click(object sender, EventArgs e)
     {
         PassVault.Rows.Add();
@@ -23,13 +40,12 @@ public partial class Vault : Form
     /// <exception cref="ArgumentNullException">Thrown if <see cref="SecureString" /> is null.</exception>
     private static void SetArray()
     {
-        // Check if SecurePassword is null.
         if (Crypto.CryptoConstants.SecurePassword == null || Crypto.CryptoConstants.SecurePassword.Length == 0)
             throw new ArgumentException("Value was empty.", nameof(Crypto.CryptoConstants.SecurePassword));
 
-        var arrayPtr = CryptoV2.Conversions.CreatePinnedCharArray(Crypto.ConvertSecureStringToCharArray(Crypto.CryptoConstants.SecurePassword));
+        var arrayPtr = Crypto.ConversionMethods.CreatePinnedCharArray(Crypto.ConversionMethods.ConvertSecureStringToCharArray(Crypto.CryptoConstants.SecurePassword));
         int len = Crypto.CryptoConstants.SecurePassword.Length;
-        var charArray = CryptoV2.Conversions.ConvertIntPtrToCharArray(arrayPtr, len);
+        var charArray = Crypto.ConversionMethods.ConvertIntPtrToCharArray(arrayPtr, len);
 
         Marshal.FreeCoTaskMem(arrayPtr);
         arrayPtr = IntPtr.Zero;
@@ -39,9 +55,12 @@ public partial class Vault : Form
 
     private void CreateCustomArray()
     {
-        var arrayPtr = CryptoV2.Conversions.CreatePinnedCharArray(CustomPasswordTextBox.Text);
+        if (Crypto.CryptoConstants.SecurePassword == null || Crypto.CryptoConstants.SecurePassword.Length == 0)
+            throw new ArgumentException("Value was empty.", nameof(Crypto.CryptoConstants.SecurePassword));
+
+        var arrayPtr = Crypto.ConversionMethods.CreatePinnedCharArray(CustomPasswordTextBox.Text);
         int len = CustomPasswordTextBox.Text.Length;
-        var charArray = CryptoV2.Conversions.ConvertIntPtrToCharArray(arrayPtr, len);
+        var charArray = Crypto.ConversionMethods.ConvertIntPtrToCharArray(arrayPtr, len);
 
         Marshal.FreeCoTaskMem(arrayPtr);
         arrayPtr = IntPtr.Zero;
@@ -68,21 +87,17 @@ public partial class Vault : Form
     {
         try
         {
-            // Display a warning message to avoid closing the program during the operation.
             MessageBox.Show(
                 "Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.",
                 "Info",
                 MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 
-            // Start the animation and disable the UI.
             StartAnimation();
             DisableUi();
 
-            // Set the file path for the user's vault.
             var filePath = Path.Combine("Password Vault", "Users",
                 Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
 
-            // Write the vault content to the file.
             await using (var sw = new StreamWriter(filePath))
             {
                 sw.NewLine = null;
@@ -94,20 +109,18 @@ public partial class Vault : Form
                         row.Cells[i].ValueType = typeof(char[]);
                         sw.Write(row.Cells[i].Value);
                         if (i < PassVault.Columns.Count - 1)
-                            await sw.WriteAsync("\t"); // Use a tab character to separate columns
+                            await sw.WriteAsync("\t");
                     }
 
-                    await sw.WriteLineAsync(); // Start a new line for each row
+                    await sw.WriteLineAsync();
                 }
             }
-
-            // Convert the secure password to a character array.
             SetArray();
 
-            // Encrypt the vault and save it to the user's file.
             var encryptedVault = await Crypto.EncryptFile(Authentication.CurrentLoggedInUser,
                 FileProcessingConstants.PasswordArray,
                 Authentication.GetUserVault(Authentication.CurrentLoggedInUser));
+
             if (encryptedVault == Array.Empty<byte>())
                 throw new ArgumentException("Value was empty.", nameof(encryptedVault));
 
@@ -115,29 +128,26 @@ public partial class Vault : Form
             await File.WriteAllTextAsync(Authentication.GetUserVault(Authentication.CurrentLoggedInUser),
                 encryptedVaultString);
 
-            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
+            Crypto.ConversionMethods.CreatePinnedCharArray(FileProcessingConstants.PasswordArray);
 
-            // Perform garbage collection to release resources.
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
-            // Stop the animation, display success messages, and enable the UI.
             FileProcessingConstants.IsAnimating = false;
             outputLbl.Text = "Vault saved successfully";
             outputLbl.ForeColor = Color.LimeGreen;
             MessageBox.Show("Vault saved successfully.", "Save vault", MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
+
             EnableUi();
             outputLbl.Text = "Idle...";
             outputLbl.ForeColor = Color.WhiteSmoke;
         }
         catch (Exception ex)
         {
-            // Enable the UI and stop the animation in case of an error.
             EnableUi();
             FileProcessingConstants.IsAnimating = false;
-            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
+            Crypto.CryptoUtilities.ClearMemory(FileProcessingConstants.PasswordArray);
 
-            // Display an error message and log the exception.
             MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
             ErrorLogging.ErrorLog(ex);
@@ -151,36 +161,25 @@ public partial class Vault : Form
     {
         try
         {
-            // Get the file path for the user's vault.
             var filePath = Authentication.GetUserVault(Authentication.CurrentLoggedInUser);
 
-            // Check if the vault file exists.
             if (File.Exists(filePath))
             {
-                // Open the vault file for reading.
                 using var sr = new StreamReader(filePath);
-
-                // Clear existing data in the DataGridView.
                 PassVault.Rows.Clear();
 
-                // Read each line from the vault file and populate the DataGridView.
                 while (!sr.EndOfStream)
                 {
-                    // Read a line from the file.
                     var line = await sr.ReadLineAsync();
-
-                    // Split the line by tabs.
                     var values = line?.Split('\t');
 
-                    // Check for invalid input text (base64 encoded).
                     if (IsBase64(line))
                         throw new ArgumentException("Invalid input text", nameof(line));
+                    if (values is { Length: <= 0 })
+                        continue;
 
-                    // Skip processing if the values array is empty.
-                    if (values is { Length: <= 0 }) continue;
-
-                    // Add a new row to the DataGridView and populate it with values.
                     var rowIndex = PassVault.Rows.Add();
+
                     if (values != null)
                         for (var i = 0; i < values.Length; i++)
                             PassVault.Rows[rowIndex].Cells[i].Value = values[i];
@@ -188,15 +187,14 @@ public partial class Vault : Form
             }
             else
             {
-                // If the vault file does not exist, enable UI and show an error message.
                 EnableUi();
                 MessageBox.Show("Vault file does not exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
         catch (Exception ex)
         {
-            // Handle exceptions by enabling UI, displaying an error message, and logging the exception.
             EnableUi();
+            Crypto.CryptoUtilities.ClearMemory(FileProcessingConstants.PasswordArray);
             MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             ErrorLogging.ErrorLog(ex);
         }
@@ -247,7 +245,6 @@ public partial class Vault : Form
         while (FileProcessingConstants.IsAnimating)
         {
             outputLbl.Text = "Saving vault";
-            // Add animated periods
             for (var i = 0; i < 4; i++)
             {
                 outputLbl.Text += ".";
@@ -265,7 +262,6 @@ public partial class Vault : Form
     {
         try
         {
-            // Create an OpenFileDialog.
             using var openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "Txt files(*.txt) | *.txt";
             openFileDialog.FilterIndex = 1;
@@ -276,20 +272,16 @@ public partial class Vault : Form
             openFileDialog.InitialDirectory =
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
 
-
             if (openFileDialog.ShowDialog() != DialogResult.OK)
                 return;
 
-            // Get information about the selected file.
             var selectedFileName = openFileDialog.FileName;
             var selectedExtension = Path.GetExtension(selectedFileName).ToLower();
             var fileInfo = new FileInfo(selectedFileName);
 
-            // Update FileProcessingConstants with file information.
             FileProcessingConstants.FileOpened = true;
             FileProcessingConstants.LoadedFile = selectedFileName;
 
-            // Read the content of the file if it is not empty.
             if (!string.IsNullOrEmpty(FileProcessingConstants.Result))
             {
                 await using var fs = new FileStream(selectedFileName, FileMode.OpenOrCreate, FileAccess.Read);
@@ -300,7 +292,6 @@ public partial class Vault : Form
                     throw new IOException("Result was empty.");
             }
 
-            // Perform additional validations on the selected file.
             if (string.IsNullOrEmpty(selectedFileName))
                 throw new ArgumentException("Value was empty.", nameof(selectedFileName));
 
@@ -311,32 +302,25 @@ public partial class Vault : Form
             if (fileInfo.Length > FileProcessingConstants.MaximumFileSize)
                 throw new ArgumentException("File size is too large.", nameof(FileProcessingConstants.FileSize));
 
-            // Update FileProcessingConstants with file size.
             FileProcessingConstants.FileSize = (int)fileInfo.Length;
 
-            // Display the file size.
             var fileSize = fileInfo.Length.ToString("#,0");
             FileSizeNumLbl.Text = $"{fileSize} bytes";
 
-            // Display success messages and reset UI.
             FileOutputLbl.Text = "File opened.";
             FileOutputLbl.ForeColor = Color.LimeGreen;
             MessageBox.Show("File opened successfully.", "Opened successfully", MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
 
-            // Reset UI and clear sensitive data.
             FileOutputLbl.Text = "Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
             FileProcessingConstants.Result = string.Empty;
         }
         catch (Exception ex)
         {
-            // Handle errors and display messages.
             FileSizeNumLbl.Text = "0";
             FileOutputLbl.Text = "Error loading file.";
             FileOutputLbl.ForeColor = Color.Red;
-
-            // Reset UI and log the error.
             FileOutputLbl.Text = "Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
             ErrorLogging.ErrorLog(ex);
@@ -353,11 +337,9 @@ public partial class Vault : Form
     {
         try
         {
-            // Check if a file is opened.
             if (!FileProcessingConstants.FileOpened)
                 throw new Exception("No file is opened.");
 
-            // Create a SaveFileDialog.
             using var saveFileDialog = new SaveFileDialog();
             saveFileDialog.Filter = "Txt files(*.txt) | *.txt";
             saveFileDialog.FilterIndex = 1;
@@ -370,10 +352,9 @@ public partial class Vault : Form
 
             if (saveFileDialog.ShowDialog() != DialogResult.OK)
                 return;
-            // Get the selected file name.
+
             var selectedFileName = saveFileDialog.FileName;
 
-            // Save the file content if it is not empty.
             if (string.IsNullOrEmpty(FileProcessingConstants.Result))
                 return;
             await using (var fs = new FileStream(selectedFileName, FileMode.OpenOrCreate, FileAccess.Write))
@@ -382,18 +363,15 @@ public partial class Vault : Form
                 await sw.WriteAsync(FileProcessingConstants.Result);
             }
 
-            // Display success messages and reset UI.
             FileOutputLbl.Text = "File saved successfully.";
             FileOutputLbl.ForeColor = Color.LimeGreen;
             MessageBox.Show("File saved successfully.", "Saved successfully", MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
 
-            // Clear sensitive data.
             FileProcessingConstants.Result = string.Empty;
         }
         catch (Exception ex)
         {
-            // Handle errors and display messages.
             FileOutputLbl.Text = "Error saving file.";
             FileOutputLbl.ForeColor = Color.Red;
             ErrorLogging.ErrorLog(ex);
@@ -414,7 +392,6 @@ public partial class Vault : Form
     {
         try
         {
-            // Display a warning message about not closing the program during encryption.
             MessageBox.Show(
                 @"Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.
                 If using a custom password to encrypt with, MAKE SURE YOU REMEMBER THE PASSWORD! You will NOT be able to
@@ -422,11 +399,9 @@ public partial class Vault : Form
                 "Info",
                 MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 
-            // Check if a file is opened.
             if (!FileProcessingConstants.FileOpened)
                 throw new ArgumentException("No file is opened.", nameof(FileProcessingConstants.FileOpened));
 
-            // Set array and start the encryption animation.
             if (CustomPasswordCheckBox.Checked)
                 CreateCustomArray();
             else
@@ -434,53 +409,44 @@ public partial class Vault : Form
             StartAnimationEncryption();
             DisableUi();
 
-            // Check if a loaded file exists.
             if (FileProcessingConstants.LoadedFile == string.Empty)
                 return;
 
-            // Encrypt the file.
             var encryptedFile =
-                await Crypto.EncryptFile(Authentication.CurrentLoggedInUser, FileProcessingConstants.PasswordArray,
+               await Crypto.EncryptFile(Authentication.CurrentLoggedInUser, FileProcessingConstants.PasswordArray,
                     FileProcessingConstants.LoadedFile);
 
-            // Check if the encrypted file is empty.
             if (encryptedFile == Array.Empty<byte>())
                 throw new ArgumentException("Value was empty.", nameof(encryptedFile));
 
-            // Perform garbage collection aggressively.
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
-            // Convert the encrypted file to Base64 string.
             var str = DataConversionHelpers.ByteArrayToBase64String(encryptedFile);
 
-
-            // Update the result and enable UI.
             if (!string.IsNullOrEmpty(str))
                 FileProcessingConstants.Result = str;
 
             EnableUi();
             FileProcessingConstants.IsAnimating = false;
 
-            // Display success message.
             FileOutputLbl.Text = "File encrypted.";
             FileOutputLbl.ForeColor = Color.LimeGreen;
-            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
+            Crypto.CryptoUtilities.ClearMemory(FileProcessingConstants.PasswordArray);
 
             MessageBox.Show("File was encrypted successfully.", "Success", MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
 
-            // Display the encrypted file size.
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+
             var size = (long)FileProcessingConstants.Result.Length;
             var fileSize = size.ToString("#,0");
             FileSizeNumLbl.Text = $"{fileSize} bytes";
 
-            // Reset UI state and clear sensitive information.
             FileOutputLbl.Text = "Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
         }
         catch (Exception ex)
         {
-            // Handle exceptions, enable UI, and log errors.
             EnableUi();
             FileProcessingConstants.IsAnimating = false;
             FileOutputLbl.Text = "Error encrypting file.";
@@ -488,7 +454,7 @@ public partial class Vault : Form
             MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             FileOutputLbl.Text = "Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
-            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
+            Crypto.CryptoUtilities.ClearMemory(FileProcessingConstants.PasswordArray);
             ErrorLogging.ErrorLog(ex);
         }
     }
@@ -503,21 +469,17 @@ public partial class Vault : Form
     {
         try
         {
-            // Display an informational message to the user.
             MessageBox.Show(
                 "Do NOT close the program while loading. This may cause corrupted data that is NOT recoverable.",
                 "Info",
                 MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 
-            // Check if a file is opened.
             if (!FileProcessingConstants.FileOpened)
                 throw new ArgumentException("No file is opened.", nameof(FileProcessingConstants.FileOpened));
 
-            // Check if the file size exceeds the maximum allowed size.
             if (FileProcessingConstants.FileSize > FileProcessingConstants.MaximumFileSize)
                 throw new ArgumentException("File size is too large.", nameof(FileProcessingConstants.FileSize));
 
-            // Initialize an array and disable the UI.
             if (CustomPasswordCheckBox.Checked)
                 CreateCustomArray();
             else
@@ -525,42 +487,33 @@ public partial class Vault : Form
             DisableUi();
             StartAnimationDecryption();
 
-            // If no loaded file is specified, return.
             if (FileProcessingConstants.LoadedFile == string.Empty)
                 return;
 
-            // Decrypt the file using the Crypto class.
             var decryptedFile = await Crypto.DecryptFile(Authentication.CurrentLoggedInUser,
                 FileProcessingConstants.PasswordArray, FileProcessingConstants.LoadedFile);
 
-            // Check if the decrypted file is empty.
             if (decryptedFile == Array.Empty<byte>())
                 throw new Exception("The decrypted file value returned empty.");
 
-            // Perform garbage collection.
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
-            // Convert the decrypted file to a string.
             var str = DataConversionHelpers.ByteArrayToString(decryptedFile);
 
-            // Update result and enable the UI.
             if (!string.IsNullOrEmpty(str))
                 FileProcessingConstants.Result = str;
 
             EnableUi();
             FileProcessingConstants.IsAnimating = false;
 
-            // Update UI labels and show success message.
             FileOutputLbl.Text = @"File decrypted.";
             FileOutputLbl.ForeColor = Color.LimeGreen;
 
-            // Clear the password array for security reasons.
-            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
+            Crypto.CryptoUtilities.ClearMemory(FileProcessingConstants.PasswordArray);
 
             MessageBox.Show(@"File was decrypted successfully.", @"Success", MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
 
-            // Display the encrypted file size.
             var size = (long)FileProcessingConstants.Result.Length;
             var fileSize = size.ToString("#,0");
             FileSizeNumLbl.Text = $"{fileSize} bytes";
@@ -570,7 +523,6 @@ public partial class Vault : Form
         }
         catch (Exception ex)
         {
-            // Handle exceptions, enable UI, and log errors.
             EnableUi();
             FileProcessingConstants.IsAnimating = false;
             FileOutputLbl.Text = @"Error decrypting file.";
@@ -578,48 +530,59 @@ public partial class Vault : Form
             MessageBox.Show(ex.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             FileOutputLbl.Text = @"Idle...";
             FileOutputLbl.ForeColor = Color.WhiteSmoke;
-            Crypto.ClearChars(FileProcessingConstants.PasswordArray);
+            Crypto.CryptoUtilities.ClearMemory(FileProcessingConstants.PasswordArray);
             ErrorLogging.ErrorLog(ex);
         }
     }
 
-
+    /// <summary>
+    /// Initiates the animation for encryption.
+    /// </summary>
     private async void StartAnimationEncryption()
     {
         FileProcessingConstants.IsAnimating = true;
         await AnimateLabelEncrypt();
     }
 
+    /// <summary>
+    /// Initiates the animation for decryption.
+    /// </summary>
     private async void StartAnimationDecryption()
     {
         FileProcessingConstants.IsAnimating = true;
         await AnimateLabelDecrypt();
     }
 
+    /// <summary>
+    /// Asynchronously animates the label to indicate file encryption progress.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task AnimateLabelEncrypt()
     {
         while (FileProcessingConstants.IsAnimating)
         {
             FileOutputLbl.Text = @"Encrypting file";
-            // Add animated periods
             for (var i = 0; i < 4; i++)
             {
                 FileOutputLbl.Text += @".";
-                await Task.Delay(400); // Delay between each period
+                await Task.Delay(400);
             }
         }
     }
 
+    /// <summary>
+    /// Asynchronously animates the label to indicate file decryption progress.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task AnimateLabelDecrypt()
     {
         while (FileProcessingConstants.IsAnimating)
         {
             FileOutputLbl.Text = @"Decrypting file";
-            // Add animated periods
             for (var i = 0; i < 4; i++)
             {
                 FileOutputLbl.Text += @".";
-                await Task.Delay(400); // Delay between each period
+                await Task.Delay(400);
             }
         }
     }
@@ -636,16 +599,20 @@ public partial class Vault : Form
         await Task.Run(() => RainbowLabel(UserWelcomeLbl));
     }
 
+    /// <summary>
+    /// Asynchronously animates the text color of a label to create a rainbow effect.
+    /// </summary>
+    /// <param name="label">The label to animate.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private static async Task RainbowLabel(Control label)
     {
         while (true)
         {
             label.ForeColor =
-                Color.FromArgb(Crypto.BoundedInt(0, 255), Crypto.BoundedInt(0, 255), Crypto.BoundedInt(0, 255));
+                Color.FromArgb(Crypto.CryptoUtilities.BoundedInt(0, 255), Crypto.CryptoUtilities.BoundedInt(0, 255), Crypto.CryptoUtilities.BoundedInt(0, 255));
 
             await Task.Delay(125);
         }
-        // ReSharper disable once FunctionNeverReturns
     }
 
     private void DecryptBtn_MouseHover(object sender, EventArgs e)
@@ -661,7 +628,7 @@ public partial class Vault : Form
         FileProcessingConstants.Tooltip.AutomaticDelay = 500;
         FileProcessingConstants.Tooltip.IsBalloon = false;
         FileProcessingConstants.Tooltip.ToolTipIcon = ToolTipIcon.Info;
-        FileProcessingConstants.Tooltip.Show("Encrypts the opened file.", EncryptBtn, int.MaxValue);
+        FileProcessingConstants.Tooltip.Show("Encrypts the opened file within a certain file size value of 1GB.", EncryptBtn, int.MaxValue);
     }
 
     private void ExportFileBtn_MouseHover(object sender, EventArgs e)
@@ -727,10 +694,10 @@ public partial class Vault : Form
 
             var selectedFileName = openFileDialog.FileName;
 
-            FileProcessingConstants.LoadedFileHash = selectedFileName;
+            FileProcessingConstants.LoadedFileToHash = selectedFileName;
 
             if (!string.IsNullOrEmpty(selectedFileName))
-                filenamelbl.Text = $@"File Name: {FileProcessingConstants.LoadedFileHash}";
+                filenamelbl.Text = $@"File Name: {FileProcessingConstants.LoadedFileToHash}";
         }
         catch (Exception ex)
         {
@@ -739,21 +706,32 @@ public partial class Vault : Form
         }
     }
 
+    /// <summary>
+    /// Asynchronously calculates the SHA-3 hash of a file.
+    /// </summary>
+    /// <param name="file">The file path or name.</param>
+    /// <returns>A task representing the asynchronous operation that returns the hash value as a hexadecimal string.</returns>
+    private static async Task<string> CalculateHash(string file)
+    {
+        using var ms = new MemoryStream();
+        await using (var fs = new FileStream(FileProcessingConstants.LoadedFileToHash, FileMode.Open,
+                         FileAccess.Read))
+        {
+            await fs.CopyToAsync(ms);
+        }
+
+        var hashBytes = Crypto.HashingMethods.Sha3Hash(ms.ToArray());
+        var hashHexString = DataConversionHelpers.ByteArrayToHexString(hashBytes).ToLower();
+
+        return hashHexString;
+    }
+
     private async void calculatehashbtn_Click(object sender, EventArgs e)
     {
         try
         {
-            using var ms = new MemoryStream();
-            await using (var fs = new FileStream(FileProcessingConstants.LoadedFileHash, FileMode.Open,
-                             FileAccess.Read))
-            {
-                await fs.CopyToAsync(ms);
-            }
-
-            var hashBytes = Crypto.Sha3Hash(ms.ToArray());
-            var hashHexString = DataConversionHelpers.ByteArrayToHexString(hashBytes).ToLower();
-
-            hashoutputtxt.Text = hashHexString;
+           var result = await CalculateHash(FileProcessingConstants.LoadedFileToHash);
+           hashoutputtxt.Text = result;
         }
         catch (Exception ex)
         {
@@ -773,7 +751,6 @@ public partial class Vault : Form
             CalculateHashBtn, int.MaxValue);
     }
 
-    // ReSharper disable once IdentifierTypo
     private void Hashimportfile_MouseHover(object sender, EventArgs e)
     {
         FileProcessingConstants.Tooltip.AutomaticDelay = 500;
@@ -782,13 +759,11 @@ public partial class Vault : Form
         FileProcessingConstants.Tooltip.Show("Opens a file to calculate the hash.", CalculateHashBtn, int.MaxValue);
     }
 
-    // ReSharper disable once IdentifierTypo
     private void Calculatehashbtn_MouseLeave(object sender, EventArgs e)
     {
         FileProcessingConstants.Tooltip.Hide(CalculateHashBtn);
     }
 
-    // ReSharper disable once IdentifierTypo
     private void Hashimportfile_MouseLeave(object sender, EventArgs e)
     {
         FileProcessingConstants.Tooltip.Hide(Hashimportfile);
@@ -863,56 +838,5 @@ public partial class Vault : Form
             CustomPasswordTextBox.Enabled = false;
             ConfirmPassword.Enabled = false;
         }
-    }
-
-    /// <summary>
-    ///     Represents static fields and constants used for file processing and UI interactions.
-    /// </summary>
-    public static class FileProcessingConstants
-    {
-        /// <summary>
-        ///     Gets the maximum allowed file size in bytes.
-        /// </summary>
-        public const int MaximumFileSize = 1_000_000_000;
-
-        /// <summary>
-        ///     Gets or sets an array to store the characters of the user's password.
-        /// </summary>
-        public static char[] PasswordArray = Array.Empty<char>();
-
-        /// <summary>
-        ///     Gets or sets the path of the currently loaded file.
-        /// </summary>
-        public static string LoadedFile = string.Empty;
-
-        /// <summary>
-        ///     Gets or sets the hash value of the currently loaded file.
-        /// </summary>
-        public static string LoadedFileHash = string.Empty;
-
-        /// <summary>
-        ///     Gets or sets the result of a file processing operation.
-        /// </summary>
-        public static string Result = string.Empty;
-
-        /// <summary>
-        ///     Gets the tooltip used for providing information to the user.
-        /// </summary>
-        public static readonly ToolTip Tooltip = new();
-
-        /// <summary>
-        ///     Gets or sets a value indicating whether an animation is currently in progress.
-        /// </summary>
-        public static bool IsAnimating { get; set; }
-
-        /// <summary>
-        ///     Gets or sets a value indicating whether a file is currently opened.
-        /// </summary>
-        public static bool FileOpened { get; set; }
-
-        /// <summary>
-        ///     Gets or sets the size of the currently loaded file.
-        /// </summary>
-        public static long FileSize { get; set; }
     }
 }
