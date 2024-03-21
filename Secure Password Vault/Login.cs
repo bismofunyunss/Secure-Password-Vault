@@ -378,6 +378,6 @@ public partial class Login : Form
 
     private async void Login_Shown(object sender, EventArgs e)
     {
-       await Checks();
+     //  await Checks();
     }
 }

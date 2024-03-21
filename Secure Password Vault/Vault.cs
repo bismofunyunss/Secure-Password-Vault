@@ -106,8 +106,11 @@ public partial class Vault : Form
                 {
                     for (var i = 0; i < PassVault.Columns.Count; i++)
                     {
-                        row.Cells[i].ValueType = typeof(char[]);
-                        sw.Write(row.Cells[i].Value);
+                        row.Cells[i].ValueType = typeof(string);
+                        if (string.IsNullOrEmpty((string)row.Cells[i].Value))
+                            throw new Exception("Each cell must have a value.");
+
+                        await sw.WriteAsync((string)row.Cells[i].Value);
                         if (i < PassVault.Columns.Count - 1)
                             await sw.WriteAsync("\t");
                     }
@@ -145,6 +148,8 @@ public partial class Vault : Form
         catch (Exception ex)
         {
             EnableUi();
+            outputLbl.Text = "Idle...";
+            outputLbl.ForeColor = Color.WhiteSmoke;
             FileProcessingConstants.IsAnimating = false;
             Crypto.CryptoUtilities.ClearMemory(FileProcessingConstants.PasswordArray);
 
@@ -730,8 +735,8 @@ public partial class Vault : Form
     {
         try
         {
-           var result = await CalculateHash(FileProcessingConstants.LoadedFileToHash);
-           hashoutputtxt.Text = result;
+            var result = await CalculateHash(FileProcessingConstants.LoadedFileToHash);
+            hashoutputtxt.Text = result;
         }
         catch (Exception ex)
         {
