@@ -1,0 +1,98 @@
+namespace TestProject
+{
+    public class Tests
+    {
+        public class CryptographyTests
+        {
+            public static byte[] chaChaNonce =
+            [
+            0x1A, 0xB3, 0x5C, 0x74, 0x2E, 0xDF, 0x48, 0x0F,
+            0xC8, 0x7E, 0x3A, 0x9F, 0xE0, 0xAC, 0x79, 0x8D,
+            0x3E, 0x6D, 0xFA, 0x86, 0x2B, 0x1D, 0x50, 0x7E
+            ];
+
+            public static byte[] threeFishNonce =
+            [
+            0x1A, 0xB3, 0x5C, 0x74, 0x2E, 0xDF, 0x48, 0x0F,
+            0xC8, 0x7E, 0x3A, 0x9F, 0xE0, 0xAC, 0x79, 0x8D,
+            0x3E, 0x6D, 0xFA, 0x86, 0x2B, 0x1D, 0x50, 0x7E,
+            0x7A, 0xD1, 0x4E, 0x95, 0x01, 0xF8, 0x23, 0xB4,
+            0x6C, 0xE2, 0x9F, 0x57, 0x38, 0xA0, 0xC7, 0x1E,
+            0x4F, 0x81, 0x5B, 0x9C, 0x2D, 0x6F, 0xEA, 0x17,
+            0x5D, 0x9B, 0x4C, 0x62, 0xA3, 0xF5, 0x08, 0x3B,
+            0xE7, 0x95, 0x21, 0xC4, 0x0D, 0x6E, 0x8B, 0x4F,
+            0xA2, 0xE7, 0x95, 0x12, 0xC4, 0x0D, 0x6E, 0x8B,
+            0x4F, 0xA2, 0xE7, 0x95, 0x12, 0xC4, 0x0D, 0x6E,
+            0x8B, 0x4F, 0xA2, 0xE7, 0x95, 0x12, 0xC4, 0x0D,
+            0x6E, 0x8B, 0x4F, 0xA2, 0xE7, 0x95, 0x12, 0xC4,
+            0x0D, 0x6E, 0x8B, 0x4F, 0xA2, 0xE7, 0x95, 0x12,
+            0xC4, 0x0D, 0x6E, 0x8B, 0x4F, 0xA2, 0xE7, 0x95,
+            0x12, 0xC4, 0x0D, 0x6E, 0x8B, 0x4F, 0xA2, 0xE7,
+            0x95, 0x12, 0xC4, 0x0D, 0x6E, 0x8B, 0x4F, 0xA2
+            ];
+
+            public static byte[] serpentIV =
+            [
+            0x1C, 0x8F, 0x5A, 0x63, 0x2E, 0xD7, 0x49, 0x0B,
+            0xC2, 0x7F, 0x38, 0x96, 0xE1, 0xA4, 0x72, 0x9D
+            ];
+
+            public static byte[] aesIV =
+            [
+            0x3A, 0x5C, 0x72, 0x8F, 0xB1, 0xD4, 0xE9, 0x0A,
+            0x2E, 0x4F, 0x61, 0x98, 0xAB, 0xCD, 0xEF, 0x37
+            ];
+
+            public static byte[] saltValue =
+            [
+            0x1C, 0x8F, 0x5A, 0x63, 0x2E, 0xD7, 0x49, 0x0B,
+            0xC2, 0x7F, 0x38, 0x96, 0xE1, 0xA4, 0x72, 0x9D,
+            0x3B, 0x6A, 0xF5, 0x87, 0x2C, 0x19, 0x54, 0x76,
+            0xAB, 0xCD, 0xEF, 0x01, 0x34, 0x98, 0x5D, 0xBA,
+            0x3A, 0x5C, 0x72, 0x8F, 0xB1, 0xD4, 0xE9, 0x0A,
+            0x2E, 0x4F, 0x61, 0x98, 0xAB, 0xCD, 0xEF, 0x37,
+            0x6D, 0x9B, 0xF2, 0x7C, 0xA1, 0xE5, 0x80, 0x3D,
+            0x5F, 0x82, 0x4A, 0x17, 0xDE, 0xC3, 0x96, 0x6E
+            ];
+
+            public const string password = "Test1234567890!!!!!!!!!!!!";
+            public const string textToEncrypt = "Here's some text to encrypt!!";
+            public const string expectedResult = "pXqvPp+/Ok/3DZhy+rH6xJx9XG5q8Mm7JWVvbyLIhw2g5/QwhF/1T00qokPnM1NP5x3lojtztk8zAQicGm1mJ3Ry48Snc3Nuk" +
+                "Ss6F3sMYiELfggumknXYA2UgULxdiHEw6cnbKTnxCbbn5PjRosrpRWVxBI6HjduJxyAyIN2EghtV/fnMsR5d5clq49PxsM9i1mCdAC4y5EXF5uVj1HElDvqmh7d5T+4TD2" +
+                "ra6wFM6dXovO9oM+YPsVayeTVAxYe19OWoBbqyU+PjemxlihX6bEK9Bm4Y2hImW/IGoPpNW7y2VKcv7aBEnTAdVHS5NgbzxevDXJYWLaS5yaLE/vu50vSHV4i79xycwAS4" +
+                "e8356I8SALuxGdZGsMZ4iC7XaKBddRfeq8N649celVQ0dvcdbN5flWGM3TM5np1R5VcGHY+k38uwDculXDR5KLGAixfLZy2IWfvy1FumfeaLW7oi/xQSEzEhv+dYEGRYG5" +
+                "andfDFF8tEHoozfoBm50SlQ2Vs+HcOOVQya3V9uyl12QAp91pXRAspJV5tXU8tTwPbRKbAqUNfyLi3C7OU7YL4IththVI620oudnEF3naIl9GGcTUKWCijNINCOwSiwc1s" +
+                "uPJ9XV3DeD53xiM2S7iZrHfzSN0os7+IaeQookGYJjqx2GD/iYEzfruXf2DwZtPldWB5D44iWNQx6+NEpWd1hIdyPCLnS4Etv+XfKKmOzhPeW2CVMNBTxLrGh2s89mLjW6" +
+                "cn1PLD22Qs1uF1314D6TnwkUBmaDZw74fT/TpLjty5pjFbvNiOa0PooQ1o/oI3VnjtES3ZAYPOnI9Bd61YmVVsl4KpQ0esbRCAh1hat+kj6+VzEey3yt4W0+Norn4bg1OG" +
+                "kCfi6LdK/hqhwt+H25ms0Ia50txn0JPXTu2W26sb9x+T1xFbes1";
+
+            [SetUp]
+            [Test]
+            public async Task EncryptionTest()
+            {
+                var encryptedBytes = await Crypto.DebugMethods.EncryptFileDebug(password.ToCharArray(), saltValue, chaChaNonce, threeFishNonce,
+                  serpentIV, aesIV, textToEncrypt);
+                Assert.IsNotEmpty(encryptedBytes);
+                Assert.IsNotNull(encryptedBytes);
+
+                var encryptedString = DataConversionHelpers.ByteArrayToBase64String(encryptedBytes);
+                Assert.IsNotEmpty(encryptedString);
+                Assert.IsNotNull(encryptedString);
+                Assert.That(encryptedString, Is.EqualTo(expectedResult));
+            }
+
+            [Test]
+            public async Task DecryptionTest()
+            {
+                var decryptedBytes = await Crypto.DebugMethods.DecryptFileDebug(password.ToCharArray(), saltValue, expectedResult);
+                Assert.IsNotEmpty(decryptedBytes);
+                Assert.IsNotNull(decryptedBytes);
+                
+                var decryptedString = DataConversionHelpers.ByteArrayToString(decryptedBytes);
+                Assert.IsNotEmpty(decryptedString);
+                Assert.IsNotNull(decryptedString);
+                Assert.That(decryptedString, Is.EqualTo(textToEncrypt));
+            }
+        }
+    }
+}

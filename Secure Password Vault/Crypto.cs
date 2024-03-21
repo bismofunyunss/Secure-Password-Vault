@@ -27,8 +27,8 @@ public static class Crypto
     /// </summary>
     public static class CryptoConstants
     {
-        public const int Iterations = 48;
-        public const int MemorySize = 1024 * 1024 * 6;
+        public const int Iterations = 1;
+        public const int MemorySize = 1024 * 1024 * 1;
         public const int SaltSize = 128;
         public const int TagLen = 16;
         public const int HmacLength = 64;
@@ -671,11 +671,11 @@ public static class Crypto
     }
 
     /// <summary>
-    ///     Encrypts the contents of a file using Argon2 key derivation and XChaCha20-Poly1305 encryption.
+    ///     Encrypts the contents of a file using Argon2 key derivation and four layers of encryption.
     /// </summary>
     /// <param name="userName">The username associated with the user's salt for key derivation.</param>
     /// <param name="passWord">The user's password used for key derivation.</param>
-    /// <param name="file">The path to the file whose content will be encrypted.</param>
+    /// <param name="plainText">The plaintext to encrypt.</param>
     /// <returns>
     ///     A Task that completes with the encrypted content of the specified file.
     ///     If any error occurs during the process, returns an empty byte array.
@@ -690,9 +690,9 @@ public static class Crypto
     ///     6. Encrypts the file content using XChaCha20-Poly1305 encryption.
     ///     7. Clears sensitive information, such as the user's password, from memory.
     /// </remarks>
-    public static async Task<byte[]> EncryptFile(string userName, char[] passWord, string file)
+    public static async Task<byte[]> EncryptFile(string userName, char[] passWord, string plainText)
     {
-        if (string.IsNullOrEmpty(userName) || passWord == null || passWord.Length == 0 || string.IsNullOrEmpty(file))
+        if (string.IsNullOrEmpty(userName) || passWord == null || passWord.Length == 0 || string.IsNullOrEmpty(plainText))
             throw new ArgumentException("Value was empty.");
 
         var salt = Authentication.GetUserSalt(userName);
@@ -701,7 +701,7 @@ public static class Crypto
         if (bytes == Array.Empty<byte>())
             throw new Exception("Value was empty.");
 
-        var fileBytes = DataConversionHelpers.StringToByteArray(File.ReadAllText(file));
+        var fileBytes = DataConversionHelpers.StringToByteArray(File.ReadAllText(plainText));
 
         if (fileBytes == null || fileBytes.Length == 0 || salt == null || salt.Length == 0)
             throw new ArgumentException("Value was empty.");
@@ -719,11 +719,11 @@ public static class Crypto
 
 
     /// <summary>
-    ///     Decrypts the contents of an encrypted file using Argon2 key derivation and ChaCha20-Poly1305 decryption.
+    ///     Decrypts the contents of an encrypted file using Argon2 key derivation and four layers of decryption.
     /// </summary>
     /// <param name="userName">The username associated with the user's salt for key derivation.</param>
     /// <param name="passWord">The user's password used for key derivation.</param>
-    /// <param name="file">The path to the encrypted file to be decrypted.</param>
+    /// <param name="cipherText">The ciphertext to decrypt.</param>
     /// <returns>
     ///     A Task that completes with the decrypted content of the specified encrypted file.
     ///     If any error occurs during the process, returns an empty byte array.
@@ -738,9 +738,9 @@ public static class Crypto
     ///     6. Decrypts the file content using ChaCha20-Poly1305 decryption.
     ///     7. Clears sensitive information, such as the user's password, from memory.
     /// </remarks>
-    public static async Task<byte[]> DecryptFile(string userName, char[] passWord, string file)
+    public static async Task<byte[]> DecryptFile(string userName, char[] passWord, string cipherText)
     {
-        if (string.IsNullOrEmpty(userName) || passWord == null || passWord.Length == 0 || string.IsNullOrEmpty(file))
+        if (string.IsNullOrEmpty(userName) || passWord == null || passWord.Length == 0 || string.IsNullOrEmpty(cipherText))
             throw new ArgumentException("Value was empty.");
 
         var salt = Authentication.GetUserSalt(userName);
@@ -748,7 +748,7 @@ public static class Crypto
         var bytes = await HashingMethods.Argon2Id(passWord, salt, 544);
         var (key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3) = BufferInit.InitBuffers(bytes);
 
-        var fileStr = File.ReadAllText(file);
+        var fileStr = File.ReadAllText(cipherText);
         var fileBytes = DataConversionHelpers.Base64StringToByteArray(fileStr);
 
         if (fileBytes == Array.Empty<byte>() || salt == Array.Empty<byte>())
@@ -1350,6 +1350,114 @@ public static class Crypto
             return result;
         }
     }
+
+    #region Debug
+
+    public static class DebugMethods
+    {
+        public static async Task<byte[]> EncryptFileDebug(char[] passWord, byte[] salt, byte[] nonce, byte[] nonce2,
+            byte[] nonce3, byte[] nonce4, string plainText)
+        {
+            if (passWord == null || passWord.Length == 0 || string.IsNullOrEmpty(plainText))
+                throw new ArgumentException("Value was empty.");
+
+            var bytes = await HashingMethods.Argon2Id(passWord, salt, 544);
+            if (bytes == Array.Empty<byte>())
+                throw new Exception("Value was empty.");
+
+            var fileBytes = DataConversionHelpers.StringToByteArray(plainText);
+
+            if (fileBytes == null || fileBytes.Length == 0 || salt == null || salt.Length == 0)
+                throw new ArgumentException("Value was empty.");
+
+            var (key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3) = BufferInit.InitBuffers(bytes);
+
+            var compressedText = await CryptoUtilities.CompressText(fileBytes);
+
+            var encryptedFile = EncryptV3Debug(compressedText, key, key2, key3, key4, key5,
+                nonce, nonce2, nonce3, nonce4, hMacKey, hMacKey2, hMacKey3);
+
+            CryptoUtilities.ClearMemory(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3, bytes);
+
+            return encryptedFile;
+        }
+
+        public static async Task<byte[]> DecryptFileDebug(char[] passWord, byte[] salt, string cipherText)
+        {
+            if (passWord == null || passWord.Length == 0 || string.IsNullOrEmpty(cipherText))
+                throw new ArgumentException("Value was empty.");
+
+            var bytes = await HashingMethods.Argon2Id(passWord, salt, 544);
+            var (key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3) = BufferInit.InitBuffers(bytes);
+
+            var fileBytes = DataConversionHelpers.Base64StringToByteArray(cipherText);
+
+            if (fileBytes == Array.Empty<byte>() || salt == Array.Empty<byte>())
+                throw new ArgumentException("Value was empty.");
+
+            var decryptedFile = DecryptV3Debug(fileBytes, key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3);
+            var decompressedText = await CryptoUtilities.DecompressText(decryptedFile);
+
+            CryptoUtilities.ClearMemory(key, key2, key3, key4, key5, hMacKey, hMacKey2, hMacKey3, bytes);
+
+            return decompressedText;
+        }
+
+        private static byte[] EncryptV3Debug(byte[] plaintext,
+        byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] nonce, byte[] nonce2,
+        byte[] nonce3, byte[] nonce4, byte[] hMacKey, byte[] hMacKey2, byte[] hMacKey3)
+        {
+
+            var cipherText = Algorithms.EncryptXChaCha20Poly1305(plaintext, nonce, key) ??
+                             throw new Exception("Value was empty.");
+            var cipherTextL2 = Algorithms.EncryptThreeFish(cipherText, key2, nonce2, hMacKey) ??
+                               throw new Exception("Value was empty.");
+            var cipherTextL3 = Algorithms.EncryptSerpent(cipherTextL2, key3, nonce3, hMacKey2) ??
+                               throw new Exception("Value was empty.");
+            var cipherTextL4 = Algorithms.EncryptAes(cipherTextL3, key4, nonce4, hMacKey3) ??
+                               throw new Exception("Value was empty.");
+
+            var result = nonce.Concat(nonce2).Concat(nonce3).Concat(nonce4).Concat(cipherTextL4).ToArray();
+            var shuffledResult = Algorithms.Shuffle(result, key5);
+
+            return shuffledResult;
+        }
+
+        private static byte[] DecryptV3Debug(byte[] cipherText,
+        byte[] key, byte[] key2, byte[] key3, byte[] key4, byte[] key5, byte[] hMacKey, byte[] hMacKey2,
+        byte[] hMacKey3)
+        {
+            var unshuffledResult = Algorithms.DeShuffle(cipherText, key5);
+
+            var nonce = new byte[CryptoConstants.ChaChaNonceSize];
+            Buffer.BlockCopy(unshuffledResult, 0, nonce, 0, nonce.Length);
+            var nonce2 = new byte[CryptoConstants.ThreeFish];
+            Buffer.BlockCopy(unshuffledResult, nonce.Length, nonce2, 0, nonce2.Length);
+            var nonce3 = new byte[CryptoConstants.Iv];
+            Buffer.BlockCopy(unshuffledResult, nonce.Length + nonce2.Length, nonce3, 0, nonce3.Length);
+            var nonce4 = new byte[CryptoConstants.Iv];
+            Buffer.BlockCopy(unshuffledResult, nonce.Length + nonce2.Length + nonce3.Length, nonce4, 0, nonce4.Length);
+
+            var cipherResult =
+                new byte[unshuffledResult.Length - nonce4.Length - nonce3.Length - nonce2.Length - nonce.Length];
+
+            Buffer.BlockCopy(unshuffledResult, nonce.Length + nonce2.Length + nonce3.Length + nonce4.Length, cipherResult,
+                0,
+                cipherResult.Length);
+
+            var resultL4 = Algorithms.DecryptAes(cipherResult, key4, hMacKey3) ??
+                           throw new Exception("Value was empty.");
+            var resultL3 = Algorithms.DecryptSerpent(resultL4, key3, hMacKey2) ??
+                           throw new Exception("Value was empty.");
+            var resultL2 = Algorithms.DecryptThreeFish(resultL3, key2, hMacKey) ??
+                           throw new Exception("Value was empty.");
+            var result = Algorithms.DecryptXChaCha20Poly1305(resultL2, nonce, key) ??
+                         throw new Exception("Value was empty.");
+
+            return result;
+        }
+    }
+    #endregion
 
     #region Unused
 
